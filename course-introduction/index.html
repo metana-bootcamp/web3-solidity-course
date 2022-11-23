@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Course introduction </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../reveal.js/css/theme/solarized.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js/css/print/pdf.css' : '../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Course Introduction
+
+*Dhruvin Parikh, November 2022*
+
+</script></section>
+
+<section id="course-outline" data-markdown><script type="text/template">
+    ### Course Outline (1/5)
+
+    * Week 1: ERC-20, its variants, and token sales
+    * Week 2: ERC721, its variants, marketplaces, and staking
+    * Week 3: ERC1155, ethers.js, metamask, build a front-end app
+    * Week 4: Hardhat, unit testing, mutation testing, and static analysis. Introduction to hacking exercises. Hacking exercises 1/10
+    * Week 5: The Ethereum client: tracking logs and other on-chain data. Build some cool dashboards.
+</script></section>
+
+<section id="course-outline" data-markdown><script type="text/template">
+  ### Course Outline (2/5)
+
+  * Week 6: Hacking exercises 2/10: Re-entrancy, insecure randomness, bad access control, and other common vulnerabilities
+  * Week 7: Hacking exercises 3/10: common vulnerabilities continued
+  * Week 8: EVM Deep Dive, Gas Optimization. Hacking exercises 4/10
+  * Week 9: Advanced Solidity: A complete tour of OpenZeppelin and advanced programming patterns. Hacking exercises 5/10
+</script></section>
+
+<section id="course-outline" data-markdown><script type="text/template">
+  ### Course Outline (3/5)
+
+  * Week 10: Yul and Assembly: Build a non-trivial smart contract entirely in assembly.
+  * Week 11: Yul and Assembly continued: Hacking exercises 6/10
+  * Week 12: Smart contract upgrade patterns: UUPS, Metamorphic smart contracts, and other upgrade patterns. Hacks related to upgrades. Hacking exercises 7/10.
+  * Week 13: Public Signatures and how to break them. State channels and other signature-related patterns. Build an Ethereum wallet from scratch. Hacking 8/10
+</script></section>
+
+<section id="course-outline" data-markdown><script type="text/template">
+  ### Course Outline (4/5)
+
+  * Week 14: Defi Protocols and Hacks. Hacking Exercises 9/10
+  * Week 15: Defi Protocols and Hacks. Hacking Exercises 10/10
+  * Week 16: Capstone 1/3 and Chainlink Oracles
+  * Week 17: Capstone 2/3 and Blockchain Dev ops
+  * Week 18: Capstone 3/3 and Smart Contract Fuzzing
+</script></section>
+
+<section id="course-outline" data-markdown><script type="text/template">
+  ### Course Outline (5/5)
+
+  **Optional Extended Curriculum**
+  * Week 19: Cross Chain Techniques, Bridges, and L2s
+  * Week 20: Research report: The Evolution of ERC20: ERC223, 667, 777, and 1363
+  * Week 21: Symbolic Execution and other Advanced Security Techniques
+  * Week 22: Golang crash course and diving into the Geth Client
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../reveal.js/lib/js/head.min.js"></script>
+    <script src="../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>

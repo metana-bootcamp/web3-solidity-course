@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> NFTs and Marketplaces </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### NFTs and Marketplaces
+
+*Dhruvin Parikh, November 2022*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan 
+
+* Currencies on Ethereum network
+* Fungible and Non-fungible tokens
+* ERC721 - Non-fungible token standard
+</script></section>
+
+<section >
+  <h2>ERC721 Objectives</h2>
+  <ul>
+    <li>Knowledge of popular ERC721 compliant tokens</li>
+    <li>Understanding ERC721 standard</li>
+    <li>Use case using ERC721 token</li>
+    <li>Develop an ERC721 compliant token contract</li>
+  </ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## Fungible v/s NFT
+
+<img src="token-comp.png">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Fungible Dividend/Investment Like
+
+* Centralised
+ * Tokenized Debt/Labour/Risk
+ * ICO/IPO
+* Decentralized
+ * Decentralised Dividends/Rewards
+ * Distributed Risk
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Fungible utility Like
+
+* Centralised
+  * Stable coins
+  * Reward points
+  * Donation/Fixed Resource/Supply Tracking
+  * Onboarding Tokens
+* Decentralized
+  * Payment for Network Fees
+  * Voting/Off-chain input
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Non-Fungible utility Like
+
+* DividendInvestment Like
+  * Tokenizing Non-fungible Investments
+* Non-Investment Like
+  * Collectibles
+  </script></section>
+
+
+
+<section>
+    <h2>What's a token?</h2>
+    <ul>
+        <li>Blockchains have a native coin/token that the chain is built with. These coins/tokens are required to execute transactions, send data, are rewards for mining, etc.</li>
+        <li>But it may be possible to encode additional metadata in the chain which represents a token.</li>
+        <li>Depending on the chain, this can be easy or hard.</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Why use tokens?</h2>
+    <ul>
+        <li>Say you want to issue share of stocks to the many co-founders (different percentages) for your new startup company that is yet to be registered</li>
+        <li>In the Ethereum world, you can represent the shares in the form of “tokens” that can be sold, sold back to the company, transferred, etc.</li>
+        <li>You can create a “token contract” and deploy it in Ethereum blockchain</li>
+        <ul>
+            <li>Then the tokens can be transferred, sold, etc.</li>
+        </ul>
+    </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape</h2>
+  <img src="nft_landcape.png" width="600">
+</section>
+
+<section>
+  <h2>NFT Landscape : Publishers (Game)</h2>
+  <ul>
+    <li>Cryptofighters</li>
+    <li>Cryptokitties</li>
+    <li>Decentraland</li>
+    <li>Etherbots</li>
+    <li>Ethermon</li>
+    <li>Rare peppes</li>
+    <li>Spells of Genesis</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape : Publishers (Non-Game)</h2>
+  <ul>
+    <li>Crafty</li>
+    <li>Superrare</li>
+    <li>Terra0</li>
+    <li>Unico</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape : Marketplaces</h2>
+  <ul>
+    <li>OpenBazaar</li>
+    <li>Opensea</li>
+    <li>OpSkins</li>
+    <li>Rarebits</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape : Infrastructure</h2>
+  <ul>
+    <li>Oxcert.org</li>
+    <li>Bitcrystals</li>
+    <li>Codex Protocol</li>
+    <li>Counterparty</li>
+    <li>Ethereum</li>
+    <li>Fanbits</li>
+    <li>Metamask</li>
+    <li>Mokens</li>
+    <li>Userfeeds</li>
+    <li>Wax</li>
+    <li>ZeppelinOS</li>
+  </ul>
+</section>
+
+<section>
+    <h2>ERC-721 standard</h2>
+    <ul>
+        <li>A standard interface for non-fungible tokens, also known as deeds.</li>
+        <li>Details in</li>
+        <ul>
+            <li><a href="https://eips.ethereum.org/EIPS/eip-721">https://eips.ethereum.org/EIPS/eip-721</a></li>
+        </ul>
+    </ul>
+</section>
+
+<section>
+    <h2>ERC-721 tokens</h2>
+    <ul>
+        <li>Provides basic functionality to track and transfer NFTs</li>
+        <li>NFTs can represent ownership over digital or physical assets.</li> 
+        <li>NFTs are distinguishable and so the ownership of each one must be tracked separately</li>
+    </ul>
+</section>
+
+<section>
+  <h2>ERC-721 use-cases</h2>
+  <ul>
+    <li><b>Physical property</b> — houses, unique artwork</li>
+    <li><b>Virtual collectables</b> — unique pictures of kittens, collectable cards</li>
+    <li><b>“Negative value”</b> assets — loans, burdens and other responsibilities</li>
+  </ul>
+</section>
+
+<section data-auto-animate>
+    <h2 data-id="code-title">ERC-721 Interface</h2>
+    <pre data-id="code-animation"><code class="hljs" data-trim>
+      interface ERC721 /* is ERC165 */ {
+        event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
+        event Approval(address indexed _owner, address indexed _approved, uint256 indexed _tokenId);
+        event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+        function balanceOf(address _owner) external view returns (uint256);
+        function ownerOf(uint256 _tokenId) external view returns (address);
+        function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) external payable;
+        function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+        function transferFrom(address _from, address _to, uint256 _tokenId) external payable;
+        function approve(address _approved, uint256 _tokenId) external payable;
+        function setApprovalForAll(address _operator, bool _approved) external;
+        function getApproved(uint256 _tokenId) external view returns (address);
+        function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+    }
+    interface ERC165 {
+        function supportsInterface(bytes4 interfaceID) external view returns (bool);
+    }
+    </code></pre>
+</section>
+
+<section>
+  <h2>ERC721 NFT Contract</h2>
+  <img src="Image-1.1.png" width=800>
+</section>
+
+<section>
+  <h2>ERC721 Required Interface</h2>
+</section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`balanceOf(owner)`**
+  Returns the number of tokens in owner's account.
+  <img src="Image-1.2.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`ownerOf(tokenId)`**
+  Returns the owner of the tokenId token.
+  <img src="Image-1.3.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`approve(to, tokenId)`**
+  Gives permission to `to` to transfer `tokenId` token to another account
+  <img src="Image-1.4.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`getApproved(tokenId)`**
+  Returns the account approved for `tokenId` token.
+  <img src="Image-1.5.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`setApprovalForAll(operator, _approved)`**
+  Approve or remove operator as an operator for the caller
+  <img src="Image-1.6.jpg" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`isApprovedForAll(owner, operator)`**
+  Returns if the `operator` is allowed to manage all of the assets of `owner`.
+  <img src="Image-1.7.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`safeTransferFrom(from, to, tokenId)`**
+  Safely transfers `tokenId` token from `from` to `to`
+  <img src="Image-1.8.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 Event : **`Transfer(address from, address to, uint256 tokenId)`**
+  Approve/remove operator as an operator for the caller
+  <img src="Image-1.9.jpg" width=850>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 Event : **`Approval(address owner, address approved, uint256 tokenId)`**
+  Returns if the `operator` is allowed to manage all of the assets of `owner`.
+  <img src="Image-1.10.png" width=850>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 Event : **`ApprovalForAll(address owner, address operator, bool approved)`**
+  Safely transfers `tokenId` token from `from` to `to`.
+  <img src="Image-1.11.png" width=850>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`transferFrom(from, to, tokenId)`**
+  Transfers tokenId token from `from` to `to`.
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721 : **`safeTransferFrom(from, to, tokenId, data)`**
+  Safely transfers `tokenId` token from `from` to `to`.
+  <img src="Image-1.8.png" width=900>
+</script></section>
+
+<section>
+  <h2>IERC721Metadata</h2>
+</section>
+
+<section>
+  <h2>ERC721 Contract with Metadata</h2>
+  <img src="Image-1.12.png" width=800>
+</section>
+
+<section data-markdown><script type="text/template">
+  ## ERC721 Metadata functions
+  * **`name()`** : Returns the token collection name.
+  * **`symbol()`** : Returns the token collection symbol.
+  * **`tokenURI(tokenId)`** : Returns the Uniform Resource Identifier (URI) for tokenId token.
+</script></section>
+
+<section>
+  <h2>IERC721Enumerable</h2>
+</section>
+
+<section>
+  <h2>ERC721 Contract with Enumerable</h2>
+  <img src="Image-1.13.png" width=800>
+</section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721Enumerbale : **`totalSupply()`**
+  Returns the total amount of tokens stored by the contract.
+  <img src="Image-1.14.png" width=850>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721Enumerbale : **`tokenOfOwnerByIndex(address owner, uint256 index)`**
+  Returns a token ID owned by owner at a given index of its token list. Use along with `balanceOf` to enumerate all of owner's tokens.
+  <img src="Image-1.15.png" width=850>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC721Enumerbale : **`tokenByIndex(uint256 index)`**
+  Returns a token ID at a given index of all the tokens stored by the contract. Use along with totalSupply to enumerate all tokens.
+  <img src="Image-1.16.png" width=900>
+</script></section>
+
+<section>
+  <h2>Demo : Standard ERC721 Token Contract</h2>
+</section>
+
+
+
+<section>
+    <h2>Recommended Resources</h2>
+    <ul>
+        <li>ERC20 - <a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md">https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md</a></li>
+        <li>ERC721 - <a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md">https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md</a></li>
+        <li>ERC-223 <a href="https://github.com/ethereum/EIPs/issues/223">https://github.com/ethereum/EIPs/issues/223</a></li>
+        <li>NFT Issuaance landscape <a target="_blank" href="https://twitter.com/Cooopahtroopa/status/1353777743775731715">tweet</a></li>
+    </ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
