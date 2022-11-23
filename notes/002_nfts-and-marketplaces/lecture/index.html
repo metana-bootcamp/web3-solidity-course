@@ -73,73 +73,16 @@
 
 ## Class Plan 
 
-* Currencies on Ethereum network
-* Fungible and Non-fungible tokens
 * ERC721 - Non-fungible token standard
+* Fungible and Non-fungible tokens
+* NFT metadata standard
 </script></section>
-
-<section >
-  <h2>ERC721 Objectives</h2>
-  <ul>
-    <li>Knowledge of popular ERC721 compliant tokens</li>
-    <li>Understanding ERC721 standard</li>
-    <li>Use case using ERC721 token</li>
-    <li>Develop an ERC721 compliant token contract</li>
-  </ul>
-</section>
-
-<section data-markdown><script type="text/template">
-
-## Fungible v/s NFT
-
-<img src="token-comp.png">
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## Fungible Dividend/Investment Like
-
-* Centralised
- * Tokenized Debt/Labour/Risk
- * ICO/IPO
-* Decentralized
- * Decentralised Dividends/Rewards
- * Distributed Risk
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## Fungible utility Like
-
-* Centralised
-  * Stable coins
-  * Reward points
-  * Donation/Fixed Resource/Supply Tracking
-  * Onboarding Tokens
-* Decentralized
-  * Payment for Network Fees
-  * Voting/Off-chain input
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Non-Fungible utility Like
-
-* DividendInvestment Like
-  * Tokenizing Non-fungible Investments
-* Non-Investment Like
-  * Collectibles
-  </script></section>
-
-
 
 <section>
     <h2>What's a token?</h2>
     <ul>
         <li>Blockchains have a native coin/token that the chain is built with. These coins/tokens are required to execute transactions, send data, are rewards for mining, etc.</li>
         <li>But it may be possible to encode additional metadata in the chain which represents a token.</li>
-        <li>Depending on the chain, this can be easy or hard.</li>
     </ul>
 </section>
 
@@ -153,61 +96,6 @@
             <li>Then the tokens can be transferred, sold, etc.</li>
         </ul>
     </ul>
-</section>
-
-<section>
-  <h2>NFT Landscape</h2>
-  <img src="nft_landcape.png" width="600">
-</section>
-
-<section>
-  <h2>NFT Landscape : Publishers (Game)</h2>
-  <ul>
-    <li>Cryptofighters</li>
-    <li>Cryptokitties</li>
-    <li>Decentraland</li>
-    <li>Etherbots</li>
-    <li>Ethermon</li>
-    <li>Rare peppes</li>
-    <li>Spells of Genesis</li>
-  </ul>
-</section>
-
-<section>
-  <h2>NFT Landscape : Publishers (Non-Game)</h2>
-  <ul>
-    <li>Crafty</li>
-    <li>Superrare</li>
-    <li>Terra0</li>
-    <li>Unico</li>
-  </ul>
-</section>
-
-<section>
-  <h2>NFT Landscape : Marketplaces</h2>
-  <ul>
-    <li>OpenBazaar</li>
-    <li>Opensea</li>
-    <li>OpSkins</li>
-    <li>Rarebits</li>
-  </ul>
-</section>
-
-<section>
-  <h2>NFT Landscape : Infrastructure</h2>
-  <ul>
-    <li>Oxcert.org</li>
-    <li>Bitcrystals</li>
-    <li>Codex Protocol</li>
-    <li>Counterparty</li>
-    <li>Ethereum</li>
-    <li>Fanbits</li>
-    <li>Metamask</li>
-    <li>Mokens</li>
-    <li>Userfeeds</li>
-    <li>Wax</li>
-    <li>ZeppelinOS</li>
-  </ul>
 </section>
 
 <section>
@@ -227,6 +115,7 @@
         <li>Provides basic functionality to track and transfer NFTs</li>
         <li>NFTs can represent ownership over digital or physical assets.</li> 
         <li>NFTs are distinguishable and so the ownership of each one must be tracked separately</li>
+        <li>NFTs are about managing ownership of general digital assets</li>
     </ul>
 </section>
 
@@ -236,6 +125,24 @@
     <li><b>Physical property</b> — houses, unique artwork</li>
     <li><b>Virtual collectables</b> — unique pictures of kittens, collectable cards</li>
     <li><b>“Negative value”</b> assets — loans, burdens and other responsibilities</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Why manage NFT on a blockchain?</h2>
+  <ul>
+    <li>Blockchain ensures long-term ownership, until sale.</li>
+    <li>Provides a trusted record of provenance (forgeries are evident)</li>
+  </ul>
+</section>
+
+<section>
+  <h2>ERC-721 Example</h2>
+  <ul>
+    <li><b>Digital art</b> — opensea, foundation</li>
+    <li><b>Collector items</b> — NBA top shots</li>
+    <li><b>Game items</b> - horses (zed.run), axies</li>
+    <li><b>Metaverse</b> - ENS, plots in a virtual land</li>
   </ul>
 </section>
 
@@ -385,19 +292,187 @@
   <img src="Image-1.16.png" width=900>
 </script></section>
 
+<section data-markdown><script type="text/template">
+
+  ## Fungible v/s NFT
+  
+  <img src="token-comp.png">
+  </script></section>
+  
+  <section data-markdown><script type="text/template">
+  
+  ## Fungible Dividend/Investment Like
+  
+  * Centralised
+   * Tokenized Debt/Labour/Risk
+   * ICO/IPO
+  * Decentralized
+   * Decentralised Dividends/Rewards
+   * Distributed Risk
+  </script></section>
+  
+  <section data-markdown><script type="text/template">
+  
+  ## Fungible utility Like
+  
+  * Centralised
+    * Stable coins
+    * Reward points
+    * Donation/Fixed Resource/Supply Tracking
+    * Onboarding Tokens
+  * Decentralized
+    * Payment for Network Fees
+    * Voting/Off-chain input
+  </script></section>
+  
+  
+  <section data-markdown><script type="text/template">
+  
+  ## Non-Fungible utility Like
+  
+  * DividendInvestment Like
+    * Tokenizing Non-fungible Investments
+  * Non-Investment Like
+    * Collectibles
+    </script></section>
+
+<section data-markdown><script type="text/template">
+
+## NFT Metadata standard (opensea)
+```js
+{
+  "image": "NFT image url",
+  "image_data":"raw svg image data(optional)"
+  "description": "human readable description",
+  "external_url":"external url of NFT on your site"
+  "attributes": [
+      {
+          "trait_type": "Tier",
+          "value": "7"
+      },
+      {
+          "trait_type": "Background",
+          "value": "Violet"
+      },
+      {
+        "display_type": "boost_number", 
+        "trait_type": "Aqua Power", 
+        "value": 40
+      }, 
+      {
+        "display_type": "boost_percentage", 
+        "trait_type": "Stamina Increase", 
+        "value": 10
+      }, 
+      {
+        "display_type": "number", 
+        "trait_type": "Generation", 
+        "value": 2
+      }
+  ]
+}
+```
+* [https://docs.opensea.io/docs/metadata-standards](https://docs.opensea.io/docs/metadata-standards)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## NFT and IPFS
+* Upload the NFT images to ipfs to get the image urls
+* Upload the NFT metadata JSON with each NFT's image url to image field 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+  ## base URI format
+  ```
+  ipfs://{ipfs_hash}/
+  ```
+  https://ipfs.io/ipfs/QmSRuR57WYiSDWEavYj1vNGMv3SJ2vPWJ3LZn8C4xTs2Lv
+  
+</script></section>    
+
+<section data-markdown><script type="text/template">
+
+## Token URI format
+```
+{base_uri}{token_id}.json
+```
+https://ipfs.io/ipfs/QmSRuR57WYiSDWEavYj1vNGMv3SJ2vPWJ3LZn8C4xTs2Lv/9.json
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+  ## Asset-based DeFi
+  * Use NFT as collateral in loans (e.g., [nftfi.com](nftfi.com))
+  * Fractional ownership of NFT assets (r.g., [fractional.art](fractional.art))
+  * NFT appraisal (e.g. [upshot.xyz](upshot.xyz))
+</script></section>
+
+
 <section>
-  <h2>Demo : Standard ERC721 Token Contract</h2>
+  <h2>NFT Landscape</h2>
+  <img src="nft_landcape.png" width="600">
 </section>
 
+<section>
+  <h2>NFT Landscape : Publishers (Game)</h2>
+  <ul>
+    <li>Cryptofighters</li>
+    <li>Cryptokitties</li>
+    <li>Decentraland</li>
+    <li>Etherbots</li>
+    <li>Ethermon</li>
+    <li>Rare peppes</li>
+    <li>Spells of Genesis</li>
+  </ul>
+</section>
 
+<section>
+  <h2>NFT Landscape : Publishers (Non-Game)</h2>
+  <ul>
+    <li>Crafty</li>
+    <li>Superrare</li>
+    <li>Terra0</li>
+    <li>Unico</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape : Marketplaces</h2>
+  <ul>
+    <li>OpenBazaar</li>
+    <li>Opensea</li>
+    <li>OpSkins</li>
+    <li>Rarebits</li>
+  </ul>
+</section>
+
+<section>
+  <h2>NFT Landscape : Infrastructure</h2>
+  <ul>
+    <li>Oxcert.org</li>
+    <li>Bitcrystals</li>
+    <li>Codex Protocol</li>
+    <li>Counterparty</li>
+    <li>Ethereum</li>
+    <li>Fanbits</li>
+    <li>Metamask</li>
+    <li>Mokens</li>
+    <li>Userfeeds</li>
+    <li>Wax</li>
+    <li>ZeppelinOS</li>
+  </ul>
+</section>
 
 <section>
     <h2>Recommended Resources</h2>
     <ul>
-        <li>ERC20 - <a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md">https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md</a></li>
         <li>ERC721 - <a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md">https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md</a></li>
-        <li>ERC-223 <a href="https://github.com/ethereum/EIPs/issues/223">https://github.com/ethereum/EIPs/issues/223</a></li>
-        <li>NFT Issuaance landscape <a target="_blank" href="https://twitter.com/Cooopahtroopa/status/1353777743775731715">tweet</a></li>
+        <li>ERC1155 - <a href="https://eips.ethereum.org/EIPS/eip-1155">https://eips.ethereum.org/EIPS/eip-1155</a></li>
     </ul>
 </section>
 
