@@ -108,7 +108,7 @@
 </section>
 
 <section data-auto-animate>
-    <h2 data-id="code-title">ERC-721 Interface</h2>
+    <h2 data-id="code-title">ERC-1155 Interface</h2>
     <pre data-id="code-animation"><code class="hljs" data-trim>
       interface ERC1155 /* is ERC165 */ {
         event TransferSingle(address indexed _operator, address indexed _from, address indexed _to, uint256 _id, uint256 _value);
@@ -162,7 +162,7 @@
 </script></section>
 
 <section data-markdown><script type="text/template">
-  #### IERC1155 : **`safeTransferFrom(from, to, tokenIds,amounts, data)`**
+  #### IERC1155 : **`safeBatchTransferFrom(from, to, tokenIds,amounts, data)`**
   Safely transfers `amounts` of `tokenIds` token from `from` to `to`.
   <img src="erc1155-safeBatchTransferFrom.png" width=900>
 </script></section>
