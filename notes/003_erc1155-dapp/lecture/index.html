@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> ERC1155 and DApps </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### ERC1155 and DApp
+
+*Dhruvin Parikh, December 2022*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan 
+
+* ERC1155 
+* Introduction to `web3.js`
+* Introduction to `ethers.js`
+</script></section>
+
+<section>
+    <h2>ERC-1155 standard</h2>
+    <ul>
+        <li>A standard interface for contracts that manage multiple token types.</li>
+        <li>Details in</li>
+        <ul>
+            <li><a href="https://eips.ethereum.org/EIPS/eip-1155">https://eips.ethereum.org/EIPS/eip-1155</a></li>
+        </ul>
+    </ul>
+</section>
+
+<section>
+    <h2>ERC-1155 purpose</h2>
+    <ul>
+        <li>A standard to accommodate any combination of fungible tokens, non-fungible tokens, semi-fungible tokens</li>
+        <li>ERC721's token ID is a single non-fungible index and group of these non-fungibles is deployed as s single contract with settings of entire collection</li>
+        <li>ERC1155 allows each token ID to represent new configuration token type which may have its own metadata</li>
+    </ul>
+</section>
+
+<section>
+  <h2>Issues with other token standards</h2>
+  <ul>
+    <li>Redundant bytecodes : ERC-20 and ERC-721 require a separate contract to be deployed for each token type or collection.</li> 
+    <li>Certain functionalities can be limited by separating each token contract into its own addresses</li>
+    <li>Blockchain games may require thousands of token types, and a new type.</li> 
+  </ul>
+</section>
+
+<section data-auto-animate>
+    <h2 data-id="code-title">ERC-721 Interface</h2>
+    <pre data-id="code-animation"><code class="hljs" data-trim>
+      interface ERC1155 /* is ERC165 */ {
+        event TransferSingle(address indexed _operator, address indexed _from, address indexed _to, uint256 _id, uint256 _value);
+        event TransferBatch(address indexed _operator, address indexed _from, address indexed _to, uint256[] _ids, uint256[] _values);
+        event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+        event URI(string _value, uint256 indexed _id);
+        function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data) external;
+        function safeBatchTransferFrom(address _from, address _to, uint256[] calldata _ids, uint256[] calldata _values, bytes calldata _data) external;
+        function balanceOf(address _owner, uint256 _id) external view returns (uint256);
+        function balanceOfBatch(address[] calldata _owners, uint256[] calldata _ids) external view returns (uint256[] memory);
+        function setApprovalForAll(address _operator, bool _approved) external;
+        function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+    }
+    interface ERC165 {
+        function supportsInterface(bytes4 interfaceID) external view returns (bool);
+    }
+    </code></pre>
+</section>
+
+<section>
+  <h2>ERC1155 NFT Contract</h2>
+  <img src="erc1155-storage.drawio.png" width=800>
+</section>
+
+<section>
+  <h2>ERC1155 Required Interface</h2>
+</section>
+
+<section data-markdown><script type="text/template">
+  #### IERC1155 : **`balanceOf(holder,tokenId)`**
+  Returns the number of tokens of a token type held by holder.
+  <img src="erc1155-balanceOf.drawio.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC1155 : **`setApprovalForAll(operator, _approved)`**
+  Approve or remove operator as an operator for the caller
+  <img src="erc1155-setApprovalForAll.drawio.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC1155 : **`isApprovedForAll(owner, operator)`**
+  Returns if the `operator` is allowed to manage all of the assets of `owner`.
+  <img src="erc1155-isApprovedForAll.drawio.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC1155 : **`safeTransferFrom(from, to,tokenId,amount,data)`**
+  Safely transfers `amount` of `tokenId` token from `from` to `to`
+  <img src="erc1155-safeTransferFrom.drawio.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### IERC1155 : **`safeTransferFrom(from, to, tokenIds,amounts, data)`**
+  Safely transfers `amounts` of `tokenIds` token from `from` to `to`.
+  <img src="erc1155-safeBatchTransferFrom.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## URI format
+```
+{base_uri}{token_id}.json
+
+https://ipfs.io/ipfs/QmSRuR57WYiSDWEavYj1vNGMv3SJ2vPWJ3LZn8C4xTs2Lv/9.json
+```
+</script></section>
+
+<section data-markdown><textarea data-template>
+  ### `web3.js`
+  - Maintained by community of users and ChainSafe 
+  - Extensively used by many project since 2015
+  - A go-to choice for "Build your first dApp" tutorials
+  - An open source library with GPLv3 license
+  - Currently at version 1.8.1.
+  - Functions to interact with Ethereum node via JSON-RPC protocol
+</textarea>></section>
+
+<section data-markdown><textarea data-template>
+  ### Modules in `web3.js`
+  - <a href="#web3-eth"><code>web3-eth</code></a>
+  - <a href="#web3-shh"><code>web3-shh</code></a>
+  - <a href="#web3-bzz"><code>web3-bzz</code></a>
+  - <a href="#web3-net"><code>web3-net</code></a>
+  - <a href="#web3-utils"><code>web3-utils</code></a>
+</textarea>></section>
+
+<section id="web3-eth">
+  <h3>Examples of <code>web3-eth</code></h3>
+  <ul>
+    <li><code>web3.eth.getBalance</code> : balance of an address at a given block</li>
+    <li><code>web3.eth.signTransaction</code> : sign a transaction</li>
+    <li><code>web3.eth.sendSignedTransaction</code> : send a signed transaction to the Ethereum blockchain.</li>
+  </ul>
+</section>
+
+<section id="web3-shh">
+  <h3>Examples of <code>web3-shh</code></h3>
+  <ul>
+    <li><code>web3.shh.post</code> : posts a whisper message to the network</li>
+    <li><code>web3.shh.subscribe</code> : creates a subscription to incoming whisper messages</li>
+  </ul>
+</section>
+
+<section id="web3-bzz">
+  <h3>Examples of <code>web3-bzz</code></h3>
+  <ul>
+    <li><code>web3.bzz.upload</code> : upload files and folders to Swarm</li>
+    <li><code>web3.bzz.download</code> : download files and folders from Swarm</li>
+  </ul>
+</section>
+
+<section id="web3-net">
+  <h3>Examples of <code>web3-net</code></h3>
+  <ul>
+    <li><code>web3.*.net.getID</code> : returns the network ID</li>
+    <li><code>web3.*.net.getPeerCount</code> : returns the number of peers that the node is connected to</li>
+  </ul>
+</section>
+
+<section id="web3-utils">
+  <h3>Examples of <code>web3-utils</code></h3>
+  <ul>
+    <li><code>web3.utils.toWei</code> : converts Ether to Wei</li>
+    <li><code>web3.utils.hexToNumberString</code> : converts a hexadecimal value to a string</li>
+    <li><code>web3.utils.isAddress</code> checks if a given string is a valid Ethereum address.</li>
+  </ul>
+</section>
+
+<section data-markdown><textarea data-template>
+### Creating the Web3 Object (1/2)
+```
+// in node.js use: const Web3 = require('web3');
+// use the given Provider, e.g in the browser with Metamask, 
+// or instantiate a new websocket provider
+const web3 = new Web3(Web3.givenProvider || 
+  'ws://localhost:8546', null, 
+  {});
+// or
+const web3 = new Web3(Web3.givenProvider || 
+new Web3.providers.
+WebsocketProvider('ws://localhost:8546'), null, {});
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Creating the Web3 Object (2/2)
+```
+const net = require('net'); // Using the IPC provider in node.js
+const web3 = new Web3(
+  '/Users/myuser/Library/Ethereum/geth.ipc', net, {}
+  ); // mac os path
+// or
+const web3 = new Web3(new Web3.providers.IpcProvider(
+  '/Users/myuser/Library/Ethereum/geth.ipc', 
+  net, {})); // mac os path
+// on windows the path is: '\\\\.\\pipe\\geth.ipc' 
+// on linux the path is: '/users/myuser/.ethereum/geth.ipc'
+```
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Creating Contract Objects
+```
+new web3.eth.Contract(jsonInterface, address, options)
+e.g. const myContract = new web3.eth.Contract(
+  [...], '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', 
+  {});
+```
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Contract Methods : view functions
+```
+myContract.methods.myMethod([param1[, param2[, 
+...]]]).call(transactionObject, blockNumber, callback])
+
+e.g.
+
+// using the promise
+myContract.methods.myMethod(123).call({
+  from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'})
+.then((result) => {
+    //...
+});
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Contract Methods : state changing functions
+```
+myContract.methods.myMethod([param1[, param2[, 
+...]]]).send(options[, callback])
+
+e.g.
+
+// using the promise
+myContract.methods.myMethod(123).send(
+  {from: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'})
+.then((receipt) => {
+    // receipt can also be a new contract instance, 
+  // when coming from a "contract.deploy({...}).send()"
+});
+```
+ </textarea></section>
+
+ <section data-markdown><textarea data-template>
+### Handling Events
+```
+myContract.events.MyEvent([options][, callback])
+// Example
+myContract.events.MyEvent({
+filter: {myIndexedParam: [20,23], 
+  myOtherIndexedParam: '0x123456789...'}, 
+  fromBlock: 0
+}, (error, event) => { console.log(event); })
+.on('data', (event) => {
+  console.log(event); // same results as the optional callback 
+                      // above
+})
+.on('changed', (event) => {
+  // remove event from local database
+})
+.on('error', console.error);
+```
+ </textarea></section>
+
+<section data-markdown><textarea data-template>
+### `web3.js` DEMO
+```
+// Inject environemnt variable in this file
+require("dotenv").config("./env");
+
+// Import Web3
+const Web3 = require("web3");
+
+// Import BigNumber
+const BigNumber = require("bignumber.js");
+
+// Import abi
+const abi = require("./abi.json");
+
+const { bytecode } = require("./bytecode");
+
+// create web3 instance
+const web3 = new Web3(new Web3.providers.HttpProvider(process.env.URI));
+
+// get the account object from private key
+const accountObj = web3.eth.accounts.privateKeyToAccount(
+process.env.PRIVATE_KEY
+);
+
+const _number = new BigNumber(2);
+const simplestorageContract = new web3.eth.Contract(abi);
+
+const contractData = simplestorageContract
+.deploy({
+  data: `0x${bytecode}`,
+  arguments: [_number],
+})
+.encodeABI();
+web3.eth
+.estimateGas({ from: accountObj.address, data: contractData })
+.then((gas) => {
+  const rawTx = {
+    from: accountObj.address,
+    gas,
+    data: contractData
+  };
+  web3.eth.accounts
+    .signTransaction(rawTx, accountObj.privateKey)
+    .then(({ rawTransaction, transactionHash }) => {
+      web3.eth
+        .sendSignedTransaction(rawTransaction)
+        .on("receipt", console.log);
+
+      waitForReceipt(transactionHash, (result) => {
+        console.log("The contract is deployed at ", result.contractAddress);
+      });
+    });
+});
+
+// function to poll until transaction gets mined
+function waitForReceipt(hash, cb) {
+web3.eth.getTransactionReceipt(hash, function (err, receipt) {
+  if (err) {
+    console.error(err);
+  }
+  if (receipt) {
+    // Transaction went through
+    if (cb) {
+      cb(receipt);
+    }
+  } else {
+    // Try again in 1 second
+    console.log("Waiting to get mined...");
+    setTimeout(function () {
+      waitForReceipt(hash, cb);
+    }, 1000);
+  }
+});
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+  ### `ethers.js`
+  - Light weight , small and compact library
+  - Large number of test cases
+  - Good "Getting started" documentation
+  - Simple and intuitive
+  - Utility functions in both Javascript and Typescript
+  - Open source via the MIT License
+</textarea>></section>
+
+<section data-markdown><textarea data-template>
+  ### Modules in `ethers.js`
+  - <a href="#ethers.provider"><code>ethers.provider</code></a>
+  - <a href="#ethers.contract"><code>ethers.contract</code></a>
+  - <a href="#ethers.utils"><code>ethers.utils</code></a>
+  - <a href="#ethers.wallets"><code>ethers.wallets</code></a>
+</textarea>></section>
+
+<section id="ethers.provider">
+  <h3>Examples of <code>ethers.provider</code></h3>
+  <ul>
+    <li><code>ethers.providers.InfuraProvider</code> : connect to the Infura hosted network of Ethereum nodes</li>
+    <li><code>ethers.provider.getBalance</code> : Balance of an address or a block in the blockchain</li>
+    <li><code>ethers.provider.resolve</code> : resolve an Ethereum Name Service (ENS) name passed in to an Ethereum address.</li>
+  </ul>
+</section>
+
+<section id="ethers.contract">
+  <h3>Examples of <code>ethers.contract</code></h3>
+  <ul>
+    <li><code>ethers.ContractFactory.fromSolidity</code> : creates a “factory” for deployment of a smart contract from compiler output of the Solidity compiler or from the Truffle generated JSON fileethers.Contract allows you to interact with a smart contract once it has been deployed.</li>
+  </ul>
+</section>
+
+<section id="ethers.utils">
+  <h3>Examples of <code>ethers.utils</code></h3>
+  <ul>
+    <li><code>ethers.utils.getContractAddress</code> : retrieves a smart contract address from the transaction used to deploy the smart contract</li>
+    <li><code>ethers.utils.computeAddress</code> : computes an address by passing the function the public or private key associated with the address</li>
+    <li><code>ethers.utils.formatEther</code> will format a passed in amount of Wei into a decimal string of Ether</li>
+  </ul>
+</section>
+
+<section id="ethers.wallet">
+  <h3>Examples of <code>ethers.wallet</code></h3>
+  <ul>
+    <li><code>ethers.wallet.createRandom</code> : create a random new account.</li>
+    <li><code>ethers.wallet.sign</code> : sign a transaction and returns the signed transaction as a hex string.</li>
+    <li><code>ethers.wallet.getBalance</code> : balance of a wallet address.</li>
+  </ul>
+</section>
+
+<section>
+  <h3>Which library to use in my DApp?</h3>
+  <ul>
+    <li>Popularity of library</li>
+    <li>Maintenance of library</li>
+    <li>Team behind development of library</li>
+    <li>Tests in library</li>
+    <li>Number of downloads of library</li>
+    <li>Web performance of library</li>
+    <li>Quality of documentation</li>
+    <li>Licensing of library</li>
+  </ul>
+</section>
+
+<section data-markdown><textarea data-template>
+### `ethers.js` DEMO
+```
+require("dotenv").config("./.env");
+const { ethers } = require("ethers");
+
+// Import abi
+const abi = require("./abi.json");
+
+// import bytecode
+const { bytecode } = require("./bytecode");
+
+// initialise with infura provider i.e. rinkeby network
+const provider = new ethers.providers.InfuraProvider(
+"rinkeby",
+process.env.INFURA_KEY
+);
+
+// create a wallet instance i.e. signer
+const wallet = new ethers.Wallet(`0x${process.env.PRIVATE_KEY}`, provider);
+
+// contract factory instance
+const factory = new ethers.ContractFactory(abi, bytecode, wallet);
+
+// deploy the contract
+factory.deploy(2).then(async (contract) => {
+// contract deployment
+await contract.deployed();
+console.log("Deployed at ", contract.address);
+
+// get the instance after contract is deployed
+const contractInstance = new ethers.Contract(contract.address, abi, provider);
+
+// get the signer from deployed contract and wallet
+const contractSigner = contractInstance.connect(wallet);
+contractSigner.number().then((_num) => {
+  console.log("The queried number is ", _num);
+  contractSigner.increment().then(async (tx) => {
+    await tx.wait();
+    console.log("Increment function is called");
+
+    contractSigner.number().then((_num) => {
+      console.log("The queried number is ", _num);
+    });
+  });
+});
+});
+
+// contract is deployed at 0x5F7C2f13E6eabfac0E4E2C74Cd69056647DcE0b4 on rinkeby
+// contract is deployed at 0xaD7DDecb646ab6849E13ABdfb1C5b1F2A377Bd32 ono rinkeby
+```
+</textarea></section>
+
+<section>
+    <h2>Recommended Resources</h2>
+    <ul>
+        <li>ERC1155 - <a href="https://eips.ethereum.org/EIPS/eip-1155">https://eips.ethereum.org/EIPS/eip-1155</a></li>
+        <li>web3.js - <a href="https://web3js.readthedocs.io/en/v1.8.1/">https://web3js.readthedocs.io/en/v1.8.1/</a></li>
+        <li>ethers.js - <a href="https://docs.ethers.io/v5/">https://docs.ethers.io/v5/</a></li>
+    </ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
