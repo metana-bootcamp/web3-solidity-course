@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Hardhat unit testing, mutation testing and SC Analysis </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Hardhat unit testing, Mutation testing and Static Analysis
+
+*Dhruvin Parikh, December 2022*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan 
+
+* Hardhat unit testing 
+* Smart Contract Analysis
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## What to test?
+
+* No internal, private functions
+* No modifiers
+* Try to test all branches
+* No need to test trusted packages. (Don't use if you don't trust)
+* If you really wanted to test them, you might want to try this - https://www.npmjs.com/package/hardhat-exposed
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Hardhat unit testing
+
+* [Hardhat toolbox](https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-toolbox#hardhat-toolbox)
+* Hardhat network methods
+ * `hardhat_impersonateAccount`
+ * `hardhat_mine`
+ * `hardhat_setStorageAt`
+ * all methods supported by Ganache
+ * [More...](https://hardhat.org/hardhat-network/docs/reference#hardhat-network-methods)
+</script></section>
+
+<section>
+<h2>Hooks in Mocha</h2>
+<ul>
+    <li><code>before()</code> — Runs once before the first test case in the block</li>
+    <li><code>beforeEach()</code> — Runs before each test case</li>
+    <li><code>afterEach()</code> — Runs after each test case</li>
+    <li><code>after()</code> — Runs once after the last test case in the block</li>
+</ul>
+<ul style="list-style: none;">
+    <li>Sequence of Hooks</li>
+    <ul style="list-style: none;">
+    <li><code>before() -> beforeEach() -> test() -> afterEach() -> after()</code></li>
+    </ul>
+</ul>
+</section>
+
+<section>
+<h2>Achieving 100% Coverage</h2>
+<ul>
+    <li>Positive test</li>
+    <ul>
+    <li>Test that code behaves as expected when valid data is given.</li>
+    </ul>
+    <li>Negative tests</li>
+    <ul>
+    <li>Test that code behaves as expected when invalid data is given.</li>
+    </ul>
+</ul>
+</section>
+
+<section>
+<h2>Solidity code coverage tools</h2>
+<ul>
+    <li>solidity-coverage(Truffle) - <a href="https://github.com/sc-forks/solidity-coverage">https://github.com/sc-forks/solidity-coverage</a></li>
+    <li>solidity-coverage(Hardhat) - <a href="https://github.com/sc-forks/solidity-coverage/blob/master/HARDHAT_README.md">https://github.com/sc-forks/solidity-coverage/blob/master/HARDHAT_README.md</a></li>
+</ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## Testing for different block timestamps
+
+```
+// Vesting.sol
+function getCurrentTime() internal view virtual returns (uint256) {
+    return block.timestamp;
+}
+```
+```
+// MockVesting.sol
+function setCurrentTime(uint256 _time) external {
+    mockTime = _time;
+}
+
+function getCurrentTime() internal view virtual override returns (uint256) {
+    return mockTime;
+}
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Smart Contract Analysis
+
+* Static Analysis
+* Dynamic Analysis
+* Fuzz testing
+* Symbolic Execution
+* Formal Verification
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Static Analysis
+
+* Static Analysis is performed by reviewing the source code without running the program
+* It is mostly for ensuring proper coding standards, best practices, syntax errors, etc
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Solidity Linters
+
+* solhint - https://github.com/protofire/solhint 
+* ethlint - https://github.com/duaraghav8/Ethlint
+* prettier-solidity - https://github.com/prettier-solidity/prettier-plugin-solidity
+
+</script></section>
+
+<section>
+    <h2>Static Analysis : tools</h2>
+    <ul>
+        <li><a target="_blank" href="https://remix-ide.readthedocs.io/en/latest/static_analysis.html#solidity-static-analysis">Solidity Static Analysis</a> - Remix Plugin</li>
+        <li><a target="_blank" href="https://contract.guardstrike.com/#/scan">sFuzz</a> - fuzzer to find common vulnerabilities</li>
+        <li><a target="_blank" href="https://github.com/smartdec/smartcheck">SmartCheck</a> - sc vulnerabilities and bugs detector</li>
+        <li><a target="_blank" href="https://github.com/crytic/slither">slither</a> - Solidity static analyzer</li>
+        <li><a target="_blank" href="https://github.com/crytic/echidna">echidna</a> - rapid sc fuzzer</li>
+        <li><a target="_blank" href="https://github.com/eth-sri/securify2">Securify</a> - Solidity security static analyzer </li>
+    </ul>
+</section>
+
+<section>
+<h2>Solidity Static Analysis - Remix Plugin</h2>
+<ul>
+    <li>Debug the code without execution.</li>
+    <li>Ensures proper coding standards, best practices, syntax errors,etc.</li>
+</ul>
+</section>
+
+<section>
+<h2>Solidity Static Analysis - Remix Plugin</h2>
+<img src="remix-static-plugin.svg" style="border: none;box-shadow: none;">
+</section>
+
+<section>
+<h2>Solidity Static Analysis - Remix Plugin</h2>
+<img src="static-analysis-output.svg" style="border: none;box-shadow: none;">
+</section>
+
+<section>
+<h2>Solidity Static Analysis - Remix Plugin</h2>
+<ul style="list-style-type: none;">
+    <li>False Positive on infinite gas for dynamic arrays such as string</li>
+</ul>
+<img src="static-false-positive.svg" style="border: none;box-shadow: none;">
+</section>
+
+<section>
+    <h2>Static Analysis : <a target="_blank" href="https://github.com/crytic/echidna">Echidna</a></h2>
+    <ul>
+        <li>Property testing to generate malicious inputs that break smart contracts</li>
+        <li>Generates inputs tailored to code</li>
+        <li>Optional corpus collection, mutation and coverage guidance to find deeper bugs</li>
+        <li>Powered by Slither to extract useful information before the fuzzing campaign</li>
+        
+    </ul>
+</section>
+
+<section>
+    <h2>Static Analysis : <a target="_blank" href="https://github.com/crytic/echidna">Echidna</a></h2>
+    <ul>
+        <li>Automatic testcase minimization for quick triage</li>
+        <li>Seamless integration into the development workflow</li>
+        <li>Maximum gas usage reporting of the fuzzing campaign</li>
+        <li>Support for a complex contract initialization with Etheno and Truffle</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Dynamic Analysis</h2>
+    <ul>
+        <li>Analysis is performed by executing the program</li>
+        <li>Unit testing is a type of dynamic analysis</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Dynamic Analysis</h2>
+    <ul>
+        <li><a target="_blank" href="https://www.trufflesuite.com/docs/truffle/testing/testing-your-contracts#testing-your-contracts">Truffle tests</a></li>
+        <li><a target="_blank" href="https://hardhat.org/hardhat-runner/docs/guides/test-contracts">Hardhat unit tests</a></li>
+        <li><a target="_blank" href="https://github.com/JoranHonig/vertigo">Vertigo</a> - Mutation testing for Ethereum smart contracts</li>
+        <li><a target="_blank" href="https://remix-ide.readthedocs.io/en/latest/unittesting.html#write-tests">Unit Testing Plugin</a> - Remix Plugin</li>
+    </ul>
+</section>
+
+
+<section data-markdown><script type="text/template">
+
+## Recommended Resources
+
+* Mocking Smart Contract while testing - https://smock.readthedocs.io/en/latest/
+* [Slither Blog](https://blog.trailofbits.com/2018/10/19/slither-a-solidity-static-analysis-framework/)
+* SC weakness classification - https://swcregistry.io/
+* Hardhat network methods - https://hardhat.org/hardhat-network/docs/reference#hardhat-network-methods
+* [SC best practices by Consensys](https://consensys.github.io/smart-contract-best-practices/)
+* [ERC20 brute force set balance by Euler labs](https://www.eulerlabs.com/blog/brute-force-storage-layout-discovery-in-erc20-contracts-with-hardhat)
+* [EVM Snapshot](https://github.com/trufflesuite/ganache/blob/ef1858d5d6f27e4baeb75cccd57fb3dc77a45ae8/src/chains/ethereum/ethereum/RPC-METHODS.md#evm_snapshot)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
