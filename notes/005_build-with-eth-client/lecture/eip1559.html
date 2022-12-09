@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> EIP1559 </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### EIP 1559
+
+*Dhruvin Parikh, December 2022*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan 
+
+* EIP 1559
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EIP 1559
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EIP 1559 glossary
+* Max Base fee
+* Base Fee
+* Max Fee
+* Priority Fee
+
+<a href="https://etherscan.io/gastracker" target="_blank" >Open Etherscan's Ethereum gas tracker</a>
+<a href="https://www.blocknative.com/gas-estimator" target="_blank" >Open Blocknative's Ethereum Gas tracker</a><br/>
+Show Gas on MetaMask's confirmation screen
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## tl;dr
+
+* Gas price per gwei ≤ Max fee
+* Priority fee and Max fee are not the same
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## The EIP 1559 has only two fees and one global variable
+
+* `max_fee_per_gas`
+ * is the maximum gwei per gas unit you are willing to pay 
+* `max_priority_fee_per_gas`
+ * is what portion of that `max_fee_per_gas` you want to be a miner tip
+* BASEFEE - is determined by protocol
+
+<a href="https://eips.ethereum.org/EIPS/eip-1559" target="_blank" >Show EIP 1559</a>
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## BASEFEE
+
+* Protocol level base fee
+* This is visible on every <a href="https://etherscan.io/block/14526838" target="_blank" >block</a>
+* BASEFEE is burned
+* It increases approx. by 12.5% if last <a href="https://etherscan.io/block/14526837" target="_blank">block was full</a>
+* It decreases approx. by 12.5% if last <a href="https://etherscan.io/block/14526838" target="_blank">block was empty</a>
+* The exact formulae is complicated
+* Solidity ^0.8.7 - `block.basefee`
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Max Base Fee
+
+* For a transaction to go through, max fee ≥ BASEFEE
+* Because BASEFEE can fluctuate, the protocol BASEFEE might exceed the basefee you paid when you signed the transaction
+* So you don't specify a basefee, you specify how high a basefee you are willing to pay at most.
+ * If the next block increases the BASEFEE because the previous block was full, you want your max fee to cover this contingency
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Priority Fee
+
+* EIP 1559 specification calls it `max_priority_fee_per_gas`
+* Metamask calls it `Priority Fee`
+* They both mean the same
+* Priority fee - amount that validator actually receives(miner tip)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Priority Fee math (1/2)
+
+* Max Fee - BASEFEE = leftover
+* case 1 : `max_priority_fee` < leftover
+ * leftover - max_priority_fee = refund
+* case 2: `max_priority_fee` ≥ leftover
+ * refund = 0, validator gets leftover
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Priority Fee math(2/2)
+
+* if max_priority_fee > leftover → refund = 0
+
+tx fee = BASEFEE + (`max_fee` - `max_priority_fee`)
+<br/>tx fee = BASEFEE + miner tip
+
+* if max_priority_fee < leftover → refund > 0
+
+tx fee = burned fee (BASEFEE) + `max_priority_fee`
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+![EIP 1559](./EIP1559-case1.drawio.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+![EIP 1559 case 2](./EIP1559-case2.drawio.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## This will not work!
+
+* BASEFEE is X
+* `max_fee_per_gas` = 90
+* `max_priority_fee_per_gas` = 100
+
+Because `max_priority_fee_per_gas` cannot be over `max_fee_per_gas`
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## This will work (No ether burnt)
+
+* BASEFEE is 0
+* `max_fee_per_gas` = 3
+* `max_priority_fee_per_gas` = 3
+* You pay 3 gwei per gas
+* The validator receives 3 gwei per gas
+* No ether is burned
+
+Because `max_priority_fee_per_gas` cannot be over `max_fee_per_gas`
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## This will work (Miner tip case)
+
+* BASEFEE is 70
+* `max_fee_per_gas` = 90
+* `max_priority_fee_per_gas` = 50
+* 70 gwei per gas is burned
+* 20 gwei per gas goes to validator
+
+the validator cannot receive 50 gwei per gas unless the BASEFEE has dropped to 40
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## This will work (Refund case)
+
+* BASEFEE is 70
+* `max_fee_per_gas` = 90
+* `max_priority_fee_per_gas` = 15
+* 70 gwei per gas is burned
+* 15 gwei per gas goes to validator
+* 5 gwei is refunded
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## This might not work (Edge case)
+
+* BASEFEE is 90
+* `max_fee_per_gas` = 90
+* `max_priority_fee_per_gas` = 90
+
+Validators may not accept this transaction as there is not tip
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Takeaways
+
+* **BASEFEE** - amount burned. Determined by network
+* **Max Fee** 
+ * max you are willing to pay for transaction regardless of priority fee
+ * upper bound of the gas price your transaction will pay
+* **Max priority fee** - the max tip willing for validator
+* **Priority fee** - The amount miner actually receives
+ * The miner will receive less than the max priority fee if max_fee - BASEFEE < max_priority_fee
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Recommended Resources
+
+* 
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
