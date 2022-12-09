@@ -112,6 +112,7 @@ Show Gas on MetaMask's confirmation screen
  * is the maximum gwei per gas unit you are willing to pay 
 * `max_priority_fee_per_gas`
  * is what portion of that `max_fee_per_gas` you want to be a miner tip
+* `max_priority_fee_per_gas` is a subset of `max_fee_per_gas`
 * BASEFEE - is determined by protocol
 
 <a href="https://eips.ethereum.org/EIPS/eip-1559" target="_blank" >Show EIP 1559</a>
@@ -138,6 +139,12 @@ Show Gas on MetaMask's confirmation screen
 * Because BASEFEE can fluctuate, the protocol BASEFEE might exceed the basefee you paid when you signed the transaction
 * So you don't specify a basefee, you specify how high a basefee you are willing to pay at most.
  * If the next block increases the BASEFEE because the previous block was full, you want your max fee to cover this contingency
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Priority Fee
+
 </script></section>
 
 <section data-markdown><script type="text/template">
