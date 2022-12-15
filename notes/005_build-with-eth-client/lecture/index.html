@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Build with Ethereum Client </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Build with Ethereum Client
+
+*Dhruvin Parikh, December 2022*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan 
+
+* Node types
+* Node clients (post merge)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum Node
+* Device or program to communicate with decentralized network
+* This peer-to-peer clients sync your copy of blockchain with rest of network
+* Ensure you have the same copy as rest
+* It performs transaction execution, managing wallets, read/write to blockchain
+* Categorized based on sync-modes
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum Node Types
+
+* **Snap (Default)** - node holds the most recent 128 block states in memory
+* **Full** - generates the current state by executing every block starting from the genesis block. Only the most recent 128 block states are stored in a full node
+* **Archive** - retains all historical data right back to genesis
+* **Light nodes** - only process block headers (do not work in PoS)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Consensus Layer syncing
+
+* **Consensus client (CL)**
+ * Handles all consensus logic and block propagation
+ * Blocks downloading
+ * <a href="https://geth.ethereum.org/docs/interface/consensus-clients" target="_blank">CL clients</a>
+* **Execution client (EL)**
+ * Block verification by reading block headers from CL
+ * Cannot sync without connecting to CL
+ * transactions, contract deployments and data queries
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Optimistic sync
+
+*  downloads blocks before the execution client has validated them
+*  node assumes the data it receives from its peers is correct during the downloading phase but then retroactively verifies each downloaded block
+*  not allowed to attest or propose blocks
+
+<br/><a href="https://github.com/ethereum/consensus-specs/blob/dev/sync/optimistic.md" target="_blank">Optimistic sync specs</a>
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Checkpoint sync
+
+* the CL can grab a checkpoint from a trusted source which provides a target state to sync up to, before switching to full sync and verifying each block in turn. 
+* node trusts that the checkpoint is correct
+
+<br/><a href="https://eth-clients.github.io/checkpoint-sync-endpoints/" target="_blank">Ethereum Beacon Chain checkpoint sync endpoints</a>
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EVM Client architecture Post "Merge"
+
+![client-architecture](./client-architecture.png)
+</script></section>
+
+<section>
+    <h3>Remote Procedure Call (RPC)</h3>
+    <ul>
+        <li>Fancy word which generally means calling procedures with
+    arguments on remote systems</li>
+    <li>Remote Procedure Call (RPC) is a protocol that one program can use
+    to request a service from a program located in another computer on
+    a network without having to understand the network's details.</li>
+    <li>Specifications: <a href="https://www.jsonrpc.org/specification" target="_blank">https://www.jsonrpc.org/specification</a></li>
+</ul>
+</section>
+
+<section data-markdown><textarea data-template>
+### JSON-RPC
+* A middle-ware like web3.js is used to take advantage of RPC calls.
+* JSON is a light weight data format that is easy to parse.
+* JSON-RPC is a stateless, light client RPC
+    * Surrounded around data structure and rules of processing
+    * It is transport agnostic (HTTP,websockets,IPC,graphql)  
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Why JSON-RPC and Not REST?
+* When used with HTTP, pretty much the same beyond semantics
+* JSON-RPC vs JSON + REST
+    * JSON-RPC is better for performance, data is serialized over the network
+    * REST data is serialized via the endpoints, can have poor performance with larger JSON files (negligible depending on use case)  
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Serialization
+*The process of translating data structures or object
+state into a format that can be stored (for example, in a file or
+memory buffer) or transmitted (for example, across a network
+connection link) and reconstructed later (possibly in a different
+computer environment).*  
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### JSON-RPC call via `curl`
+
+```bash
+curl https://mainnet.infura.io/v3/86599c771d434ac3ba265546515812ed \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}' 
+```
+
+- Readings: <a href="https://blog.infura.io/ethereum-rpcs-methods/" target="_blank">https://blog.infura.io/ethereum-rpcs-methods/</a>
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## genesis file
+
+```
+{
+    "config": {
+        "chainId": 2019,
+        "istanbulCompatibleBlock": 0,
+        "istanbul": {
+            "epoch": 604800,
+            "policy": 2,
+            "sub": 13
+        },
+        "unitPrice": 25000000000,
+        "deriveShaImpl": 2,
+        "governance": {
+            "governingNode": "0x46b0bd6380005952759f605d02a6365552c776f3",
+            "governanceMode": "single",
+            "reward": {
+                "mintingAmount": 6400000000000000000,
+                "ratio": "50/40/10",
+                "useGiniCoeff": true,
+                "deferredTxFee": true,
+                "stakingUpdateInterval": 86400,
+                "proposerUpdateInterval": 3600,
+                "minimumStake": 5000000
+            }
+        }
+    },
+    "nonce": "0x0",
+    "timestamp": "0x5c9af60e",
+    "extraData": "0x0000000000000000000000000000000000000000000000000000000000000000f89af85494aeae0ab623d4118ac62a2decc386949b5ce67ce29446b0bd6380005952759f605d02a6365552c776f394699b607851c878e29499672f42a769b71f74be8e94e67598eb5831164574c876994d53f63eab4f36d7b8410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0",
+    "gasLimit": "0xe8d4a50fff",
+    "difficulty": "0x1",
+    "mixHash": "0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "alloc": {
+        "0000000000000000000000000000000000000400": {
+            "code": "0x6080604052600436106101505763ffffffff60e00a165627a7a7230582093756fe617053766b158f7c64998c746eb38f0d5431cc50231cc9fb2cd1fd9950029",
+            "balance": "0x0"
+        },
+        "46b0bd6380005952759f605d02a6365552c776f3": {
+            "balance": "0x446c3b15f9926687d2c40534fdb564000000000000"
+        },
+        "699b607851c878e29499672f42a769b71f74be8e": {
+            "balance": "0x446c3b15f9926687d2c40534fdb564000000000000"
+        },
+        "aeae0ab623d4118ac62a2decc386949b5ce67ce2": {
+            "balance": "0x446c3b15f9926687d2c40534fdb564000000000000"
+        },
+        "e67598eb5831164574c876994d53f63eab4f36d7": {
+            "balance": "0x446c3b15f9926687d2c40534fdb564000000000000"
+        }
+    },
+    "number": "0x0",
+    "gasUsed": "0x0",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Accounts
+
+* **EOA** - controlled by private keys and have no code associated with them.
+* **Contract accounts** - controlled by their contract code and have code associated with them.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Account State
+
+* nonce
+* balance
+* storageRoot
+* codeHash
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## ETHPoS Consensus
+
+* One block every 12 seconds. ~120 Tx per block
+* Block proposer receives Tx fees for block [along with other rewards]
+* To become a validator: stake (lock up) 32 ETH.
+* Validators:
+
+```
+- sign blocks to express correctness (finalized once enough sigs)
+- occasionally act as block proposer (chosen at random)
+- correct behavior ⇒ issued new ETH every epoch (32 blocks)
+- incorrect behavior ⇒ slashed
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Rewards Post "Merge"
+
+* **Transaction rewards* 
+ * the priority fees are available immediately.
+* **Consensus rewards**
+ * the rewards received by validators on Beacon Chain pre-merge (and continue to be received post-merge) - along with stake will not be withdrawable until after the [Shanghai upgrade](https://hackmd.io/@timbeiko/acd).
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Recommended Resources
+
+* https://geth.ethereum.org/
+* https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
