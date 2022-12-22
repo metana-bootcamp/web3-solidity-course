@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Security and Audit </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Security And Audit
+
+*Dhruvin Parikh, December 2022*
+
+</script></section>
+
+
+<section data-markdown><textarea data-template>
+### Erstwhile
+* **Smart Contracts** : a decentralized way to enforce digital agreements
+* **Ethereum** : a blockchain-based Turing complete application platform
+* Bugs can be (and have been) exploited: hundreds million USD lost
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Ethereum Nodes :
+* Store account balances, contract code and variables
+* Execute smart contracts code on request
+* Maintain a shared view of the global state
+</textarea></section>
+
+
+<section>
+    <h2 style="text-align: left;">Powerful but tricky</h2>
+    <div class="r-stack">
+        <img src="dao-news.jpeg" width="600px" height="300px" style="transform: rotate(-5deg);position:absolute;right:350px;top:170px" class="fragment">
+        <img src="ethbleeding.jpg" width="600" style="transform: rotate(7deg);position:relative;left:100px;top:0px" class="fragment">
+        <img src="coinbase-news.png" width="600" style="transform: rotate(-9deg);position:absolute;right:350px;top:300px" class="fragment">
+        <img src="parity-hack.png" width="600" style="transform: rotate(2deg);position:relative;right:0px;top:200px" class="fragment">
+    </div>
+</section>
+
+<section data-markdown><textarea data-template>
+### Ethereum Security Challenges :
+* Decentralized execution environment
+* New software stack
+* Very limited ability to patch contracts
+* Anonymous financially motivated attackers
+* Rapid pace of development
+* Suboptimal high-level language
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Classification of issues in Solidity code :
+* **Security** : directly lead to exploits (re-entrancy)
+* **Functional**: violate the intended functionality1 (locked money)
+* **Operational** : lead to run-time problems (costly loop)
+* **Developmental** : make code hard to improve
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Locked money
+* Contracts that receive ether should have a way to withdraw it: call transfer, send, or call.value
+* Otherwise money is stuck in contract forever
+* In which situation money cannot be recovered?
+* Money locked in <a href="https://etherscan.io/address/0x0000000000000000000000000000000000000000" target="_blank">zero address</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Costly loop
+* Ethereum users pay for contract execution with gas
+* Tx’s are atomic: if one step fails, whole tx fails
+* Miners enforce a block gas limit
+(hence, a limit on computation in one tx)
+* A costly function called inside a long enough loop exceeds block gas limit: tx is never confirmed
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Example 3/3: Costly loop
+* Example: payouts for all winners in a game fail because of one (maliciously) failing payout
+```
+for(uint256 i = 0 ; i < array.length; i++) {
+    costlyF();
+}
+```
+</textarea></section>
+
+<section>
+<h3>The lifecycle of smart contract</h3>
+<section data-transition="zoom-in">
+    <h3>Idea 💡</h3>
+    <p>Client requirements</p>
+</section>
+<section data-transition="zoom-in">
+    <h3>Architecture 📐</h3>
+    <p>Best practices, simulations, design</p>
+</section>
+<section data-transition="zoom-in">
+    <h3>Develop 💻</h3>
+    <p>Foundry,Truffle,Hardhat,Visual Studio Code, Remix, MythX</p>
+</section>
+<section data-transition="zoom-in">
+    <h3>Testing 🧪</h3>
+    <p>Manual + unit testing,Remix plugins, CI, GitHub integration, Code complete</p>
+</section>
+<section data-transition="zoom-in">
+<h3>Deploy ⛓</h3>
+<p>Local,Ganache,Testnets</p>
+</section>
+<section data-transition="zoom-in">
+    <h3>Audit 📝</h3>
+    <p>Human + machine, business logic</p>
+</section>
+<section data-transition="zoom-in">
+<h3>Deploy 🔗</h3>
+<p>Mainnet</p>
+</section>
+<section data-transition="zoom-in">
+<h3>Bug Bounty Programs 🐛</h3>
+<p>Monitor, detect attacks, new vulnerabilities</p>
+</section>
+</section>
+
+<section data-markdown><textarea data-template>
+### What is security audit?
+
+* An assessment of your secure development process.
+* The best option available to identify subtle vulnerabilities
+* A systematic method for assessing the quality and security of code.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Analyze security vulnerabilities process involves:
+1. Analyze specifications
+1. Run tests
+1. Run automated analysis tools
+1. Perform manual code audit
+1. Create audit report  
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### The limitations of an audit
+* Cannot replace internal quality insurance
+* Cannot overcome excessive complexity or poor architecture
+* Cannot guarantee no-bugs or vulnerabilities
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### The value of audit
+* Systematic review
+* Qualitative assessment
+* Thorough coverage of code in scope
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### The value of audit via bug-bounty
+* Reviews tend to be shallower
+* Typically identify well known standard bug classes
+* Rarely identify subtle logic bugs or unspecified behaviour
+* Requires substantial rewards and promotional effort
+* Might result in no review at all
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Is audit even needed
+* Risk?
+* Code Complexity?
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Before auditing
+1. Documentation
+1. Easy to run
+1. Clean up the code
+1. Run a linter
+1. Run analysis tools
+1. Freeze the code
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Documentation
+* Describe overall system and its objective
+* Describe what should not be possible
+* Lists which contracts are derived/deployed, and how they interact with another
+* For e.g. <a href="https://github.com/0xProject/0x-protocol-specification/blob/master/v3/v3-specification.md" target="_blank">0x specs</a>
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Easy to run
+* Make it easy to install and run the tests
+```
+# Install truffle globally
+$ npm install --global truffle
+# install local node deps
+$ yarn
+# Testing
+$ npm run test
+# windows test
+$ npm run wintest   
+```           
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+###  Clean up code
+* Add helpful comments
+* Resolve TODO/FIXME comments
+* Delete commented-out blocks of code      
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+###  Run analysis tools
+* <a href="https://github.com/crytic/rattle" target="_blank">Rattle</a>
+* <a href="https://github.com/consensys/mythril" target="_blank">Mythril</a>
+* <a href="https://github.com/trailofbits/slither" target="_blank">Slither</a>   
+* <a href="https://github.com/consensys/surya" target="_blank">Surya</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Code Freeze
+* A moving target cannot be audited
+</textarea></section>
+
+        
+<section data-markdown><textarea data-template>
+### Audit Report
+- Typically includes:
+    - Disclaimer
+        - Not guarantee bug free
+    - What was audited, version
+    - Findings
+    - Severity: Critical, High, Low
+    - Recommendations
+</textarea></section>
+
+    <section data-markdown><textarea data-template>
+    ### Issue Severity
+    - **Critical**: can cost unlimited amount of users' funds
+    - **High**: can cost limited amount of users' funds
+    - **Low**: minor problems or better solutions
+    </textarea></section>
+
+<section data-markdown><textarea data-template>
+    ### Sample Audit Reports
+    - <a href="https://github.com/EthereumCommonwealth/Auditing/issues/340#issuecomment-524348753" target="blank">Dai Security Audit Report</a>
+    - <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/audit" target="blank">OpenZeppelin Security Audit Report</a>
+    - <a href="https://github.com/w3f/polkadot-auction/blob/master/parity-audit-final.pdf" target="_blank">Polkadot sale Audit Report</a>
+    - <a href="https://github.com/sigp/public-audits" target="_blank">Public-audits by Sigma Prime</a>
+    - <a href="https://github.com/bokkypoobah/OneLedgerCrowdsaleContractAudit/tree/master/audit" target="_blank">One Ledger CrowdSale Audit Report</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Security Tools
+- Static Analyzer in Remix
+- MythX in Remix or truffle
+- <a href="https://github.com/consensys/scribble" target="_blank">Scribble</a> 
+- <a href="https://consensys.github.io/smart-contract-best-practices/security-tools/" target="_blank">Security Tools</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Manual Audit
+Automatic analysis tools is not reliable, give false positive and miss finding issues; manual auditing is still required
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Useful Checklists and References
+- <a href="https://consensys.github.io/smart-contract-best-practices/recommendations/" target="_blank">Consensys Security Best Practices</a>
+- <a href="https://swcregistry.io" target="_blank">Smart Contract Weakness Classification</a>
+- <a href="https://blog.sigmaprime.io/solidity-security.html" target="_blank">Solidity Security: known attack vectors and fixes</a>
+- <a href="https://github.com/ethereum/wiki/wiki/Safety" target="_blank">Ethereum Safety Wiki</a>
+- <a href="https://medium.com/hashex-blog/how-to-perform-your-first-smart-contract-audit-3d6883f44924" target="_blank">Smart contract security audit</a>
+- <a href="https://blockgeeks.com/guides/audit-smart-contract/#_The_Steps_for_a_Full_Smart_Contract_Audit" target="_blank">Blockgeeks Security Audit Checklists</a>
+- <a href="https://ethernaut.openzeppelin.com/level/0xdf51a9e8ce57e7787e4a27dd19880fd7106b9a5c" target="_blank">Ethernaut Contract Hacking Game</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Check for Warnings
+- Any compiler or analysis tool warnings?
+- Warnings could be
+- false positive
+- bug
+    - `==` should be `=`
+    <img src="./warning.png"></img>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Testing
+- Any test failures?
+- Any function missing tests?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Code Currency
+- Use latest solidity compiler?
+- may have patches for security risks
+- solidity v0.6.0 changes
+- array.length-- is not allowed
+- <a href="https://swcregistry.io/docs/SWC-119#tokensalesol" target="_blank">state variable shadowing</a> not allowed
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### External Calls
+- Is there any state changes after external calls?
+- Is <a href="https://solidity.readthedocs.io/en/v0.6.4/security-considerations.html#use-the-checks-effects-interactions-pattern" target="_blank">Checks-Effects-Interactions</a> pattern used to avoid re-entrancy issue?
+- Are errors in external calls <a href="https://www.dasp.co/#item-4" target="_blank">handled properly</a>?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Denial of Service (DoS)
+- Do external calls <a href="https://github.com/ethereum/wiki/wiki/Safety#favor-pull-over-push-for-external-calls" target="_blank">favor push over pull</a>?
+- push: 2 accounts, A pushes to B
+- pull: 1 account, A pulls from contract
+- Is <a href="https://medium.com/@jgm.orinoco/why-use-the-withdrawal-pattern-d5255921ca2a" target="_blank">withdrawal</a> pattern being used?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### DoS With Block Gas Limit
+- Cost of function execution exceeds block gas limit
+- <a href="https://swcregistry.io/docs/SWC-128#dos_numbersol" target="_blank">Here</a> is an example of modifying large array leads to denial of service attack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Permission
+- Functions should have proper permission checking to ensure only the authorized can run the functions
+- <a href="https://swcregistry.io/docs/SWC-106" target="_blank">Unprotected selfdestruct</a>
+```
+function kill() public {
+selfdestruct(msg.sender);
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Failure Handling
+- Can the contract <a href="https://github.com/ethereum/wiki/wiki/Safety#circuit-breakers-pause-contract-functionality" target="_blank">pause operation</a>?
+- Can malicious actions be <a href="https://github.com/ethereum/wiki/wiki/Safety#speed-bumps-delay-contract-actions" target="_blank">delayed</a>?
+- How are fund at risk managed?
+- Can broken contract be <a href="https://github.com/ethereum/wiki/wiki/Safety#upgrading-broken-contracts" target="_blank">upgraded</a>?
+- Are users given grace period to upgrade?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Front Running
+- Is there <a href="https://consensys.github.io/smart-contract-best-practices/known_attacks/#front-running" target="_blank">transaction ordering dependence</a>?
+
+- Insertion attack: ERC20 Approve/TransferFrom
+- changing approval from 5 to 3 may result in 8 (5 + 3) tokens transfered
+- work around by approving 5, then 0, then 3
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Overflow
+- Is there integer wraparound issue?
+- When arithmetic reaches bound, it wraps
+- uint8(255) + uint8(1) == 0
+- uint8(0) - uint8(1) == 255
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Division
+- Is there division by zero?
+- EVM will revert
+- Is there <a href="https://github.com/ethereum/wiki/wiki/Safety#beware-rounding-with-integer-division" target="_blank">rounding</a> issue?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Delegate Calls
+- Is the context used properly?
+- Will the call cause <a href="https://ethernaut.openzeppelin.com/level/0x68756ad5e1039e4f3b895cfaa16a3a79a5a73c59" target="_blank">change of control</a>?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Unexpected Contract Balance
+- Any strict assumption of contract balance?
+- Ether can be <a href="https://consensys.github.io/smart-contract-best-practices/known_attacks/#forcibly-sending-ether-to-a-contract" target="_blank">forced sent to a contract</a>
+- Contract can be pre-funded with ether
+- Attack on this <a href="https://gist.github.com/vasa-develop/415a17c709d804a4d351485cd1b7c981#file-ethergame-sol" target="_blank">example</a> can make claimReward() to always fail
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Smart Contract Security Challenge
+* <a href="https://ethernaut.openzeppelin.com/" target="_blank">Ethernaut</a>
+* <a href="https://capturetheether.com/challenges/" target="_blank">Capture the Ether</a>
+* <a href="https://www.damnvulnerabledefi.xyz/" target="_blank">Damn Vulnerable DeFi</a>
+* <a href="https://cryptohack.org/challenges/">Cryptohack challenges</a>
+* <a href="https://etherhack.positive.com/#/">Etherhack</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Smart Contract security audit reports
+* [MixBytes](https://mixbytes.io/)
+* [sigma prime](https://github.com/sigp/public-audits)  
+* [Consensys deligence](https://consensys.net/diligence/audits/)
+* [Open zeppelin](https://blog.openzeppelin.com/security-audits/)
+* [Trail of bits](https://github.com/trailofbits/publications)
+* [Quantstamp](https://quantstamp.com/audits)
+* [SmartDec](https://blog.smartdec.net/)
+* [Peckshield](https://github.com/peckshield/publications)
+</textarea></section>
+
+<section>
+<h2>Recommended Readings </h2>
+<ul>
+    <li><a href="https://github.com/crytic/not-so-smart-contracts">Examples of solidity security issues</a></li>
+    <li><a href="https://swcregistry.io/">Smart contract Weakness classification</a></li>
+    <li><a href="https://consensys.github.io/smart-contract-best-practices">Consensys smart contract best practices</a></li>
+    <li><a href="https://github.com/patrickd-/cheatsheet.sol/blob/main/contracts/cheatsheet.sol">Solidity cheat sheet</a></li>	  
+</ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## References
+* [Ethereum Security Resources by Crytic](https://github.com/crytic/awesome-ethereum-security)
+* [Development guidelines by Crytic](https://github.com/crytic/building-secure-contracts/tree/master/development-guidelines)
+* [Secureum Security pitfalls - 1](https://secureum.substack.com/p/security-pitfalls-and-best-practices-101) [Secureum security pitfalls - 2](https://secureum.substack.com/p/security-pitfalls-and-best-practices-101)
+* [Ethereum Attacks](https://gist.github.com/ethanbennett/7396bf3f61dd985d3426f2ee184d8822)
+* [Smart contract security - Ethereumbook](https://github.com/ethereumbook/ethereumbook/blob/develop/09smart-contracts-security.asciidoc)
+* [Sigp solidity security blog](https://github.com/sigp/solidity-security-blog)
+</script></section>
+  
+
+<section data-markdown><textarea data-template>
+## References
+* [What is sc audit?](https://quantstamp.com/blog/what-is-a-smart-contract-audit)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Bounty Program
+- Used to get community to audit code
+- <a href="https://consensys.github.io/smart-contract-best-practices/bug_bounty_list" target="_blank">Consensys Bug Bounty List</a>
+- <a href="https://bounty.ethereum.org" target="_blank">Ethereum Bounty Program</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Readings on Parity Bug
+- <a href="https://etherscan.io/address/0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4#code" target="_blank">Parity Multisig Wallet Source Code</a>
+- <a href="https://medium.com/@q3693735/parity-bug-c67ecd500347" target="_blank">Parity Bug Explanation</a>
+- <a href="https://ethereum.stackexchange.com/questions/30128/explanation-of-parity-library-suicide" target="_blank">Parity Bug Stack Exchange Explanation</a>
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
