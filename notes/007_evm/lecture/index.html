@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> EVM </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### EVM (Ethereum Virtual Machine)
+
+*Dhruvin Parikh, January 2023*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+<img src="solc.svg" style="background-color: white" />
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EVM
+
+* The EVM (Ethereum Virtual Machine) is a “mini computer” on your computer that runs contract code
+* Contract code that actually gets executed on every node is EVM code
+* EVM code: low-level, stack based bytecode language (i.e. JVM bytecode)
+* Every Ethereum node runs EVM 
+    
+</script></section>
+
+<section data-markdown><textarea data-template>
+## EVM
+* The runtime environment for smart contracts
+* A sandboxed, isolated environment
+* Code running inside the EVM has no access to network, filesystem or other processes
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## What if our contract has an infinite loop?
+
+* Every node on the network will get stuck executing the loop forever! 
+* By the halting problem, it is impossible to determine ahead of time whether the contract will ever terminate 
+    * Lead to: **Denial of Service (DoS)** Attack 
+* Solution is Gas.   
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Gas
+    
+* In order to prevent transactions from using too many resources, they are charged *gas fees*
+* You set a gas price when you create a transaction
+* Your transaction uses a certain amount of gas when it runs
+* You are charged gas used times gas price
+* If you run out of gas, your whole transaction is rolled back
+* But you still pay the gas fee
+    
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+ ## EVM and Gas
+
+* Every contract requires “gas”, which “fuels” contract execution 
+* Every EVM operation-code requires some gas in order to execute 
+* Every transaction specifies: 
+    * gasLimit: Max quantity of gas it is willing to consume 
+    * gasPrice: Fee in ether it is willing to pay per unit gas  
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EVM and Gas
+
+* At the start of the transaction
+    gasLimit * gasPrice (units = ether) are subtracted from the sender's  account (the one “poking” the contract)
+* If the contract successfully executes...
+    * the remaining gas is refunded to the sender
+* If the contract execution runs out of gas before it finishes...
+    * execution reverts
+* `gasLimit * gasprice` are not refunded
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## EVM and Gas
+
+* Purchasing gas == purchasing distributed, trustless computational power
+* An attacker looking to launch a DoS attack will need to supply enough  ether to fund the attack
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### EVM is Atomic State Machine 
+* Each transaction is a change from one state of the blockchain to the next. 
+* A correct program cannot reach any state that isn’t allowed to according to our specification.
+</script></section>
+
+<section data-markdown><script type="text/template">
+  
+## Ethereum Virtual Machine
+
+<img src="EVM_architecture.png" width=600>
+
+</script></section>
+
+<section>
+  <h2>Storage</h2>
+  <ul>
+    <li>A contract storage is persistent between function calls and transactions</li>
+    <li>It is a key-value mapping of 2<sup>256</sup> keys. Each value is 32 bytes</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Memory</h2>
+  <ul>
+    <li>Memory is volatile</li>
+    <li>It is mainly used to store data during execution</li>
+    <li>Each message call starts with a cleared memory</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Stack</h2>
+  <ul>
+    <li>All computations are performed on the stack</li>
+    <li>It has a maximum of 1024 elements</li>
+    <li>Access to stack is limited to the top elements</li>
+    <li>Access to elements by pop/push to stack</li>
+  </ul>
+</section>
+
+<section>
+<h3>Smart contract Storage</h3>
+<ul>
+  <li>This is where state variables are stored</li>
+  <li>It is persistent between function calls and transactions</li>
+  <li>It is a key-value mapping of 2<sup>256</sup> keys; each value is 32 bytes long</li>
+</ul>
+</section>
+
+<section>
+<h3>State Variables Storage Layout</h3>
+<ul>
+  <li>One Astronomically large array</li>
+  <li>Solidity generates code that saves variable values in their declaration order.</li>
+  <li>Variable <span class="highlight">first</span> was declared first, it’s stored in slot 0</li>
+                            <li>Items that need less than 32 bytes are packed together. <a href="https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#layout-of-state-variables-in-storage" target="_blank"> See Rules</a></li>
+</ul>
+<pre><code data-trim>
+  contract Sample {
+    uint first;    // storage slot 0
+    uint second;   // storage slot 1
+  }
+</code></pre>
+</section>
+
+<section>
+<h3>Astronomically large array mental model</h3>
+<img src="storage.png">
+</section>
+
+<section data-markdown><textarea data-template>
+### Fixed-Sized Variables storage layout
+```js
+contract StorageTest {
+  uint256 a;	// slot 0. (location = slot)
+  uint256[2] b; // slots 1,2
+
+  struct Entry { 
+    uint256 id; // slot 3
+    uint256 value; // slot 4
+  }
+  Entry c; // slots 3,4
+}
+```
+<img src="fixed.png" width=400>
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Dynamic-Sized Variables storage layout
+```js
+contract StorageTest {
+  uint256 a;     // slot 0
+  uint256[2] b;  // slots 1-2
+
+  struct Entry {
+    uint256 id;
+    uint256 value;
+  }
+  Entry c;       // slots 3-4
+  Entry[] d;
+}
+```
+<img src="dynamic.png" width=400>
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Dynamic-Sized Variables storage layout
+* Computing the location of an element of a dynamically-sized array:
+```js
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+    return uint256(keccak256(slot)) + (index * elementSize);
+}
+```
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Mapping storage layout
+```js
+contract StorageTest {
+  uint256 a;     // slot 0
+  uint256[2] b;  // slots 1-2
+
+  struct Entry {
+    uint256 id;
+    uint256 value;
+  }
+  Entry c;       // slots 3-4
+  Entry[] d;     // slot 5 for length, keccak256(5)+ for data
+
+  mapping(uint256 => uint256) e;
+  mapping(uint256 => uint256) f;
+}
+```
+<img src="mapping.png" width=400>
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Mapping storage layout
+* Computing the location of a value given slot and key:
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+  return uint256(keccak256(key, slot));
+}
+```
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+```js
+contract StorageTest {
+  uint256 a;     // slot 0
+  uint256[2] b;  // slots 1-2
+  struct Entry {
+    uint256 id;
+    uint256 value;
+  }
+  Entry c;       // slots 3-4
+  Entry[] d;     // slot 5 for length, keccak256(5)+ for data
+
+  mapping(uint256 => uint256) e;    // slot 6, data at h(k . 6)
+  mapping(uint256 => uint256) f;    // slot 7, data at h(k . 7)
+  mapping(uint256 => uint256[]) g;  // slot 8
+  mapping(uint256 => uint256)[] h;  // slot 9
+}
+```
+      </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+* To find `g[123][0]` :
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+  return uint256(keccak256(key, slot));
+}
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+  return uint256(keccak256(slot)) + (index * elementSize);
+}
+// first find arr = g[123]
+arrLoc = mapLocation(8, 123);  // g is at slot 8
+// then find arr[0]
+itemLoc = arrLocation(arrLoc, 0, 1);
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+* To find `h[2][456]` :
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+  return uint256(keccak256(key, slot));
+}
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+  return uint256(keccak256(slot)) + (index * elementSize);
+}
+// first find map = h[2]
+mapLoc = arrLocation(9, 2, 1);  // h is at slot 9
+// then find map[456]
+itemLoc = mapLocation(mapLoc, 456);
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Packed Storage
+![Storage Layout](./storage.svg "Storage Layout")
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Stack
+* EVM is a stack machine
+* All instructions are run on a <span class="highlight">stack</span>
+* Only the top part of a stack can be accessed
+* Stack max size is 1024 elements
+* Each stack element is 256 bits wide
+* Stack operations: PUSH, POP, SWAP, DUP
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## `PUSH` and `POP`
+* `PUSH1`: add 1 byte item on stack
+* `PUSH2`: add 2 bytes item on stack
+* `PUSH3-32`: add 3 to 32 bytes item on stack
+* `POP`: remove an item from the stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## `SWAP` and `DUP`
+* `SWAP1`: exchange 1st and 2nd stack items
+* `SWAP2`: exchange 1st and 3rd stack items
+* `SWAP3-16`: exchange 1st and 4th (17th) stack items
+* `DUP1`: Duplicate 1st stack item
+* `DUP2-16`: Duplicate 2nd-16th stack item
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Opcodes not available in Yul
+Since Yul manages local variables and control-flow, opcodes that interfere with these features are not available. This includes the `dup`, `swap`, `jump`, `labels`, `push` instructions
+<a href="https://ethervm.io/#opcodes" target="_blank">EVM Opcodes</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Memory
+- An expandable byte-array used to store data
+- Expanding memory costs gas
+- Memory is expanded by 256-bit
+- Volatile, only available during execution
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Memory Access Functions
+- `MLOAD(o)`: load word from memory onto stack
+  - o: memory offset
+- `MSTORE(o,v)`: store 256-bit word into memory
+  - o: memory offset
+  - v: value from stack
+- `MSTORE8(o,v)`: store a byte into memory
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Solidity Memory Layout
+- Solidity reserves memory slots as follow:
+  - 0x00 - 0x3f (64 bytes): scratch space, for short term usage
+  - 0x40 - 0x5f (32 bytes): free memory pointer
+  - 0x60 - 0x7f (32 bytes): zero for empty dynamic memory arrays
+  - 0x80: initial value of the free memory pointer
+- <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-in-memory" target="_blank">Solidity Documentation</a> on Memory Layout
+</textarea></section>
+
+<section>
+  <h2 data-id="code-title">Memory Example</h2>					
+  <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+  function getData(uint value) public view returns (bytes32 output) {
+    assembly {
+      function allocate(length) -> pos {
+      let freePointer := 0x40
+      pos := mload(freePointer)
+      mstore(freePointer, add(pos,length))
+      }	
+      let dataSize := 0x20  // 32 bytes
+      let offset := allocate(dataSize)
+      mstore(offset, value)
+      return(offset, dataSize)
+    }
+    }
+  </code></pre>
+</section>
+
+<section data-markdown><textarea data-template>
+## CallData
+- Read only byte-array containing msg.data
+- Data is ABI encoded
+- The first 4 bytes is the function selector
+- Arguments are padded to multiples of 32 bytes
+- <a href='https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-call-data' target="_blank">Layout of CallData</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## CallData Access Functions
+- `CALLDATACOPY(m, c, n)`: 
+  - load n bytes of call data from offset c into memory offset m
+- `CALLDATALOAD(m)`: load 32 bytes calldata onto stack
+- `CALLDATASIZE()`: load call data size onto stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Return
+- End execution, return output data
+- `return(m,l)`: 
+  - m: memory offset
+  - l: length of data in byte
+</textarea></section>
+
+<section>
+  <h2 data-id="code-title">Calldata demo</h2>
+  <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+    // return calldata as bytes output
+  function getData(uint input) public view returns (bytes memory output) {
+    assembly {
+      let base := mload(0x40)
+      mstore(add(base, 0x00), 0x20) // pointer to data
+      mstore(add(base, 0x20), 36) // data length
+      calldatacopy(add(base, 0x40), 0, 36)  // data from byte 0
+      return(base, 0x80)
+    }
+    }
+  </code></pre>
+</section>
+
+<section data-markdown><textarea data-template>
+## Storage
+- State variables stored here
+- Key-value store
+  - maps 256-bit words to 256-bit words
+- Persistent storage in an account
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## State Variable Access
+- <span class="highlightRed">`.slot`</span>: storage slot for the variable
+- <span class="highlightRed">`.offset`</span>: byte offset for the variable
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## SSTORE/SLOAD
+- `sstore(p,v)`: save a word to storage
+  - p: storage slot
+  - v: value to store
+- `sload(p)`: load a word from storage to stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## State Variable Storage Layout
+- Statically-sized variables stored from position <span class="highlightRed">0</span>
+- Variables less than 32 bytes are packed in a single slot
+- Refer to other rules in <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank">Solidity Documentation</a>
+</textarea></section>
+
+<section>
+  <h2 data-id="code-title">Storage demo</h2>
+  <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+  uint8 data1 = 1;
+  uint8 data2 = 2;
+  uint8 data3 = 3;
+  uint8 data4 = 4;
+    
+  // get data3 and return it as ouput
+  function getData() public view returns(bytes32){
+    assembly {
+      let data := sload(data3_slot)
+      let result := and(shr(shl(3,data3.offset), data), 0xff)
+      mstore(0, result)
+      return(0,32)
+    }
+  }
+  </code></pre>
+</section>
+
+<section data-markdown><textarea data-template>
+  ## References
+
+  * [Understanding Ethereum contract storage](https://programtheblockchain.com/posts/2018/03/09/understanding-ethereum-smart-contract-storage/)
+  * [Layout of state variable in storage](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#layout-of-state-variables-in-storage)
+  * [Layout in memory](https://docs.soliditylang.org/en/latest/internals/layout_in_memory.html#layout-in-memory)
+  * [Layout of calldata](https://docs.soliditylang.org/en/latest/internals/layout_in_calldata.html#layout-of-call-data)  
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
