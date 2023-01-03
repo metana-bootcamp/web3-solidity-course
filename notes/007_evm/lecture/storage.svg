@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <g class="layer">
+  <title>Layer 1</title>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_2" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" transform="matrix(1 0 0 1.25455 0 -52.1818)" x="148.5" xml:space="preserve" y="142.007246">contract Proxy {</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_3" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" transform="matrix(1 0 0 1 0 0)" x="167.5" xml:space="preserve" y="164.5">uint8 val1;</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_4" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" x="168.84375" xml:space="preserve" y="198.5">bool val2;</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_5" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" x="160.84375" xml:space="preserve" y="235.5">bytes1 val3;</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_6" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" x="156.1875" xml:space="preserve" y="268.5">address val4;</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_7" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" x="164.84375" xml:space="preserve" y="301.25">string val5;</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_8" opacity="0.9" stroke="#000000" stroke-width="0" text-anchor="middle" transform="matrix(1.53803 0 0 1 -39.7354 0)" x="78.5" xml:space="preserve" y="333.5">};</text>
+  <rect fill="#ffaa56" height="166" id="svg_1" stroke="#000000" stroke-width="5" width="137" x="390.5" y="142.5"/>
+  <line fill="none" id="svg_10" stroke="#000000" stroke-width="5" x1="390.5" x2="525.5" y1="182.5" y2="181.5"/>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_11" stroke="#000000" stroke-width="0" text-anchor="middle" x="457.5" xml:space="preserve" y="167.5">Slot 0</text>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_12" stroke="#000000" stroke-width="0" text-anchor="middle" x="455.5" xml:space="preserve" y="129.5">Storage</text>
+  <line fill="none" id="svg_14" stroke="#000000" stroke-width="5" x1="390.5" x2="525.5" y1="225.5" y2="224.5"/>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_13" stroke="#000000" stroke-width="0" text-anchor="middle" x="457.5" xml:space="preserve" y="210.5">Slot 1</text>
+  <path d="m343.958069,202.20932l0.161285,28.594162l30.838715,-21.594162" fill="none" id="svg_24" stroke="#000000" stroke-width="5" transform="rotate(-151.628 359.458 216.506)"/>
+  <line fill="none" id="svg_23" stroke="#000000" stroke-width="5" x1="235.5" x2="380.5" y1="293.5" y2="212.5"/>
+  <line fill="none" id="svg_27" stroke="#000000" stroke-width="5" x1="225.499997" x2="379.499998" y1="260.642622" y2="168.642622"/>
+  <line fill="none" id="svg_28" stroke="#000000" stroke-width="5" x1="224.500002" x2="381.5" y1="227.500001" y2="168.5"/>
+  <line fill="none" id="svg_29" stroke="#000000" stroke-width="5" x1="222.5" x2="383.499986" y1="190.499999" y2="166.5"/>
+  <line fill="none" id="svg_30" stroke="#000000" stroke-width="5" x1="229.5" x2="384.499993" y1="155.5" y2="163.5"/>
+  <line fill="none" id="svg_33" stroke="#000000" stroke-width="5" x1="389.5" x2="524.5" y1="267.5" y2="266.5"/>
+  <text fill="#000000" font-family="serif" font-size="24" id="svg_32" stroke="#000000" stroke-width="0" style="cursor: move;" text-anchor="middle" x="456.5" xml:space="preserve" y="252.5">Slot 2</text>
+ </g>
+</svg>
