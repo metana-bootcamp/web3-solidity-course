@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Create2 </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+     }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Create2
+
+*Dhruvin Parikh, January 2023*
+
+</script></section>
+
+<section data-markdown><textarea data-template>
+### Topics
+* Contract Types
+* CREATE
+* CREATE2(EIP-1014)
+* Counterfactual
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Contract types (1/2)
+* Contracts can be converted to :
+* contracts they inherit from
+* `address` type
+* `address payable`. (`receive()` or `fallback()` required)
+* payable (`payable(address(x))`)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Contract types (2/2)
+* `MyContract c`
+* `c` can call all `public` and `external` functions of `MyContract`
+* Contracts can be created via `new`
+* `D newD = new D(arg);`
+* Contract type does not support any operators
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### `type` keyword in Solidity (1/4)
+* `type(X)` is use to access type information of `X`
+* `X` can be contract or integer type
+* `type(C).name`
+* The name of the contract
+* `type(I).interfaceId`
+* a `bytes4` value of interface `I` as per EIP-165
+* `XOR` of all function selectors in an `I` interface
+* Inherited functions are excluded in XORing 
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### `type` keyword in Solidity (2/4)
+* `type(T).min`
+* The smallest value of type `T`
+* `type(T).max`
+* The largest value of type `T`
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### `type` keyword in Solidity (3/4)
+* `type(C).creationCode` 
+* Memory Byte array
+* Property cannot be accessed in contract `C` or its child
+* It includes bytecode plus encoded constructor with argument (if any)
+* Used in inline assembly to build custom creation routines using `create2` opcode
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### `type` keyword in Solidity (4/4)
+* `type(C).runtimeCode` 
+* Memory Byte array
+* Property cannot be accessed in contract `C` or its child
+* Code that is deployed by constructor of `C`
+* It can be different than bytecode if constructor includes assembly
+* Libraries modify runtime bytecode to guard against regular calls
+</textarea></section>
+
+<section>
+<h3>What is initcode?</h3>
+<ul>
+  <li>Contract creation code</li>
+  <li>Contract Constructor logic and parameters</li>
+  <li>Generate the contract runtime bytecode</li>
+  <li>The bytecode in Remix "Compilation details" for a contract</li>
+</ul>
+</section>
+
+<section>
+<h3>Runtime Bytecode</h3>
+<ul>
+  <li>Contract code
+    <ul>
+      <li>No constructor and parameters</li>
+      <li>This restricts constructor execution after contract deployment</li>
+    </ul>
+  </li>
+  <li>Stored on-chain</li>
+  <li>Also known as Deployed Bytecode</li>
+  <li><a href="https://medium.com/authereum/bytecode-and-init-code-and-runtime-code-oh-my-7bcd89065904" target="_blank">init code vs runtime code</a></li>
+</ul>
+</section>
+
+<section data-markdown><textarea data-template>
+### Smart contract creation : `CREATE`
+* Solidity's `new`  and `truffle migrate` (using EOA)
+* Nonce
+* Every EOA has nonce increased every transaction
+* Every contract account has nonce increased every new contract creation
+* They are sequential and cannot be re-used
+* Hash of sender's account address and nonce
+* `new_address = hash(sender, nonce)`
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Smart contract creation : `create`
+```
+function deploy() public {
+    address addr;
+    bytes memory _code = code;
+    assembly {
+        addr := create(0, add(_code, 0x20), mload(_code))
+        if iszero(extcodesize(addr)) {revert(0, 0)}
+    }
+}
+```
+* `create(v,p,m)` - create new contract with code mem[p…(p+n)) and send v wei and return the new address
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Smart contract creation : `new`
+```
+contract C {
+  D d = new D(4); // will be executed as part of C's constructor
+  function createD(uint256 arg) public {
+      D newD = new D(arg);
+      newD.x();
+  }
+
+  function createAndEndowD(uint256 arg, uint256 amount) 
+  public payable { // Send ether along with the creation
+      D newD = new D{value: amount}(arg);
+      newD.x();
+  }
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Counterfactuality
+* Creation of contract that could happen, but has not: yet that fact that it could is enough.
+* We use counterfactual X to talk about the case where:
+  * X could happen on-chain, but doesn’t
+  * The enforcement mechanism allows any participant to unilaterally make X happen
+  * Participants can act as though X has happened
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### User onboarding
+* Parking an address has also become a key component in [new user onboarding flows](https://blog.goodaudience.com/one-weird-trick-to-fix-user-on-boarding-d54b7ff9d711).
+* “parking” identity contracts solves problems like getting user on to the DApp with ETH.
+* Gas station relayer, Burner Wallet and Universal logins are some examples
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Salted contract creation : `CREATE2`
+* sender ever deploys `bytecode` using `CREATE2` and the provided `salt`, it will be stored in `new_address`.
+* `new_address = hash(0xFF, sender, salt, bytecode)`
+* *salt* - 32-byte random data
+* Introduced by <a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014</a>
+* Ability to predict address where a contract will be deployed without actually deploying
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### `create2(v,p,n,s)`
+* create new contract with code `mem[p…(p+n)) and return the new address : 
+```
+string addr = keccak256(0xff,this,s,keccak256(mem[p…(p+n)))` 
+```
+* where `v` is wei, 
+* where 0xff is a 8 byte value, 
+* `this` is the current contract’s address as a 20 byte value and 
+* `s` is a big-endian 256-bit value
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Salted contract creation : `CREATE2`
+```
+function createDSalted(bytes32 salt, uint arg) public {
+    address predictedAddress = address(uint160(uint(
+    keccak256(abi.encodePacked(bytes1(0xff),address(this),salt,
+    keccak256(abi.encodePacked(
+        type(D).creationCode,
+        arg
+    )))))));
+    D d = new D{salt: salt}(arg);
+    require(address(d) == predictedAddress);
+}
+```
+* This complicated expression demonstrates how address is pre-computed
+* Use `new D{salt: salt}(arg)`
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Counterfactual
+* `CREATE` can be used to predict address where the next contract will be deployed
+* Only if *no transaction* happen before - an undesirable property for counterfactual systems
+* Counterfactual deployment - `CREATE2`
+* `new_address` is independent of future events
+* `bytecode` in address computation will enable agents to rely on `new_address`
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Contract Address
+- If `create` is used, the contract address is:
+```
+keccak256(rlp([caller, nonce]))[12:]
+```
+
+- If "create2" is used, the contract address is: 
+```
+keccak256(0xff + caller + salt + keccak256(init_code))[12:]
+```
+
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Create2
+- A low level way to create a contract
+- create2(v, p, n, s)
+- *v* is contract creation value in wei
+- *p* is the memory location of the contract code 
+- *n* is the length of contract code
+- *s* is the salt
+- <a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014 Skinny CREATE2</a>
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+
+### Goal of CREATE2
+
+* Allow state channel interactions to be made with addresses that do not exist yet on-chain but can be relied on to eventually contain code (counterfactuality)
+* Contracts that act as judges for off-chain interactions, which only need to be created if there is a dispute. 
+* Contract Upgrade
+* User Onboarding
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### CREATE2 EXAMPLE (ASSEMBLY)
+
+```
+function deploy(bytes memory code, bytes32 salt) 
+public returns (address addr) {
+assembly {
+addr := create2(0, add(code, 0x20), mload(code), salt)
+if iszero(extcodesize(addr)) { revert(0, 0) }
+}
+}
+```
+</textarea></section>
+
+<section data-markdown>
+<textarea data-template>
+## Contract Code
+* need assembly to use extcodesize and extcodecopy
+```
+function GetCodeAt(address _addr) public view 
+returns (bytes memory o_code) {
+    assembly {
+        let size := extcodesize(_addr) // code size
+        o_code := mload(0x40)  // free memory pointer
+        mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+        mstore(o_code, size)   // code length
+        extcodecopy(_addr, add(o_code, 0x20), 0, size) // copy code
+    }
+}
+```
+</textarea>
+</section>
+
+<section data-markdown>
+<textarea data-template>
+## Contract Hash
+- EXTCODEHASH
+- <a href="https://eips.ethereum.org/EIPS/eip-1052" target="_blank">Introduced by EIP-1052</a>
+- Openzepplin <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol#L26" target="_blank">isContract()</a>  utility function
+```js
+function isContract(address account) internal view      
+returns (bool) {    
+  bytes32 codehash;
+  bytes32 accountHash = 0xc5d2...ad8045d85a470;   
+  assembly { codehash := extcodehash(account) }
+  return (codehash != accountHash && codehash != 0x0);        
+}
+```
+</textarea>
+</section> 
+
+<section data-markdown><textarea data-template>
+### Metamorphosis Smart Contracts using CREATE2
+* Contracts created with create2 could be replaced with different logic at the same address
+* Demo "Overwriting Smart Contracts"
+* Deploy a smart contract that replaces its own bytecode with a different bytecode upon deployment. 
+* So, the bytecode you run through CREATE2 is always the same, and that calls back to the Factory and replaces itself during deployment.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Upgrade: Create2 vs Proxy 
+- Create2
+    - more gas efficient, no delegate call
+    - more complex, uses selfdestruct
+    - selfdestruct will wipe out storage
+- Proxy pattern 
+    - is more well-known
+    - simpler and easier to understand
+    - storage persists after upgrade
+</textarea></section>
+
+<section>
+<h3>References</h3>
+<ul>
+    <li><a href="https://blog.openzeppelin.com/getting-the-most-out-of-create2/" target="_blank">Getting most out of CREATE2</a></li>
+    <li><a href="https://docs.openzeppelin.com/cli/2.8/deploying-with-create2" target="_blank">Deploying smart contracts using CREATE2</a></li>
+    <li><a href="https://ethereum-blockchain-developer.com/110-upgrade-smart-contracts/12-metamorphosis-create2/" target="_blank">Metamorphosis smart contracts using CREATE2</a></li>
+    <li><a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP-1014 CREATE2</a></li>
+    <li><a href="https://eips.ethereum.org/EIPS/eip-165" target="_blank"> EIP-165 Standard Interface Detection</a></li>
+    <li><a href="https://docs.soliditylang.org/en/latest/units-and-global-variables.html#type-information" target="_blank">Solidity type information</a></li>
+    <li><a href="https://docs.soliditylang.org/en/latest/control-structures.html#salted-contract-creations-create2">Salted Contract creations</a></li>
+</ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
