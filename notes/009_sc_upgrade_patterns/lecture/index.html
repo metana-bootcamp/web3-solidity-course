@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Smart Contract Upgradeability Patterns </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Smart Contract Upgradeability Patterns
+
+*Dhruvin Parikh, January 2023*
+
+</script></section>
+
+<section data-markdown><textarea data-template>
+### Smart Contract Upgrade standards
+* Eternal storage
+* EIP-897 : Delegate proxy
+* EIP-1822 : UUPS
+* EIP-1967 : Standard Storage Slots
+* EIP-2535 Diamond Standard
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Objectives
+* State variable layout scheme 
+* Understand Storage Collisions
+* Deep dive into storage patterns
+* Understand All proxy standards
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+    ### State variable layout scheme
+    * Inherited storage
+    * Diamond Storage
+    * App storage
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Problem with blockchain
+* It is connected to immutability of the data
+* *Once contract is deployed, it cannot be altered*
+* Smart contract storage and addresses can be still modified
+    * Not true for historical transaction information
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### The Lost storage problem
+* Storage of a smart contract is the smart contract address itself
+* New deployment of a smart contract starts with fresh(empty) storage
+* Re-deploying the smart contract results in
+    * Two different addresses
+    * Two different storage 
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Reasons to make smart contract upgradeable
+* Iteratively release new features
+* Understand the possibilities for Bug-Fixing
+* Pick the right architecture for the project
+* Avoid Scammers
+* Make life of auditors easy
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Eternal Storage Pattern (without proxy)
+* Initially proposed by <a href="https://blog.colony.io/writing-upgradeable-contracts-in-solidity-6743f0eecc88/" target="_blank">Elena Dimitrova in this blog</a>
+* Separating data and logic contracts
+    * **Logic** : read/write to the storage contract
+    * **Storage** : getter/setter to read/write state variables commanded from logic contract
+</textarea></section>
+
+<section>
+    <h3>Data Separation</h3>
+    <img src="data-sepration.png">
+<div data-markdown class="left" style="margin-right: 1px;">
+```js
+contract Logic {
+    Data data;
+
+    function inc() public{
+        data.setV(data.v() + 1);
+    }
+    function v() public 
+    returns(uint){
+        return data.v();
+    }
+}
+```
+</div>
+<div data-markdown class="right" style="margin-left: 1px;">
+```js
+contract Data is Owner {
+
+    uint public v;
+
+    function setV(uint new_v) 
+    onlyOwner 
+    public {
+
+        v = new_v;
+    }
+}
+```
+</div>
+</section>
+
+<section>
+    <h3>Data storage strategy: key value pair</h3>
+<div data-markdown>
+```js
+contract DataContract is Owner {
+    mapping(bytes32 =&gt; uint) uIntStorage;
+    
+    function getUint(bytes32 key) view public returns(uint) {
+        return uintStorage[key];
+    }
+    
+    function setUint(bytes32 key, uint new_val) onlyOwner public {
+        uintStorage[key] = new_val;
+    }
+}
+```
+</div>
+    <p>It is also known as <a href="https://github.com/ethereum/EIPs/issues/930" target="_blank">Eternal storage</a></p>
+</section>
+
+<section>
+    <h3>Data separation: Recommendations</h3>
+    <ul>
+        <li>Define clear separation between data and logic</li>
+        <li>Keep simple implementation
+            <ul>
+                <li>Avoid complex data storage (ex: key-value pair)</li>
+            </ul>
+        </li>
+        <li>Define the upgrade procedure
+            <ul>
+                <li>How to upgrade the contracts? Pause contracts</li>
+                <li>How to store keys</li>
+                <li>How to communicate with users</li>
+            </ul>
+        </li>
+    </ul>
+</section>
+
+<section>
+    <h3>How to Upgrade (Solution : 1)</h3>
+    <p>Upgrade: deploy new logic contract and disable old one</p>
+    <img src="upgrade-1.png">
+</section>
+
+<section>
+    <h3>How to Upgrade (Solution: 2)</h3>
+    <p>Upgrade: deploy new logic contract and forward call</p>
+    <img src="upgrade-2.png">
+</section>
+
+<section data-markdown><textarea data-template>
+### Eternal Storage : Pros
+* Fairly simple due to no assembly
+* No need for storage migration after contract upgrades
+* Address of logic smart contract changes (good for transparency reasons)
+    * e.g. An online service changing fees for new signups
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### Eternal Storage : Cons 
+* Difficult access patterns for variables 
+* Cannot work for out of the box smart contracts like tokens
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Eternal Storage Examples 
+* <a href="https://github.com/Morpher-io/MorpherProtocol/blob/master/contracts/MorpherState.sol" target="_blank">`MorpherState.sol`</a>
+* <a href="https://github.com/Morpher-io/MorpherProtocol/blob/master/contracts/MorpherToken.sol" target="_blank">`MorpherToken.sol`</a>
+</textarea></section>
+
+<section>
+    <h3>Data Separation: alternative</h3>
+    <p>Use of third proxy contract</p>
+    <ul>
+        <li>Provide constant entry point for users</li>
+    </ul>
+    <img src="data-separation-alternative.png">
+</section>
+
+
+<section data-markdown><textarea data-template>
+### Proxies
+* Nick Johnson's <a href="https://gist.github.com/Arachnid/4ca9da48d51e23e5cfe0f0e14dd6318f" target="_blank">upgradeable.sol gist</a>
+* `delegatecall` from a `fallback()` 
+    * Code in target contract is executed in context of calling contract and `msg.sender` & `msg.value` does not change
+* **Callee needs to know the exact memory layout of the caller**
+    * For library: handled by compiler
+    * For user-level call: needs to be **really** careful
+</textarea></section>
+
+<section>
+    <h3>EVM Internals</h3>
+    <ul>
+        <li>EVM has a hardvard architecture
+            <ul>
+                <li>Section code != Section data</li>
+            </ul>
+        </li>
+        <li>A contract can
+            <ul>
+                <li>Call another contract</li>
+            </ul>
+        </li>
+        <li>A contract cannot
+            <ul>
+                <li>Write directly to another contract's data</li>
+            </ul>
+        </li>
+    </ul>
+</section>
+
+<section data-markdown>
+    ### delegatecall instruction
+    - **Delegatecall instruction:**
+        - Execute code from external contracts from the caller's data context
+    - **Example:**
+        - contract A *delegatecalls* to contract B
+        - The code of contract B will be executed using data fo contract A
+    - **Designed for libraries**
+</section>
+
+<section data-markdown>
+### Library
+```js
+library Lib {
+    struct Data { uint val; }
+    function set(Data storage self, uint new_val) public {
+        self.val = new_val;
+    }
+}
+
+contract C {
+    Lib.Data public myVal;
+    function set(uint new_val) public {
+        Lib.set(myVal, new_val);
+    }
+}
+```
+</section>
+            
+<section data-markdown>
+    ### Upgradeability through delegatecall
+    - **Two contracts:**
+        - Proxy contracts: holds data: (immutable)
+        - Logic: holds the logic (mutable)
+        - Fallback function of proxy delegatecalls to Logic
+    
+        ![proxy-pattern](./proxy-delegatecall.png)
+</section>
+
+<section data-markdown>
+    ### Upgradeability through delegatecall
+    - **Upgrade: change the logic contract**
+    - **Each version of the logic contract must follow the same memory layout**
+        - Do you know precisely how Solidity store variables in memory?
+        - Refer content of Week 8
+</section>
+
+<section>
+    <h3>Delegatecall Example</h3>
+<div class="left" data-markdown>
+```js
+contract Proxy{
+    uint public a;
+    address public pointer;
+
+    ...
+    function () public {
+        pointer.delegatecall(..)
+    }
+}
+```
+```js
+contract MyContract_V1 {
+    uint public a;
+    address public pointer;
+
+    function set(uint val) public {
+        a = val;
+    }
+}
+```
+</div>
+    <div class="right">
+        <img src="delegatecall-example.png">
+    </div>
+</section>
+
+<section>
+    <h3>Delegatecall Example</h3>
+<div class="left" data-markdown>
+```js
+contract Proxy{
+    uint public a;
+    address public pointer;
+
+    ...
+    function () public {
+        pointer.delegatecall(..)
+    }
+}
+```
+```js
+contract MyContract_V1 {
+    uint public a;
+    address public pointer;
+
+    function set(uint val) public {
+        a = val;
+    }
+}
+```
+</div>
+<div class="right" data-markdown>
+![delegatecall-ex](delegatecall-example.png)
+```js
+contract MyContract_V2 {
+    uint public pointer;
+    address public a;
+
+    function set(uint val) public {
+        a = val;
+    }
+}
+```
+</div>
+</section>
+
+<section>
+    <h3>Delegatecall Example</h3>
+<div class="left" data-markdown>
+```js
+contract Proxy{
+    uint public a;
+    address public pointer;
+
+    ...
+    function () public {
+        pointer.delegatecall(..)
+    }
+}
+```
+```js
+contract MyContract_V1 {
+    uint public a;
+    address public pointer;
+
+    function set(uint val) public {
+        a = val;
+    }
+}
+```
+</div>
+<div class="right" data-markdown>
+![delegatecall-ex](delegatecall-example-v2.png)
+```js
+contract MyContract_V2 {
+    uint public pointer;
+    address public a;
+
+    function set(uint val) public {
+        a = val;
+    }
+}
+```
+</div>
+</section>
+
+<section>
+    <h3>Examples of incorrect upgrades</h3>
+    <img src="incorrect.png">
+</section>
+
+<section data-markdown>
+    ### Delegatecall Proxy: Recommendations
+    - **Never remove a variable**
+    - **Never change a variable type**
+        - Packing issue
+    - **Be careful with the inheritance**
+        - Inheritance order impacts the memory layout
+    - Avoid storage collisions
+        * Two variables taking same storage slot
+</section>
+
+<section data-markdown>
+    ### Delegatecall Proxy: Recommendations
+    - **Use same compiler version**
+        - Solidity could have better optimizations
+    - **Be careful with correct contract initializatione**
+        - Constructors cannot be used
+    - **Inspect the generated EVM code manually**
+        - No mature tool can validate the memory layout
+</section>
+
+<section data-markdown>
+    ### Delegatecall Proxy: Recommendations
+    - **Define the upgrade procedure**
+        - How to upgrade the contracts?
+        - How to store keys?
+        - how to communicate with users?
+</section>
+
+<section data-markdown><textarea data-template>
+### EIP-897: ERC DelegateProxy
+* <a href="https://eips.ethereum.org/EIPS/eip-897" target="_blank">EIP-897: ERC DelegateProxy</a> by Jorge Izquierdo and Manuel Araoz
+* Avoiding storage collisions:
+    * Make contracts inheriting proxy . 
+    * Use storage (proxy) contract as a base contract for `LostStorage`.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-897 Examples 
+* <a href="https://github.com/aragon/aragonOS/tree/master/contracts/apps" target="_blank">AragonOS</a>
+* <a href="https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_ownership/contracts" target="_blank">ZeppelinOS</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-897 : Contract Modifications 
+* All upgradeable Smart Contracts have to extend `ProxyStorage` for this to work.
+* Add in the ProxyStorage Smart Contract to Smart Contracts if developing yourself
+    * Difficult if using standard contracts packages like OpenZeppelin
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-1822: Universal Upgradeable Proxy Standard (UUPS)
+* <a href="https://eips.ethereum.org/EIPS/eip-1822" target="_blank">EIP-1822: Universal Upgradeable Proxy Standard</a> by Gabriel Barros and Patrick Gallagher
+* Proxies without storage collision and common storage contracts
+* Uses pseudo-random storage slot to store address of logic contract
+    * Not 100% but random enough to avoid collision
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### UUPS Anatomy
+```
+sstore(
+    0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7, 
+    contractLogic)
+```
+* Storing variables to specific storage slot and then load it again from that slot. 
+* The EIP-1822 uses the 
+```
+keccak256("PROXIABLE") = 
+"0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7"
+```
+    which results in the storage slot
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### UUPS Downside
+* Removable of variables is not possible
+    * Variables still reside in a specific storage slot in the Proxy contract
+    * Removing a variable will make Solidity compiler assume that the next variable is on the place of the previous one.(clash!)
+* Storage slot isn't standardized. 
+    * Any storage slot can be opted to store logic contract address.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-1967: Standard Proxy Storage Slots
+* <a href="https://eips.ethereum.org/EIPS/eip-1967" target="_blank">EIP-1967: Standard Proxy Storage Slots</a> by Santiago Palladino
+* OpenZeppelin is using under the hood
+* Standardize the way proxies store logic contract address
+* <a href="https://medium.com/etherscan-blog/and-finally-proxy-contract-support-on-etherscan-693e3da0714b" target="_blank">Etherscan added support for EIP-1967</a>
+* Similar to EIP-1822 with clearly defined namespace
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-1967: Storage Slot
+```
+bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)) = 
+0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+```
+* Well defined reserved storage slot for logic contract address.
+* In EIP-1822 it is keccak256("PROXYABLE") - or anything of your choice.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP-1967: Beacon Contract
+* Re-usability : To updates logic contract address of all proxies, beacon contract returns the address of all logic contract for all proxies.
+* Proxies read the logic contract address from beacon and call logic contract            
+* Refer implementation by <a href="https://github.com/OpenZeppelin/openzeppelin-sdk/blob/dc9e4edf1169eb8bd675961c9d821d1a712a70df/packages/lib/contracts/upgradeability/BaseAdminUpgradeabilityProxy.sol" target="_blank">OpenZeppelin</a>.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Proxy + Eternal Storage
+![proxystorage1](./proxystorage1.png)
+* Cannot solve 24KB contract code size limit
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Nested Delegation pattern
+*  Implementation contract had to manually delegate each method to the corresponding sub-implementation contract.
+<img src="./proxystorage2.png" width="600">  
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### EIP-2535: Diamond Standard
+* <a href="https://eips.ethereum.org/EIPS/eip-2535" target="_blank">EIP-2535: Diamonds</a> by Nick Mudge
+* Map single functions for a delegatecall to addresses, instead of proxying a whole contract through.
+* *Diamond Storage* keeps a single `struct` to a specific storage slot unlike unstructured storage pattern OpenZeppelin uses
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Diamond Standard Layout
+![diamond standard](./diamondstandard.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Proxy Contract
+* Visually cutting a Diamond to add functions (or mapping of addresses to functions and vice versa).
+* The function to add Facets and functions is called "diamondCut".
+* The functionality to view what functions a Facet has is called "Loupe"
+* Read this <a href="https://github.com/mudgen/Diamond" target="_blank">Readme</a> for more facets
+* Explorer : https://louper.dev/
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+### EIP 2535 : Prons
+* Circumventing contract size limits and gradually updating contracts
+* A pseudo-framework to  break up Smart Contracts into smaller parts and deploy and update each one of them separately. 
+    * However facets need a complete picture of internally used functions and signatures so its not a complete framework.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP 2535 : Cons
+* Larger systems use inheritance heavily so need to be cautious while adding functions to the Diamond proxy. 
+* Function signatures could easily collide for two different parts of the system with the same name.
+* Every Smart Contract in the System needs adoption for the Diamond Storage, unless you use only one single facet that uses unstructured storage.
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### EIP 2535 : Cons
+* Sharing storage between facets is dangerous. It puts a lot of liability on the admin.
+* Adding functions to the Diamond via diamondCut is quite cumbersome.
+* Adding functions to the Diamond via DiamondCut could become quite gas heavy. Adding the two functions for FacetA Contract costs 109316. That's $20 Extra.
+</textarea></section>
+
+<section data-markdown>
+### Upgradeability: Takeaways
+- **Allow to patch the contracts**
+- **Drawbacks for developers:**
+    - Increase code size and complexity
+    - Require extra knowledge
+    - Increase number of keys
+    - Encourage solving problems after deployments
+- **Drawbacks for users:**
+    - Increase gas cost
+    - Prevent trustless system
+</section>
+
+<section data-markdown>
+### Upgradeability: recommendations
+- **Be careful when choosing features of your contract**
+- **Strive for the simplest solution**
+    - Use data separation over delegatecall
+- **Don't add Upgradeability at the end of our development process**
+</section>
+
+<section>
+    <h2>Alternative?</h2>
+    <h2>Contract Migration</h2>
+</section>
+
+<section data-markdown>
+### Contract Migration
+- Copy variables from the contract to a new version
+</section>
+
+<section data-markdown>
+### Why do you need a Migration?
+- **To upgrade non-upgradable contracts**
+- **To recover from a compromise**
+    - Contract compromise
+    - Key(s) compromise
+- **To recover from incorrect setup**
+    - owner = 0
+</section>
+
+<section data-markdown>
+### How to perform a migration
+1. **Data recovery: Collect the values of the variables**
+    - Use Events
+2. **Data writing: Deploy and initiate the new contract**
+- Use an initialization state
+- Migration 300.000 balances = $7,500 in October'20
+</section>
+
+<section data-markdown>
+### Migration versus Upgradeability
+- **Migration covers most of the benefits of Upgradeability**
+- **Arguments for migration:**
+    - Simple than Upgradeability
+    - No additional code
+    - No additional key
+    - No additional trust from the user
+    - No additional cost for users
+Upgradable contracts also need a migration procedure
+</section>
+
+<section data-markdown>
+### Migration versus Upgradeability
+- **Arguments for Upgradeability**
+    - **Frequent update (cost of migration)**
+    - One migration is cheap (read this [blog](https://blog.trailofbits.com/2018/10/29/how-contract-migration-works/))
+    - Fixed address required
+</section>
+
+<section data-markdown><textarea data-template>
+### Recommended Readings
+* <a href="https://blog.openzeppelin.com/proxy-patterns/" target="_blank">Proxy Pattern</a> Blog from OpenZeppelin
+* <a href="https://hiddentao.com/archives/2020/05/28/upgradeable-smart-contracts-using-diamond-standard" target="_blank">Upgradeable smart contracts using the Diamond Standard</a>
+</textarea></section>
+
+<section>
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://github.com/dhruvinparikh93/ethereumbook/" target="_blank">Ethereumbook</a></li>
+        <li><a href="https://github.com/GeorgeBrownCollege-Toronto/ConsenSys-Academy-Notes/blob/master/Part%208%20-%20Smart%20Contracts%20Pitfalls%2C%20Testing%20and%20Debugging.md#smart-contract-best-practices" target="_blank">Consensys notes</a></li>
+        <li><a href="https://blog.trailofbits.com/2018/09/05/contract-upgrade-anti-patterns/" target="_blank">Contract upgrade anti-pattern</a></li>
+        <li><a href="https://blog.trailofbits.com/2018/10/29/how-contract-migration-works/" target="_blank">How migrations works?</a></li>
+    </ul>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
