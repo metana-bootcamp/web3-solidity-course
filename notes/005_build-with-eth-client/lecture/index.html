@@ -105,7 +105,7 @@
 * **Consensus client (CL)**
  * Handles all consensus logic and block propagation
  * Blocks downloading
- * <a href="https://geth.ethereum.org/docs/interface/consensus-clients" target="_blank">CL clients</a>
+ * <a href="https://geth.ethereum.org/docs/getting-started/consensus-clients" target="_blank">CL clients</a>
 * **Execution client (EL)**
  * Block verification by reading block headers from CL
  * Cannot sync without connecting to CL
@@ -137,7 +137,7 @@
 
 ## EVM Client architecture Post "Merge"
 
-![client-architecture](./client-architecture.png)
+<img src="./client-architecture.png" width="500" />
 </script></section>
 
 <section>
@@ -154,11 +154,11 @@
 
 <section data-markdown><textarea data-template>
 ### JSON-RPC
-* A middle-ware like web3.js is used to take advantage of RPC calls.
+* A middleware like web3.js is used to take advantage of RPC calls.
 * JSON is a light weight data format that is easy to parse.
 * JSON-RPC is a stateless, light client RPC
     * Surrounded around data structure and rules of processing
-    * It is transport agnostic (HTTP,websockets,IPC,graphql)  
+    * It is transport agnostic (HTTP, websockets, IPC, graphql)  
 </textarea></section>
 
 <section data-markdown><textarea data-template>
@@ -295,7 +295,7 @@ curl https://mainnet.infura.io/v3/86599c771d434ac3ba265546515812ed \
 
 ## Rewards Post "Merge"
 
-* **Transaction rewards* 
+* **Transaction rewards** 
  * the priority fees are available immediately.
 * **Consensus rewards**
  * the rewards received by validators on Beacon Chain pre-merge (and continue to be received post-merge) - along with stake will not be withdrawable until after the [Shanghai upgrade](https://hackmd.io/@timbeiko/acd).
