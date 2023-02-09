@@ -128,7 +128,7 @@
 
 ## Sharding
 
-* 
+* Sharding is the idea of not requiring every miner to be working on every single block, essentially creating parallel but connected blockchains.
 
 </script></section>
 
@@ -136,7 +136,9 @@
 
 ## Side chains
 
-* 
+* A sidechain is a separate blockchain. 
+
+* However, it’s not a standalone platform, as it’s pegged in some way to the main chain. The main chain and the sidechain are interoperable, meaning that assets can flow freely from one to the other.
 
 </script></section>
 
@@ -144,7 +146,8 @@
 
 ## Plasma
 
-* 
+* The “root” of each plasma chain block is published to Ethereum. Block “roots” are basically little pieces of information that users can use to prove things about the contents of those blocks.
+* The Plasma structure is built through the use of smart contracts and Merkle trees, enabling the creation of an unlimited number of child chains - which are, essentially, smaller copies of the parent Ethereum blockchain. On top of each child chain, more chains can be created and this is what builds a tree-like structure.
 
 </script></section>
 
@@ -153,18 +156,109 @@
 
 ## Payment channels
 
-* 
-
+* A payment channel uses a smart contract to enable users to transact without publishing their transactions to the blockchain. It does so by using a software-enforced agreement between two participants.
+* They don’t require a separate blockchain to function
 </script></section>
 
+<section>
+  <h2>Signatures</h2>
+  <ul>
+      <li>The way for smart contracts to verify information</li>
+      <li><b>Assumption</b>: The owner of the private key is the owner of the account</li>
+      <li>Sign data using private key</li>
+      <li>Unforgeable signature on an important letter</li>
+  </ul>
+</section>
+
+<section>
+  <h3>Signing and Verifying Messages in Ethereum</h3>
+  <ul>
+      <li>Cryptographic signatures are a powerful primitive in Ethereum.</li> 
+      <li>Signatures are used to authorize transactions</li>  
+      <li>Signatures can be used to prove to a smart contract that a certain account approved a certain message.</li>
+  </ul>
+</section>
+
+<section data-markdown><textarea data-template>
+### Create Signature (web3js)
+```
+web3Utils.soliditySha3({
+{ t: "address", v: "0xF4e1E7a435BF80ebdFB2A9E7Bd05A560367d809E" },
+{ t: "uint256", v: 5000000000 },
+{ t: "uint256", v: 0 },
+{ t: "address", v: "0x0ED8f92224E590f827Bf00D0F32CDFa7cDcB4f5b" }
+}).then((message) => {
+const pKey =
+"6192891cafc2a2aaba01eb205e9026ae70a14e568e8664ff04947cad4b1b2449";
+const sig = web3.eth.accounts.sign(message, pKey);
+})
+```
+* **messageHash** : signer's address, amount, nonce, recipient
+* `sign(<data>,<privateKey>)` has built-in support for ECDSA(<a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm" target="_blank">Elliptic Curve Digital Signature Algorithm</a>)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Create Signature (ethersjs)
+```
+  function signPayment(amount, contractAddress) {
+    const digest = ethers.utils.solidityKeccak256(
+        ["uint256", "address"],
+        [amount, contractAddress]
+    );
+
+    const arrayDigest = ethers.utils.arrayify(digest);
+    const signature = wallet.signMessage(arrayDigest);
+    return signature;
+  }
+
+```
+</textarea></section>
+
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+### Signature anatomy (1/2)
+```
+function splitSignature(bytes sig) internal pure 
+returns (uint8, bytes32, bytes32) {
+  require(sig.length == 65);
+  bytes32 r; bytes32 s; uint8 v;
+  assembly {
+    // first 32 bytes, after the length prefix
+    r := mload(add(sig, 32))
+    // second 32 bytes
+    s := mload(add(sig, 64))
+    // final byte (first byte of the next 32 bytes)
+    v := byte(0, mload(add(sig, 96)))
+  }
+  return (v, r, s);
+}
+```
+</script></section>
+
+### Signature anatomy (2/2)
+* Length of signature is 65
+* The `mload` opcode loads 32 bytes at a time.
+* `mload(add(sig,32))` : Reads data at byte 32. 
+* *r* and *s* are 32 bytes each.
+* *v* is 65th byte at byte offset 96. 
+* `byte(0,..)` extracts first byte to read
+</script></section>
+
+<section>
+<h3>Cheque Cashing</h3>
+<img src="receiverpays-signature.png" width="400px">
+</ul>
+</section>
 
 <section data-markdown><script type="text/template">
 
 ## Meta transactions
 
-* 
+![gsn_flow](https://docs.opengsn.org/assets/img/gsn_flow_full_layered.737dd3e4.jpg)
 
 </script></section>
+
 
 <section data-markdown><script type="text/template">
 
@@ -297,6 +391,7 @@ v' = 0x37 - v
 * [Signature malleability thread 1](https://twitter.com/onfroygogo/status/1611667787759616000)
 * [Signature malleability thread 2](https://twitter.com/onfroygogo/status/1612432225252921345)
 * [EIP-712 thread](https://twitter.com/onfroygogo/status/1617551026390990848)
+* [Understanding: Plasma Chains vs. Sidechains](https://docs.plasma.group/en/latest/src/plasma/sidechains.html#understanding-plasma-chains-vs-sidechains)
 </textarea></section>
 
 <section data-markdown><script type="text/template">
