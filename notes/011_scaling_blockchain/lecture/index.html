@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Scaling Blockchain </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Scaling Blockchain
+
+*Dhruvin Parikh, February 2023*
+
+</script></section>
+
+<section data-markdown><textarea data-template>
+## Topics
+* Blockchain trilemma
+ * Sharding, sidechains, state channels
+* Multi signature wallets
+* Meta transactions
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## What is scalability Problem?
+
+* ⬆️ Volume of transactions
+* ⬇️ Block time
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Scalability triangle
+
+![Scalability-triangle](./scalability-triangle.png)
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## TPS Comparisons
+
+* Bitcoin : 3 tps
+* PayPal : 150 tps
+* VISA : 2000 tps
+* Ethereum : 27 tps
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Sharding
+
+* 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Side chains
+
+* 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Plasma
+
+* 
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Payment channels
+
+* 
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Meta transactions
+
+* 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Off-chain designs
+
+* Sending a transaction to the blockchain results in an update to the blockchain state
+    * This is called an *on-chain* operation
+* To avoid paying gas, and/or to increase speed, dapps try to do various things without transactions
+    * This is known as *off-chain* communication
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Off-chain orderbooks
+
+* In token exchanges, orders are offers to trade at a certain price
+* Orders are usually distributed off-chain
+* When somebody wants to trade on an order, they submit it to the block-chain
+    * Not every order will be traded on, so better to keep them off-chain to save gas
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Signatures
+
+* In order to create off-chain messages that can be proved to have come from you, your ethereum private key can be used to sign messages
+* A smart contract can verify the signatures on-chain using `ecrecover()`
+    * This is the same functionality that verifies ethereum transactions
+* Only small messages can be signed
+    * Longer messages are hashed and the hash is signed
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## ecrecover
+
+<pre class="hljs js">
+ecrecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s)
+    returns(address)
+</pre>
+
+* *hash*: Hash of the message that was signed
+* *v*, *r*, *s*: These 3 values are the signature
+* Returns an ethereum address
+    * This is the address of who signed the message
+    * This is why you don't need to pass in a public key
+    * It is "recovered" from the signature
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Signature UI: Old
+
+<img src="sig1.png" width="20%" />
+
+* Users just saw a hash
+* Didn't really know what they were signing
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## \x19... prefix
+
+<pre class="hljs js">
+bytes32 messageHash2 = keccak256(abi.encodePacked(
+    "\x19Ethereum Signed Message:\n32", messageHash
+));
+</pre>
+
+* Most signers will automatically prepend a special prefix to the beginning of your message and then hash
+* This is so that users can't be tricked into signing something that could be a valid transaction
+    * Bitcoin [has a similar protection](https://bitcoin.stackexchange.com/questions/77324/how-are-bitcoin-signed-messages-generated)
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## New Signature UI: <a href="https://medium.com/metamask/eip712-is-coming-what-to-expect-and-how-to-use-it-bb92fd1a7a26">EIP712</a>
+
+<img src="sig2.png" width="30%" />
+
+* More clear what they are signing
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Signature malleability
+
+* ECDSA is not 100% secure under [EUF model](https://en.wikipedia.org/wiki/Digital_signature_forgery)
+* Anyone who has a valid signature can compute another valid signature for same message:
+<pre class="hljs js" style="font-size: 50%">
+r' = r
+s' = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 - s
+v' = 0x37 - v
+</pre>
+* Ethereum (and bitcoin) protect against this for transaction signatures
+    * But `ecrecover` doesn't so don't use signatures to prevent replay attacks
+
+</script></section>
+
+<section data-markdown><textarea data-template>
+## References
+* [Blockchain Trilemma](https://academy.binance.com/en/articles/what-is-the-blockchain-trilemma)
+* [Signature malleability thread 1](https://twitter.com/onfroygogo/status/1611667787759616000)
+* [Signature malleability thread 2](https://twitter.com/onfroygogo/status/1612432225252921345)
+* [EIP-712 thread](https://twitter.com/onfroygogo/status/1617551026390990848)
+</textarea></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: './lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
