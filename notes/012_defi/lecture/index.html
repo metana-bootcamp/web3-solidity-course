@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Decentralized Finance </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Decentralized Finance
+
+*Dhruvin Parikh, February 2023*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Class Plan
+
+* Averages and Accumulators
+* Uniswap
+* Money markets
+ * Time Value of Money
+ * Leverage
+ * Case Study: Compound
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Decentralized Finance
+
+* DeFi: Financial systems built with smart contracts as the platform for enforcing rules, instead of legal system
+* The intersection of economics and blockchain technology
+* Benefits are: transparent and permissionless
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Fungible Assets
+
+* Assets where every unit is interchangeable with any other
+* You don't care which dollar bill you have, or exactly which share of a company
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Flash Loans
+
+* Imagine you write a cheque to buy something, then you sell it for a profit and receive a new cheque
+* As long as you deposit your new cheque before the cheque you wrote clears, you don't need any balance in your account!
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Flash Loans on Ethereum
+
+* On Ethereum, it works like this:
+    * A borrower requests a lending contract to send some ETH or tokens
+    * The lender sends the tokens, then invokes a callback into the borrower's code
+    * When the borrower's callback returns, the lender verifies that the funds were returned (plus fees)
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Example Flash Lender
+
+    function flashLoan(uint amount) {
+        uint origBalance = this.balance;
+
+        msg.sender.transfer(amount);
+
+        // Invoke a function on the caller
+        IFlashLoan(msg.sender).onFlashLoan();
+
+        // Make sure the function paid us back
+        require(this.balance >= origBalance);
+    }
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Automated Market Makers
+
+* An AMM is a special contract that buys and sells an asset according to specific rules
+* Uniswap is most famous example on Ethereum
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Constant Product Rule
+
+* Uniswap has a simple rule: The product of the amounts of the assets is a constant
+        x * y = k
+* You can swap an amount of token for another amount, but you need to keep the product the same
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Constant Product Rule, 2
+
+* Suppose there are 10 of token A and 4 of token B
+        k = 10 * 4 = 40
+* The price of A in units of B is
+        4 / 10 = 0.4
+* The price of B in units of A is
+        10 / 4 = 2.5
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Constant Product Rule, 3
+
+* I want to buy exactly 2 units of A so I withdraw 2 A tokens from reserves, leaving 8 A tokens
+* How many Bs must there now be?
+        8 * B = 40
+        B = 40 / 8
+        B = 5
+* Since B started at 4 tokens I need to deposit 1 unit of B to bring it up to 5
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Constant Product Rule, 4
+
+* Now there are 8 of token A and 5 of token B
+* `k` remains 40 <span style="margin-left: 20px; color: green; font-size: 120%">&check;</span>:
+        k = 8 * 5 = 40
+* The price of A in units of B goes up:
+        5 / 8 = 0.625
+* The price of B in units of A goes down:
+        8 / 5 = 1.6
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Slippage
+
+* We said the price of A in B was 0.4
+* But we paid 1 B for 2 As, meaning price was 0.5
+    * 0.4 was the *marginal* price (price for smallest amount possible)
+    * The more you buy the worse your average price will be
+    * "*slippage*"
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Decimal Scaling
+
+* In solidity, division is always integer division (truncates decimals)
+* Example: `4 ether / 10 ether = 0` (!)
+* To get around this, first scale by decimal precision (usually `1e18`):
+
+        function getPriceOfA() external view returns (uint) {
+            return reserveB * 1e18 / reserveA;
+        }
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Time Value of Money
+
+* Would you rather have <span>$</span>100 right now, or $100 a year from now?
+* Correct answer is right now: You could lend that money out and earn interest for the year
+* If interest rate is 10%, you'll end up with <span>$</span>110 after a year instead of $100
+* This implies that <span>$</span>100 now is equal to $110 a year from now
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Compound Interest
+
+$P'=P(1+\frac{r}{n})^{nt}$
+
+* $P$ : Original principal
+* $P'$ : New principal
+* $r$ : Interest rate
+* $n$ : Number of compoundings
+* $t$ : Loan duration
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Simple Interest
+
+* Also known as "nominal" interest rate
+* Assume we start with 1 dollar ($P=1$) and loan is for 1 year ($t=1$)
+* If we have a 5% interest rate and there is only 1 compounding period, we pay or earn exactly 5% interest:
+
+$(1+\frac{0.05}{1})^{1 \times 1}=1.05$
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Semi-Annual Compounding
+
+* Suppose we have 2 compounding periods (each 6 months)
+
+$(1+\frac{0.05}{2})^{2}=1.050625$
+
+* In the first period we earn/pay 2.5% interest on the principal
+* In the second period we earn/pay 2.5% interest on the principal *and* the interest from the first payment
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## More Frequent Compounding
+
+* Monthly: $(1+\frac{0.05}{12})^{12}=1.051161897881733$
+
+* Daily: $(1+\frac{0.05}{365})^{365}=1.051267496467463$
+
+* Per second: $(1+\frac{0.05}{365 \times 86400})^{365 \times 86400}=1.051271096334355$
+
+* Continuous: $e^{0.05} = 1.051271096376024$
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Which compounding frequency?
+
+* Lenders prefer more frequent compounding, and borrowers less frequent
+* Problem with less frequent compounding: adds edge case incentives where people wait for a compounding interval to pass
+* Better to use as high frequency as possible, and adjust nominal rate to compensate
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## On-chain compounding
+
+* Computing $e^x$ in Solidity to high precision is expensive
+* Per-second compounding is a sweet spot
+    * Seconds are the smallest time unit possible on the EVM
+    * Typically within a billionth of a percent of continuous anyway
+    * Can be computed with integer exponentiation
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Integer Exponentiation
+
+* Naive (multiply n $x$s together):
+
+$x^n = x \times x \times x \times ... \times x$
+
+* Repeated squaring:
+
+$x^n = x^{\frac{n}{2}} \times x^{\frac{n}{2}} = x^{\frac{n}{4}} \times ... \times x^{\frac{n}{4}} = ... $
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Repeated Squaring in Binary
+
+* Notice in repeated squaring we need to keep halving the exponent until we get down to 1
+* Number of halvings is equal to number of bits
+* Computers store numbers in binary so exponent is already in the right format for us
+    * Just need to loop over the bits in reverse!
+* Advanced modern computer algorithm right?
+    * Nope: described in Hindu text circa 200 BC
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Interest Accumulators
+
+* In a smart contract, we cannot update each user's balance to pay out interest
+* Instead, usual way is to keep an accumulator
+    * Multiplicative accumulator: Every update multiply it by the interest accrued since previous update
+* Each user's balance is stored along with their own accumulator
+    * User's accumulator only updated when their balance changes
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Interest Accumulator Example
+
+1. Accumulator is at `2.1`
+1. User A invests 100. State: `(100, 2.1)`
+1. Some time passes, and 1% interest accrued
+1. Accum update: `2.1 * 1.01 -> 2.121`
+1. User B invests 50, State: `(50, 2.121)`
+1. More time passes, and 3% interest accrued
+1. Accum update: `2.121 * 1.03 -> 2.18463`
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Interest Accumulator Example 2
+
+* User's total balances are their stored balances times how much the asset's accumulator has grown since user's accumulator was snapshotted
+    * User A's balance:<br/> `100 * 2.18463 / 2.1 = 104.03`
+    * User B's balance:<br/> `50 * 2.18463 / 2.121 = 51.5`
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Leverage
+
+* A common use-case for borrowing is "leverage"
+* This means borrowing money and using it to make investments
+* Increases profits, but also losses
+    * Can be very risky
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Leverage example
+
+1. Borrow $100
+1. Use it to buy 10 of token ABC at $10 each
+1. ABC goes up to $11
+1. Sell your ABC for $110
+1. Pay back the $100
+1. Profit $10
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Collateral
+
+* Money deposited to secure a loan
+* If the lender requires you to put in <span>$</span>10 to borrow $100, then you are 10:1 leveraged
+* Price went up 10% but you profited 100%
+
+<img style="background-color: white; border: 0; padding: 40px" src="leverage.svg" />
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Collateralised Lending
+
+* On the blockchain, there is no way to repossess tokens transferred to a user
+* Such loans must be fully collateralised
+    * Typically *over*-collateralized, for safety during big price movements
+* When prices move against the borrower, collateral can be sold off to recover borrowed assets
+    * "Liquidation"
+    * Protects lenders
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Collateral Factor
+
+* In order to ensure that liquidation can happen reliably, there is a safety buffer called a collateral factor
+* You can borrow assets worth your collateral's value times its collateral factor
+* Example: If DAI's collateral factor is 0.75, and you deposit 1000 DAI, you can borrow up to 750 worth of assets
+    * 750 DAI ~= US $750
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Re-supplying Collateral
+
+* If loans must be over-collateralised, how is leverage possible?
+* Take example from previous slide:
+    * Borrow $750 of ETH, sell it for DAI
+    * Deposit that fresh DAI as more collateral
+    * Now you have $1750 worth of collateral deposited
+    * Can borrow up to `1750 * .75 = 1312.5`
+    * Repeat
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Re-supplying Collateral
+
+* You can repeat this until your total DAI collateral is `1000 / (1 - 0.75) = 4000`
+* At this point you will have sold $3000 worth of assets, for example ETH
+    * You are short ETH/DAI at 3:1 leverage
+    * "short" = you want ETH to go down in price, relative to DAI
+    * Equivalently, you are "long" DAI/ETH
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Using Flash Loans
+
+Rather than repeat deposits, use a flash loan:
+
+1. Flash borrow 4000 DAI
+1. Deposit it as collateral
+1. Borrow $3000 worth of ETH
+1. Sell this ETH for DAI, giving you 3000 DAI
+1. With this 3000 and your original 1000 DAI, pay back the flash loan
+    * (ignoring flash loan fees)
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Profit Example
+
+Suppose the price of ETH falls: Amount you could buy for 1000 DAI you can now get for only 800:
+
+1. Flash borrow full amount of ETH owed, worth <span>$</span>2400 = $3000 \times \frac{800}{1000}$
+1. Pay back all the ETH you owe
+1. Withdraw 4000 DAI collateral
+1. Convert $2400 worth to ETH, repay flash loan
+1. Profit is 600 DAI (3x the 200 you would've earned without leverage)
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Loss Example
+
+* Suppose instead the price of ETH rises: Amount you could buy for 1000 DAI you now need 1200:
+* The $3000 of ETH is now worth 3600
+* Implied collateral factor of 0.9
+    * *A violation*!
+1. Liquidators seize 3600 DAI of your collateral, sell it for ETH, and give this back to lenders
+1. You are left with 400 DAI collateral: 600 DAI loss (3x the 200 loss without leverage)
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Carry Trade
+
+* Where you take advantage of interest rate differences
+* Classic example: JPY interest is about 0.1%, AUD interest is 5%
+* Borrow JPY and buy AUD, hold for a year
+* Earn 5%, paying 0.1%
+    * Leverage up to increase profit
+* Risk is price movement in JPY/AUD
+    * Worse with leverage: No free lunch
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Lending Markets on Ethereum
+
+* MakerDAO: Lets you borrow DAI against ETH collateral. Tries to maintain DAI pegged to US Dollar
+* Compound: Borrow/lend ~10 assets. Uses custom off-chain oracle
+* AAVE: Borrow/lend ~25 assets. Chainlink oracle
+* Euler: Borrow/lend any ERC-20 asset, Uniswap TWAP Oracle (coming soon)
+
+</script></section>
+
+
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Case Study: Compound
+
+* Money market lending protocol
+* Live in 2019
+* Many billions of dollars worth of "Total Value Locked"
+* Respect governance system, using COMP tokens
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Compound Architecture
+
+<img style="background-color: white; border: 0; padding: 40px" src="compound.svg" />
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Solidity Inheritance
+
+    contract A {
+        function func1() private {}
+        function func2() internal {}
+    }
+
+    contract B is A {
+        // func2 is visible, func1 isn't
+    }
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Inherited storage
+
+* The comptroller storage is actually stored in the Unitroller contract
+    * The Comptroller code is invoked by `delegatecall`
+* When the Comptroller is upgraded, it continues to use the old storage
+* Compound is careful to always add new storage variables to the end, and never the middle
+    * That would break the storage after an upgrade
+
+</script></section>
+
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Inheritance Order
+
+* Heirarchy ensures ordering of storage variables
+
+        contract ComptrollerV1Storage {
+            uint origVariables;
+            ...
+        }
+
+        contract ComptrollerV2Storage is ComptrollerV1Storage {
+            uint newVariables;
+            ...
+        }
+
+        contract Comptroller is ComptrollerV2Storage
+        }
+
+* Compound released before `abstract` contract feature
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Abstract Contracts
+
+* Usually used for base classes
+* Not intended to be instantiated
+* Defines an interface for a class
+        abstract contract BaseToken {
+            function symbol() public virtual returns (string memory);
+        }
+* Note we didn't provide a function body
+* `virtual` means derived classes can override
+
+</script></section>
+
+
+
+<section data-markdown><script type="text/template">
+
+## Virtual/Override
+
+* Because `BaseToken` didn't implement it, derived contracts *must* implement `symbol()`:
+        contract MyToken is BaseToken {
+            function symbol() public override returns (string memory) {
+                return "SYM";
+            }
+        }
+* `override` means we are overriding a `virtual` method
+* Methods can have both `virtual` and `override`, meaning they could in turn be overridden by another class
+
+</script></section>
+
+
+
+
+<section data-markdown><script type="text/template">
+
+## Compound's Interest Rate Model
+
+<img style="background-color: white; border: 0; padding: 40px" src="compound-irm.svg" />
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: '../../../lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
