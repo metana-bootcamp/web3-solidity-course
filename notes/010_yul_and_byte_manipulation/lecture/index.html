@@ -109,6 +109,28 @@
 </textarea></section>
 
 <section data-markdown><textarea data-template>
+## Assembly
+
+Solidity => Assembly => Bytecode
+```
+function setOne() public {
+    myVar = 1;
+}
+```
+```
+JUMPDEST
+PUSH1 0x1
+PUSH1 0x0
+DUP2
+SWAP1
+SSTORE
+```
+```
+0x5b01010100819055
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
 ## Solidity Inline Assembly
 - Use Low level language called <a href="https://solidity.readthedocs.io/en/v0.6.2/yul.html" target="_blank">Yul</a>
 - Provide low level access to the <a href="https://solidity.readthedocs.io/en/v0.6.2/introduction-to-smart-contracts.html#index-6" target="_blank">EVM</a>

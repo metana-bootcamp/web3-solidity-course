@@ -1,0 +1,10 @@
+strict digraph {
+subgraph cluster_42_KingOfEther {
+label = "KingOfEther"
+"42_claimThrone" [label="claimThrone"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+"require(bool,string)" 
+"42_claimThrone" -> "require(bool,string)"
+}
+}

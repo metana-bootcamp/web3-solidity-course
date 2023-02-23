@@ -90,10 +90,156 @@
 
 ## Lesson Topics
 
+* Introduction Oracle
+* Oracle Problem
 * Prices and Oracles
 
 </script></section>
 
+
+<section data-markdown><script type="text/template">
+
+## Blockchain Oracle
+
+* Blockchain oracles are entities that connect blockchains to external systems, thereby enabling smart contracts to execute based upon inputs and outputs from the real world. 
+
+![](blockchain-oracle.webp)
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Interoperability with traditional systems
+
+* Alice and Bob want to bet on the outcome of a sports match. 
+* Alice bets $20 on team A and Bob bets $20 on team B with the $40 total held in escrow. 
+* When the game ends, how does the smart contract know whether to release the funds to Alice or Bob? 
+* The answer is it requires an oracle mechanism to fetch accurate match outcomes off-chain and deliver it to the blockchain in a secure and reliable manner.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Off-chain versus on-chain
+
+* Resources external to the blockchain are considered “off-chain,” 
+* Data already stored on the blockchain is considered on-chain.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Oracle Problem
+
+* Smart contracts cannot inherently interact with data and systems existing outside their native blockchain environment
+* Securely interoperating with off-chain systems from a blockchain requires an additional piece of infrastructure known as an “oracle” to bridge the two environments.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Oracle Problem
+
+* Blockchains cannot connect to real-world data and events on their own
+ ![](oracle-prob.jpeg)
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Oracle Contract
+
+```
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.4.22 <0.9.0;
+
+
+contract Oracle {
+    struct Request {
+        bytes data;
+        function(uint) external callback;
+    }
+
+    Request[] private requests;
+    event NewRequest(uint);
+
+    function query(bytes memory data, function(uint) external callback) public {
+        requests.push(Request(data, callback));
+        emit NewRequest(requests.length - 1);
+    }
+
+    function reply(uint requestID, uint response) public {
+        // Here goes the check that the reply comes from a trusted source
+        requests[requestID].callback(response);
+    }
+}
+
+
+contract OracleUser {
+    Oracle constant private ORACLE_CONST = Oracle(address(0x00000000219ab540356cBB839Cbe05303d7705Fa)); // known contract
+    uint private exchangeRate;
+
+    function buySomething() public {
+        ORACLE_CONST.query("USD", this.oracleResponse);
+    }
+
+    function oracleResponse(uint response) public {
+        require(
+            msg.sender == address(ORACLE_CONST),
+            "Only oracle can call this."
+        );
+        exchangeRate = response;
+    }
+}
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Type of Oracles
+
+* Centralized oracles
+ * Low correctness guarantee, Poor availability, Poor Incentive compatibility
+* Decentralized Oracles
+ * High correctness guarantees, authenticity proofs, availability, good incentive compatibility
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Oracle design patterns
+
+* Input Oracles : Price Feeds
+* Output Oracles : API
+* Cross-chain Oracles : Bridge
+* Compute-Enabled Oracles : VRNF, Stop-loss
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Compute Enabled Oracle
+
+* Different types of oracles enable the creation of hybrid smart contracts
+
+<img src="compute-enable-oracle.webp" width="800">
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Oracle Applications
+
+* Decentralized Finance (DeFi)
+* Dynamic NFTs and Gaming
+* Insurance
+* Enterprise
+* Sustainability
+
+</script></section>
 
 
 <section data-markdown><script type="text/template">
@@ -494,7 +640,7 @@ Subtract 2 snapshots to get area:
           { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
           { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
           { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+          // { src: '../../../reveal.js/plugin/math/math.js', async: true },
            // Zoom in and out with Alt+click
            { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
         ]

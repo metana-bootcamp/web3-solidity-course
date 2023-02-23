@@ -1,0 +1,11 @@
+strict digraph {
+subgraph cluster_82_WithdrawDAO {
+label = "WithdrawDAO"
+"82_withdraw" [label="withdraw"]
+"82_trusteeWithdraw" [label="trusteeWithdraw"]
+"82_slitherConstructorVariables" [label="slitherConstructorVariables"]
+"82_slitherConstructorConstantVariables" [label="slitherConstructorConstantVariables"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+}
+}
