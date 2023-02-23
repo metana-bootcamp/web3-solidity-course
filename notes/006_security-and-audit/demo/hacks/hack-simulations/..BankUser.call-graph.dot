@@ -1,0 +1,16 @@
+strict digraph {
+subgraph cluster_223_BankUser {
+label = "BankUser"
+"223_getBalance" [label="getBalance"]
+"223_setCount" [label="setCount"]
+"223_setAmount" [label="setAmount"]
+"223_setMax" [label="setMax"]
+"223_slitherConstructorVariables" [label="slitherConstructorVariables"]
+"223_setup" [label="setup"]
+"223_receive" [label="receive"]
+"223_withdraw" [label="withdraw"]
+"223_deposit" [label="deposit"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+}
+}

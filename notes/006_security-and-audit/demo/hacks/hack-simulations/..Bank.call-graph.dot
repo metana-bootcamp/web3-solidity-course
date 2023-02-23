@@ -1,0 +1,16 @@
+strict digraph {
+subgraph cluster_107_Bank {
+label = "Bank"
+"107_withdraw" [label="withdraw"]
+"107_constructor" [label="constructor"]
+"107_getBalance" [label="getBalance"]
+"107_deposit" [label="deposit"]
+"107_slitherConstructorConstantVariables" [label="slitherConstructorConstantVariables"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+"require(bool,string)" 
+"require(bool)" 
+"107_deposit" -> "require(bool)"
+"107_withdraw" -> "require(bool,string)"
+}
+}

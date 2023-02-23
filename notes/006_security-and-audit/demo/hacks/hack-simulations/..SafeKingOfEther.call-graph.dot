@@ -1,0 +1,12 @@
+strict digraph {
+subgraph cluster_147_SafeKingOfEther {
+label = "SafeKingOfEther"
+"147_withdraw" [label="withdraw"]
+"147_claimThrone" [label="claimThrone"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+"require(bool,string)" 
+"147_withdraw" -> "require(bool,string)"
+"147_claimThrone" -> "require(bool,string)"
+}
+}

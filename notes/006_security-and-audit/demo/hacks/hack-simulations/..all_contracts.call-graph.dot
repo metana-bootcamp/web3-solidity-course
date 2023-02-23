@@ -1,0 +1,180 @@
+strict digraph {
+subgraph cluster_69_Attack {
+label = "Attack"
+"69_constructor" [label="constructor"]
+"69_attack" [label="attack"]
+}subgraph cluster_42_KingOfEther {
+label = "KingOfEther"
+"42_claimThrone" [label="claimThrone"]
+}subgraph cluster_107_Bank {
+label = "Bank"
+"107_deposit" [label="deposit"]
+"107_getBalance" [label="getBalance"]
+"107_withdraw" [label="withdraw"]
+"107_constructor" [label="constructor"]
+}subgraph cluster_82_WithdrawDAO {
+label = "WithdrawDAO"
+"82_withdraw" [label="withdraw"]
+"82_trusteeWithdraw" [label="trusteeWithdraw"]
+}subgraph cluster_8211_console {
+label = "console"
+"8211_logBytes11" [label="logBytes11"]
+"8211_logBytes15" [label="logBytes15"]
+"8211_logBytes4" [label="logBytes4"]
+"8211_logBytes24" [label="logBytes24"]
+"8211_logBytes28" [label="logBytes28"]
+"8211_logBytes26" [label="logBytes26"]
+"8211_logBytes13" [label="logBytes13"]
+"8211_logBytes12" [label="logBytes12"]
+"8211_log" [label="log"]
+"8211_logBytes6" [label="logBytes6"]
+"8211_logBytes22" [label="logBytes22"]
+"8211_logBytes16" [label="logBytes16"]
+"8211_logBytes7" [label="logBytes7"]
+"8211_logAddress" [label="logAddress"]
+"8211_logInt" [label="logInt"]
+"8211_logBytes1" [label="logBytes1"]
+"8211_logBytes9" [label="logBytes9"]
+"8211_logBytes29" [label="logBytes29"]
+"8211_logBool" [label="logBool"]
+"8211_logBytes31" [label="logBytes31"]
+"8211_logBytes25" [label="logBytes25"]
+"8211_logBytes5" [label="logBytes5"]
+"8211__sendLogPayload" [label="_sendLogPayload"]
+"8211_logBytes8" [label="logBytes8"]
+"8211_logUint" [label="logUint"]
+"8211_logBytes14" [label="logBytes14"]
+"8211_logBytes" [label="logBytes"]
+"8211_logBytes27" [label="logBytes27"]
+"8211_logBytes19" [label="logBytes19"]
+"8211_logString" [label="logString"]
+"8211_logBytes17" [label="logBytes17"]
+"8211_logBytes30" [label="logBytes30"]
+"8211_logBytes23" [label="logBytes23"]
+"8211_logBytes2" [label="logBytes2"]
+"8211_logBytes18" [label="logBytes18"]
+"8211_logBytes3" [label="logBytes3"]
+"8211_logBytes21" [label="logBytes21"]
+"8211_logBytes32" [label="logBytes32"]
+"8211_logBytes10" [label="logBytes10"]
+"8211_logBytes20" [label="logBytes20"]
+"8211_logBytes2" -> "8211__sendLogPayload"
+"8211_logBytes8" -> "8211__sendLogPayload"
+"8211_logBytes18" -> "8211__sendLogPayload"
+"8211_logBytes5" -> "8211__sendLogPayload"
+"8211_logBytes3" -> "8211__sendLogPayload"
+"8211_logBytes1" -> "8211__sendLogPayload"
+"8211_logBytes15" -> "8211__sendLogPayload"
+"8211_logBytes31" -> "8211__sendLogPayload"
+"8211_logBytes23" -> "8211__sendLogPayload"
+"8211_logBytes16" -> "8211__sendLogPayload"
+"8211_logBytes21" -> "8211__sendLogPayload"
+"8211_logBytes" -> "8211__sendLogPayload"
+"8211_logBytes12" -> "8211__sendLogPayload"
+"8211_logBytes32" -> "8211__sendLogPayload"
+"8211_logBytes11" -> "8211__sendLogPayload"
+"8211_logBytes26" -> "8211__sendLogPayload"
+"8211_logAddress" -> "8211__sendLogPayload"
+"8211_logBytes27" -> "8211__sendLogPayload"
+"8211_logBytes22" -> "8211__sendLogPayload"
+"8211_logInt" -> "8211__sendLogPayload"
+"8211_logBytes17" -> "8211__sendLogPayload"
+"8211_log" -> "8211__sendLogPayload"
+"8211_logBytes19" -> "8211__sendLogPayload"
+"8211_logBytes25" -> "8211__sendLogPayload"
+"8211_logBytes28" -> "8211__sendLogPayload"
+"8211_logBool" -> "8211__sendLogPayload"
+"8211_logBytes10" -> "8211__sendLogPayload"
+"8211_logString" -> "8211__sendLogPayload"
+"8211_logBytes9" -> "8211__sendLogPayload"
+"8211_logBytes7" -> "8211__sendLogPayload"
+"8211_logUint" -> "8211__sendLogPayload"
+"8211_logBytes30" -> "8211__sendLogPayload"
+"8211_logBytes4" -> "8211__sendLogPayload"
+"8211_logBytes20" -> "8211__sendLogPayload"
+"8211_logBytes14" -> "8211__sendLogPayload"
+"8211_logBytes6" -> "8211__sendLogPayload"
+"8211_logBytes29" -> "8211__sendLogPayload"
+"8211_logBytes24" -> "8211__sendLogPayload"
+"8211_logBytes13" -> "8211__sendLogPayload"
+}subgraph cluster_147_SafeKingOfEther {
+label = "SafeKingOfEther"
+"147_withdraw" [label="withdraw"]
+"147_claimThrone" [label="claimThrone"]
+}subgraph cluster_22_DAO {
+label = "DAO"
+"22_totalSupply" [label="totalSupply"]
+"22_balanceOf" [label="balanceOf"]
+"22_transferFrom" [label="transferFrom"]
+}subgraph cluster_223_BankUser {
+label = "BankUser"
+"223_getBalance" [label="getBalance"]
+"223_setCount" [label="setCount"]
+"223_setAmount" [label="setAmount"]
+"223_setMax" [label="setMax"]
+"223_setup" [label="setup"]
+"223_receive" [label="receive"]
+"223_withdraw" [label="withdraw"]
+"223_deposit" [label="deposit"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+"require(bool)" 
+"abi.encodeWithSignature()" 
+"staticcall(uint256,uint256,uint256,uint256,uint256,uint256)" 
+"require(bool,string)" 
+"gas()" 
+"8211_logBytes16" -> "abi.encodeWithSignature()"
+"8211_logBytes24" -> "abi.encodeWithSignature()"
+"8211_logBytes14" -> "abi.encodeWithSignature()"
+"8211_logBytes15" -> "abi.encodeWithSignature()"
+"8211_logInt" -> "abi.encodeWithSignature()"
+"8211_logBytes4" -> "abi.encodeWithSignature()"
+"8211_logBytes31" -> "abi.encodeWithSignature()"
+"8211_logBytes11" -> "abi.encodeWithSignature()"
+"8211_logBytes21" -> "abi.encodeWithSignature()"
+"8211_logBytes" -> "abi.encodeWithSignature()"
+"8211_logBytes29" -> "abi.encodeWithSignature()"
+"8211_logBytes9" -> "abi.encodeWithSignature()"
+"8211_logBytes27" -> "abi.encodeWithSignature()"
+"8211_logBytes13" -> "abi.encodeWithSignature()"
+"8211_logAddress" -> "abi.encodeWithSignature()"
+"8211_logBytes7" -> "abi.encodeWithSignature()"
+"8211_logBytes8" -> "abi.encodeWithSignature()"
+"8211_logBytes20" -> "abi.encodeWithSignature()"
+"8211_log" -> "abi.encodeWithSignature()"
+"8211_logString" -> "abi.encodeWithSignature()"
+"8211_logBytes12" -> "abi.encodeWithSignature()"
+"8211_logBytes26" -> "abi.encodeWithSignature()"
+"8211_logUint" -> "abi.encodeWithSignature()"
+"147_claimThrone" -> "require(bool,string)"
+"8211_logBytes28" -> "abi.encodeWithSignature()"
+"107_withdraw" -> "require(bool,string)"
+"8211_logBytes25" -> "abi.encodeWithSignature()"
+"8211_logBytes32" -> "abi.encodeWithSignature()"
+"8211_logBool" -> "abi.encodeWithSignature()"
+"8211_logBytes6" -> "abi.encodeWithSignature()"
+"42_claimThrone" -> "require(bool,string)"
+"8211_logBytes1" -> "abi.encodeWithSignature()"
+"8211_logBytes23" -> "abi.encodeWithSignature()"
+"8211_logBytes17" -> "abi.encodeWithSignature()"
+"8211_logBytes10" -> "abi.encodeWithSignature()"
+"8211_logBytes2" -> "abi.encodeWithSignature()"
+"8211_logBytes5" -> "abi.encodeWithSignature()"
+"8211__sendLogPayload" -> "gas()"
+"8211__sendLogPayload" -> "staticcall(uint256,uint256,uint256,uint256,uint256,uint256)"
+"107_deposit" -> "require(bool)"
+"8211_logBytes22" -> "abi.encodeWithSignature()"
+"8211_logBytes30" -> "abi.encodeWithSignature()"
+"8211_logBytes19" -> "abi.encodeWithSignature()"
+"8211_logBytes3" -> "abi.encodeWithSignature()"
+"147_withdraw" -> "require(bool,string)"
+"8211_logBytes18" -> "abi.encodeWithSignature()"
+}"223_receive" -> "107_withdraw"
+"82_trusteeWithdraw" -> "22_totalSupply"
+"223_withdraw" -> "107_withdraw"
+"82_withdraw" -> "22_balanceOf"
+"82_trusteeWithdraw" -> "22_balanceOf"
+"82_withdraw" -> "22_transferFrom"
+"223_deposit" -> "107_deposit"
+"69_attack" -> "42_claimThrone"
+}

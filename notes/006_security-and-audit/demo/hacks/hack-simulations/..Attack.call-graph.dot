@@ -1,0 +1,9 @@
+strict digraph {
+subgraph cluster_69_Attack {
+label = "Attack"
+"69_constructor" [label="constructor"]
+"69_attack" [label="attack"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+}
+}

@@ -93,6 +93,8 @@
 * Code running inside the EVM has no access to network, filesystem or other processes
 </textarea></section>
 
+
+
 <section data-markdown><script type="text/template">
 
 ## What if our contract has an infinite loop?
@@ -155,6 +157,35 @@
 ### EVM is Atomic State Machine 
 * Each transaction is a change from one state of the blockchain to the next. 
 * A correct program cannot reach any state that isn’t allowed to according to our specification.
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### The Stack Machine
+* Depth of 1024 Items
+* Each item is a 256-bit word
+* During execution, the EVM maintains a transient memory, which does not persist between transactions
+ * transient memory : a word-addressed byte array
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### The Stack Machine
+* Contracts contain a Merkle Patricia storage trie, which associated with the account in questionable is part of the global state
+* Compiled smart contract bytecode executes as a number of EVM opcodes, which perform standard stack operations like XOR, AND, ADD,SUB etc
+* THE EVM also implements a number of blockchain-specific stack operations (more this in week 11) 
+* Each operation costs a certain number of gas
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+  
+## Tracing a transaction
+
+https://www.evm.codes/
+
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -541,6 +572,7 @@ Since Yul manages local variables and control-flow, opcodes that interfere with 
   * [Layout of state variable in storage](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#layout-of-state-variables-in-storage)
   * [Layout in memory](https://docs.soliditylang.org/en/latest/internals/layout_in_memory.html#layout-in-memory)
   * [Layout of calldata](https://docs.soliditylang.org/en/latest/internals/layout_in_calldata.html#layout-of-call-data)  
+  * [EVM - Some Assembly Required by Alex Bazhenov | Devcon Bogotá](https://youtu.be/yxgU80jdwL0)
 </textarea></section>
 
 <section data-markdown><script type="text/template">

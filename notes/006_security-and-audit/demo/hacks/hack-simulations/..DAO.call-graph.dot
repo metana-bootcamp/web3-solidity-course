@@ -1,0 +1,9 @@
+strict digraph {
+subgraph cluster_22_DAO {
+label = "DAO"
+"22_balanceOf" [label="balanceOf"]
+"22_transferFrom" [label="transferFrom"]
+}subgraph cluster_solidity {
+label = "[Solidity]"
+}
+}
