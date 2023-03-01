@@ -93,7 +93,7 @@
     <h2>ERC-1155 purpose</h2>
     <ul>
         <li>A standard to accommodate any combination of fungible tokens, non-fungible tokens, semi-fungible tokens</li>
-        <li>ERC721's token ID is a single non-fungible index and group of these non-fungibles is deployed as s single contract with settings of entire collection</li>
+        <li>ERC721's token ID is a single non-fungible index and group of these non-fungibles is deployed as a single contract with settings of entire collection</li>
         <li>ERC1155 allows each token ID to represent new configuration token type which may have its own metadata</li>
     </ul>
 </section>
@@ -184,17 +184,23 @@ https://ipfs.io/ipfs/QmSRuR57WYiSDWEavYj1vNGMv3SJ2vPWJ3LZn8C4xTs2Lv/9.json
 </script></section>
 
 <section data-markdown><textarea data-template>
+### DAPP architecture
+
+![](web3-js-diagram.png)
+</textarea>></section>
+
+<section data-markdown><textarea data-template>
   ### `web3.js`
   - Maintained by community of users and ChainSafe 
   - Extensively used by many project since 2015
   - A go-to choice for "Build your first dApp" tutorials
   - An open source library with GPLv3 license
-  - Currently at version 1.8.1.
+  - Currently at version 1.8.2.
   - Functions to interact with Ethereum node via JSON-RPC protocol
 </textarea>></section>
 
 <section data-markdown><textarea data-template>
-  ### Modules in `web3.js`
+  ### Packages in `web3.js`
   - <a href="#web3-eth"><code>web3-eth</code></a>
   - <a href="#web3-shh"><code>web3-shh</code></a>
   - <a href="#web3-bzz"><code>web3-bzz</code></a>
@@ -424,16 +430,17 @@ web3.eth.getTransactionReceipt(hash, function (err, receipt) {
 
 <section data-markdown><textarea data-template>
   ### `ethers.js`
-  - Light weight , small and compact library
-  - Large number of test cases
-  - Good "Getting started" documentation
-  - Simple and intuitive
-  - Utility functions in both Javascript and Typescript
-  - Open source via the MIT License
+  * Light weight , small and compact library
+  * Large number of test cases
+  * Good "Getting started" documentation
+  * Simple and intuitive
+  * Utility functions in both Javascript and Typescript
+  * Open source via the MIT License
+  * Currently 
 </textarea>></section>
 
 <section data-markdown><textarea data-template>
-  ### Modules in `ethers.js`
+  ### Packages in `ethers.js`
   - <a href="#ethers.provider"><code>ethers.provider</code></a>
   - <a href="#ethers.contract"><code>ethers.contract</code></a>
   - <a href="#ethers.utils"><code>ethers.utils</code></a>
@@ -545,7 +552,7 @@ contractSigner.number().then((_num) => {
     <h2>Recommended Resources</h2>
     <ul>
         <li>ERC1155 - <a href="https://eips.ethereum.org/EIPS/eip-1155">https://eips.ethereum.org/EIPS/eip-1155</a></li>
-        <li>web3.js - <a href="https://web3js.readthedocs.io/en/v1.8.1/">https://web3js.readthedocs.io/en/v1.8.1/</a></li>
+        <li>web3.js - <a href="https://web3js.readthedocs.io/en/v1.8.1/">https://web3js.readthedocs.io/en/latest/</a></li>
         <li>ethers.js - <a href="https://docs.ethers.io/v5/">https://docs.ethers.io/v5/</a></li>
     </ul>
 </section>
