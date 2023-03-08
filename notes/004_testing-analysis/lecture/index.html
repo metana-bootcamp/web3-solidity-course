@@ -163,6 +163,28 @@ function getCurrentTime() internal view virtual override returns (uint256) {
 ```
 </script></section>
 
+
+<section data-markdown><script type="text/template">
+
+## Mock Contracts
+
+```
+import {deployMockContract} from '@ethereum-waffle/mock-contract'
+// .....
+const mockContract = await deployMockContract(wallet,contractAbi);
+// .....
+await mockContract.mock<nameOfMethod>.returns(<value>)
+await mockContract.mock<nameOfMethod>.withArgs(<arguments>).returns(<value>)
+// .....
+await mockContract.mock<nameOfMethod>.reverts()
+await mockContract.mock<nameOfMethod>.revertsWithReason(<reason>)
+await mockCOntract.mock<nameOfMethod>.withArgs(<arguments>).reverts()
+await mockContract.mock.<nameOfMethod>.withArgs(<arguments>).revertsWithReason(<reason>)
+```
+* https://ethereum-waffle.readthedocs.io/
+</script></section>
+
+
 <section data-markdown><script type="text/template">
 
 ## Smart Contract Analysis
