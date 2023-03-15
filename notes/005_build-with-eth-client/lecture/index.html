@@ -75,6 +75,7 @@
 
 * Node types
 * Node clients (post merge)
+* Staking on Ethereum
 
 </script></section>
 
@@ -96,6 +97,13 @@
 * **Full** - generates the current state by executing every block starting from the genesis block. Only the most recent 128 block states are stored in a full node
 * **Archive** - retains all historical data right back to genesis
 * **Light nodes** - only process block headers (do not work in PoS)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## State Pruning
+
+![](state-pruning.png)
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -135,10 +143,20 @@
 
 <section data-markdown><script type="text/template">
 
-## EVM Client architecture Post "Merge"
+## EVM Client architecture
 
 <img src="./client-architecture.png" width="500" />
 </script></section>
+
+<section data-markdown><textarea data-template>
+### Block structure
+<img src="block-structure.png" width="500">
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### How `DIFFICULTY` & `PREVRANDAO` opcodes work pre and post-merge?
+<img src="difficulty_prevrandao.png" width="600">
+</textarea></section>
 
 <section>
     <h3>Remote Procedure Call (RPC)</h3>
@@ -191,10 +209,29 @@ curl https://mainnet.infura.io/v3/86599c771d434ac3ba265546515812ed \
 - Readings: <a href="https://blog.infura.io/ethereum-rpcs-methods/" target="_blank">https://blog.infura.io/ethereum-rpcs-methods/</a>
 </textarea></section>
 
+
+<section data-markdown><textarea data-template>
+## Hard Fork
+
+* A permanent divergence in the blockchain. 
+* Not backward compatible
+* Occurs when nonupgraded nodes can't validate blocks created by upgraded nodes that follow newer consensus rules.
+</textarea></section>
+
+
+<section data-markdown><textarea data-template>
+## Soft Fork
+
+* A divergence in a blockchain that occurs when the consensus rules change. 
+* A soft fork is backwards compatible 
+ * Upgraded nodes can validate blocks created by non-upgraded nodes as long as they follow the new consensus rules.
+
+</textarea></section>
+
 <section data-markdown><script type="text/template">
 
-## genesis file
-
+## [Private Networks](https://geth.ethereum.org/docs/fundamentals/private-network)
+EthHash genesis config
 ```
 {
     "config": {
@@ -293,12 +330,116 @@ curl https://mainnet.infura.io/v3/86599c771d434ac3ba265546515812ed \
 
 <section data-markdown><script type="text/template">
 
-## Rewards Post "Merge"
+## Why Stake ETH?
 
-* **Transaction rewards** 
- * the priority fees are available immediately.
-* **Consensus rewards**
- * the rewards received by validators on Beacon Chain pre-merge (and continue to be received post-merge) - along with stake will not be withdrawable until after the [Shanghai upgrade](https://hackmd.io/@timbeiko/acd).
+* Secure the Network
+* Earn Rewards
+  * Consensus rewards
+  * Execution rewards
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Secure the Network
+
+* 32 ETH per validator
+* Currently +500k validators
+* An attacker would need to be heavily invested in network and would be slashed
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Consensus rewards
+
+* Attestations every epoch (6.4 mins)
+* Sync committees (~ every 2 years)
+* Block Proposals (~ every 2 months)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Execution rewards
+
+* Tips
+* MEV
+
+</script></section>
+
+
+<section>
+  <div data-markdown><script type="text/template">
+    ## Validator Rewards
+  </script></div>
+  <div data-markdown style="font-size:20px"><script type="text/template">
+    | Type  | Layer   | Frequency   | Amount  |
+    |---|---|---|---|
+    | Attestation   | Consensus   | Once per Epoch (every 6.4 minutes on average)   | 0.000014 ETH<sup>1</sup>  |
+    | Block Proposal   | Consensus   | [Every 2 months on average](https://proposalprobab.web.app/)<sup>2</sup>   | 0.02403 ETH<sup>1</sup>  |
+    | [Sync Committee](https://blockdaemon.com/blog/ethereum-altair-hard-folk-light-clients-sync-committees/)   | Consensus   | Every 2 years on average<sup>2</sup>  | 0.11008 ETH<sup>1</sup>  |
+    | Slashing Reward | Consensus | Very rarely included in block proposals | Up to 0.0625 ETH |
+    | Priority Fees | Execution | Also included in Block Proposals | Typically 0.01 to 0.1 ETH; very rarely 1+ ETH |
+    | MEV Rewards | Execution | Also included in Block Proposals when using [MEV-boost](https://boost.flashbots.net/) | Typically 0.01 to 0.1 ETH; very rarely 1+ ETH |
+    ||||
+
+  </script></div>
+  <div data-markdown style="font-size:20px"><script type="text/template">
+  1. varies based on the total number of validators in the network. Approximated for 435,000 active validators.
+  2. these are subject to randomness; there can be "dry spells" multiple times longer than the average without being given one.
+  </script></div>
+</section>
+
+<section data-markdown><script type="text/template">
+
+## Rewards Liquidity
+
+* Rewards on Consensus Layer (the Beacon Chain) are not currently liquid.
+  * Locked until [Shanghai upgrade](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md)
+* Rewards on execution layer are liquid (BASEFEE with priority fee)
+
+</script></section>
+
+<section>
+<div data-markdown><script type="text/template">
+
+## Validator Punishments
+
+</script></div>
+<div data-markdown style="font-size:xx-large;"><script type="text/template">
+
+* **Leaking** 
+ * Validators are penalized for small amounts of ETH if they are offline and fail to perform their assigned duties
+* **Slashing** 
+ * A forceful exit of your validator without your permission, accompanied by a relatively large fine that removes some of your validator's ETH balance
+ * If a validator violates one of the core rules of the Beacon chain and appears to be attacking the network 
+* running your validator's keys on two nodes at the same time
+* Slashing **cannot** occur from being offline for maintenance
+</script></div>
+</section>
+
+<section>
+<div data-markdown><script type="text/template">
+
+## Penalties
+
+</script></div>
+<div style="font-size: x-large;" data-markdown><script type="text/template">
+
+| Type | Layer | Amount |
+|-|-|-|
+| Missed Attestation | Consensus | -0.000011 ETH<sup>1</sup> per attestation (-9/10 the value of a normal attestation reward) |
+| Missed Proposal | Consensus | 0 |
+| Missed Sync Committee | Consensus | -0.00047 ETH<sup>1</sup> per epoch (-0.1 ETH total if offline for the whole sync committee) |
+| Slashing | Consensus | At least 1/32 of your balance, up to your entire balance in extreme circumstances |
+||||
+1. Varies based on the total number of validators in the network. Approximated for 435,000 active validators.
+</script></div>
+</section>
+<section data-markdown><script type="text/template">
+
+## Rule of thumb for penalties
+
+* if you're offline for X hours (and you aren't in a sync committee), then you'll make all of your leaked ETH back after X hours once you're back online and attesting.
 
 </script></section>
 
@@ -308,7 +449,12 @@ curl https://mainnet.infura.io/v3/86599c771d434ac3ba265546515812ed \
 
 * https://geth.ethereum.org/
 * https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/
-
+* https://ethereum.org/en/upgrades/merge/
+* https://docs.rocketpool.net/guides/node/responsibilities.html#rewards
+* https://blog.ethereum.org/2021/11/29/how-the-merge-impacts-app-layer
+* [Engine JSON-RPC API](https://github.com/ethereum/execution-apis/tree/main/src/engine)
+* [Consensus Specs](https://github.com/ethereum/consensus-specs/tree/dev/specs/bellatrix)
+* [Execution Specs](https://github.com/ethereum/execution-specs/)
 </script></section>
 
 <section data-markdown><script type="text/template">
