@@ -247,8 +247,8 @@ contract DataContract is Owner {
 
 <section data-markdown><textarea data-template>
 ### Eternal Storage Examples 
-* <a href="https://github.com/Morpher-io/MorpherProtocol/blob/master/contracts/MorpherState.sol" target="_blank">`MorpherState.sol`</a>
-* <a href="https://github.com/Morpher-io/MorpherProtocol/blob/master/contracts/MorpherToken.sol" target="_blank">`MorpherToken.sol`</a>
+* <a href="https://etherscan.io/address/0x1f426C51F0Ef7655A6f4c3Eb58017d2F1c381bfF#code" target="_blank">`MorpherState.sol`</a>
+* <a href="https://etherscan.io/address/0x6369c3DadfC00054A42BA8B2c09c48131dd4Aa38#code" target="_blank">`MorpherToken.sol`</a>
 </textarea></section>
 
 <section>
@@ -276,7 +276,7 @@ contract DataContract is Owner {
     <ul>
         <li>EVM has a hardvard architecture
             <ul>
-                <li>Section code != Section data</li>
+                <li>Program memory != Data memory</li>
             </ul>
         </li>
         <li>A contract can
@@ -293,13 +293,13 @@ contract DataContract is Owner {
 </section>
 
 <section data-markdown>
-    ### delegatecall instruction
-    - **Delegatecall instruction:**
-        - Execute code from external contracts from the caller's data context
-    - **Example:**
-        - contract A *delegatecalls* to contract B
-        - The code of contract B will be executed using data fo contract A
-    - **Designed for libraries**
+    ### `delegatecall` instruction
+    * **Delegatecall instruction:**
+     * Execute code from external contracts from the caller's data context
+    * **Example:**
+     * contract A *delegatecalls* to contract B
+     * The code of contract B will be executed using data fo contract A
+    * **Designed for libraries**
 </section>
 
 <section data-markdown>
@@ -323,10 +323,10 @@ contract C {
             
 <section data-markdown>
     ### Upgradeability through delegatecall
-    - **Two contracts:**
-        - Proxy contracts: holds data: (immutable)
-        - Logic: holds the logic (mutable)
-        - Fallback function of proxy delegatecalls to Logic
+    * **Two contracts:**
+     * Proxy contracts: holds data: (immutable)
+     * Logic: holds the logic (mutable)
+    * Fallback function of proxy delegatecalls to Logic
     
         ![proxy-pattern](./proxy-delegatecall.png)
 </section>
@@ -335,8 +335,8 @@ contract C {
     ### Upgradeability through delegatecall
     - **Upgrade: change the logic contract**
     - **Each version of the logic contract must follow the same memory layout**
-        - Do you know precisely how Solidity store variables in memory?
-        - Refer content of Week 8
+    * Do you know precisely how Solidity store variables in memory?
+     * Refer content of Week 8
 </section>
 
 <section>
@@ -693,6 +693,8 @@ Upgradable contracts also need a migration procedure
 ### Recommended Readings
 * <a href="https://blog.openzeppelin.com/proxy-patterns/" target="_blank">Proxy Pattern</a> Blog from OpenZeppelin
 * <a href="https://hiddentao.com/archives/2020/05/28/upgradeable-smart-contracts-using-diamond-standard" target="_blank">Upgradeable smart contracts using the Diamond Standard</a>
+* <a href="https://users.encs.concordia.ca/~mmannan/publications/upgradability-WTSC-2022.pdf" target="_blank">Not so immutable: Upgradeability of Smart Contracts on Ethereum</a>
+* <a href="https://github.com/solidstate-network/solidstate-solidity" target="_blank">Upgradeable-first Solidity smart contract development library</a>
 </textarea></section>
 
 <section>
