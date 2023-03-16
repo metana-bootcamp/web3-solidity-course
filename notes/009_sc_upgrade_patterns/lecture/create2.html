@@ -97,18 +97,18 @@
 <section data-markdown><textarea data-template>
 ### Contract types (1/2)
 * Contracts can be converted to :
-* contracts they inherit from
-* `address` type
-* `address payable`. (`receive()` or `fallback()` required)
-* payable (`payable(address(x))`)
+ * contracts they inherit from
+ * `address` type
+ * `address payable`. (`receive()` or `fallback()` required)
+ * payable (`payable(address(x))`)
 </textarea></section>
 
 <section data-markdown><textarea data-template>
 ### Contract types (2/2)
 * `MyContract c`
-* `c` can call all `public` and `external` functions of `MyContract`
+ * `c` can call all `public` and `external` functions of `MyContract`
 * Contracts can be created via `new`
-* `D newD = new D(arg);`
+ * `D newD = new D(arg);`
 * Contract type does not support any operators
 </textarea></section>
 
@@ -178,13 +178,13 @@
 
 <section data-markdown><textarea data-template>
 ### Smart contract creation : `CREATE`
-* Solidity's `new`  and `truffle migrate` (using EOA)
+* Solidity's `new`  and `hardhat deploy` (using EOA)
 * Nonce
 * Every EOA has nonce increased every transaction
-* Every contract account has nonce increased every new contract creation
+* Every contract account has nonce increased every **new contract creation**
 * They are sequential and cannot be re-used
 * Hash of sender's account address and nonce
-* `new_address = hash(sender, nonce)`
+ * `new_address = keccak256(senderAddress, nonce)`
 </textarea></section>
 
 <section data-markdown><textarea data-template>
@@ -240,8 +240,8 @@ contract C {
 <section data-markdown><textarea data-template>
 ### Salted contract creation : `CREATE2`
 * sender ever deploys `bytecode` using `CREATE2` and the provided `salt`, it will be stored in `new_address`.
-* `new_address = hash(0xFF, sender, salt, bytecode)`
-* *salt* - 32-byte random data
+* `new_address = keccak256(0xFF, sender, salt, bytecode)`
+ * *salt* - 32-byte random data
 * Introduced by <a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014</a>
 * Ability to predict address where a contract will be deployed without actually deploying
 </textarea></section>
@@ -328,10 +328,10 @@ keccak256(0xff + caller + salt + keccak256(init_code))[12:]
 ```
 function deploy(bytes memory code, bytes32 salt) 
 public returns (address addr) {
-assembly {
-addr := create2(0, add(code, 0x20), mload(code), salt)
-if iszero(extcodesize(addr)) { revert(0, 0) }
-}
+  assembly {
+    addr := create2(0, add(code, 0x20), mload(code), salt)
+    if iszero(extcodesize(addr)) { revert(0, 0) } 
+  }
 }
 ```
 </textarea></section>
@@ -361,6 +361,7 @@ returns (bytes memory o_code) {
 - EXTCODEHASH
 - <a href="https://eips.ethereum.org/EIPS/eip-1052" target="_blank">Introduced by EIP-1052</a>
 - Openzepplin <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol#L26" target="_blank">isContract()</a>  utility function
+
 ```js
 function isContract(address account) internal view      
 returns (bool) {    
@@ -376,7 +377,6 @@ returns (bool) {
 <section data-markdown><textarea data-template>
 ### Metamorphosis Smart Contracts using CREATE2
 * Contracts created with create2 could be replaced with different logic at the same address
-* Demo "Overwriting Smart Contracts"
 * Deploy a smart contract that replaces its own bytecode with a different bytecode upon deployment. 
 * So, the bytecode you run through CREATE2 is always the same, and that calls back to the Factory and replaces itself during deployment.
 </textarea></section>
