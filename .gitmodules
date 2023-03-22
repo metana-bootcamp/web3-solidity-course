@@ -1,3 +1,7 @@
 [submodule "reveal.js"]
 	path = reveal.js
 	url = git@github.com:hakimel/reveal.js.git
+	
+[submodule "notes/010_yul_and_byte_manipulation/examples/ultrasoundmoney/lib/notes/010_yul_and_byte_manipulation/examples/ultrasoundmoney/lib/forge-std"]
+	path = notes/010_yul_and_byte_manipulation/examples/ultrasoundmoney/lib/notes/010_yul_and_byte_manipulation/examples/ultrasoundmoney/lib/forge-std
+	url = git@github.com:foundry-rs/forge-std

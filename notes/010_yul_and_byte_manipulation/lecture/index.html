@@ -82,22 +82,10 @@
 
 #### YUL and Byte Manipulation
 
-*Dhruvin Parikh, February 2023*
+*Dhruvin Parikh, March 2023*
 
 </script></section>
 
-<section data-markdown><textarea data-template>
-## YUL
-* Introduction
-* Deploy the contract
-* Runtime
-* function signatures and function selectors
-* function selector
-* Internal return functions
-* ERC20 function example
-* Events
-* Custom errors
-</textarea></section>
 
 <section data-markdown><textarea data-template>
 * Solidity Inline Assembly
@@ -111,12 +99,19 @@
 <section data-markdown><textarea data-template>
 ## Assembly
 
-Solidity => Assembly => Bytecode
+* Intermediate code between we as a developers write (solidity) and the one that machine interprets 
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Assembly
+
+Solidity
 ```
 function setOne() public {
     myVar = 1;
 }
 ```
+Assembly
 ```
 JUMPDEST
 PUSH1 0x1
@@ -125,9 +120,273 @@ DUP2
 SWAP1
 SSTORE
 ```
+Bytecode
 ```
 0x5b01010100819055
 ```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Tracing a transaction
+* www.evm.codes
+ * Reference that has every single opcode in the EVM
+ * How much gas it costs
+ * What it does?
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.9;
+
+contract UltraSoundMoney {
+    uint256 totalSupply;
+
+    function setTotalSupply() public {
+        totalSupply = 8;
+    }
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+solc UltraSoundMoney.sol --opcodes
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+PUSH1 0x80 PUSH1 0x40 MSTORE CALLVALUE DUP1 ISZERO 
+PUSH1 0xF JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP 
+PUSH1 0x75 DUP1 PUSH1 0x1D PUSH1 0x0 CODECOPY 
+PUSH1 0x0 RETURN INVALID PUSH1 0x80 PUSH1 0x40 
+MSTORE CALLVALUE DUP1 ISZERO PUSH1 0xF JUMPI 
+PUSH1 0x0 DUP1 REVERT JUMPDEST POP PUSH1 0x4 
+CALLDATASIZE LT PUSH1 0x28 JUMPI PUSH1 0x0 
+CALLDATALOAD PUSH1 0xE0 SHR DUP1 PUSH4 0x8BC05833 
+EQ PUSH1 0x2D JUMPI JUMPDEST PUSH1 0x0 DUP1 
+REVERT JUMPDEST PUSH1 0x33 PUSH1 0x35 JUMP JUMPDEST 
+STOP JUMPDEST PUSH1 0x8 PUSH1 0x0 DUP2 SWAP1 SSTORE 
+POP JUMP INVALID LOG2 PUSH5 0x6970667358 0x22 SLT 
+KECCAK256 CALLCODE 0xE6 DELEGATECALL 
+PUSH18 0x5C05123502B557E60DA4279CAD3735C62338 
+0xDB 0xC8 0xC3 0x5C 0xCB BYTE STOP 0xFB SMOD 0xBB 
+PUSH5 0x736F6C6343 STOP ADDMOD MULMOD STOP CALLER  
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+6080604052348015600f57600080fd5b50607580601d6000396000f3f
+e6080604052348015600f57600080fd5b506004361060285760003560e01
+c80638bc0583314602d575b600080fd5b60336035565b005b60086000819
+0555056fea2646970667358221220f2e6f4715c05123502b557e60da4279
+cad3735c62338dbc8c35ccb1a00fb07bb64736f6c63430008090033
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+const ultraSoundMoney = await ethers.getContractAt("0x...");
+await ultraSoundMoney.setTotalSupply();
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+console.log(
+ await ethers.provider.send("debug_traceTransaction", [
+ "0x3b182599ed6613bfce0cedf6dc5d9dd5a129ca7c4f2dbccef8b7a63942d20cd3",
+ ])
+);
+```
+Let us trace the opcode of that transaction
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](01_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](02_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](03_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](04_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](04a_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](05_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](06_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](07_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](08_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](09_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](10_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](11_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](12_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](13_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](14_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](15_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](16_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](17_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+![](18_step.png)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Gas Optimization using Yul
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+assembly {
+    // Get a location of some free memory and store it in result 
+    // as Solidity does for memory variables
+    bs := mload(0x40)
+    // Put 0x20 at the first word, the length of bytes 
+    // for uint256 values
+    mstore(bs,0x20)
+    // In the next word, put value in bytes format to 
+    // the next 32 bytes 
+    mstore(add(bs,0x20),_value)
+    // Update the free memory-pointer by padding our last 
+    // write location to 32 bytes
+    mstore(0x40, add(bs, 0x40))
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.9;
+
+contract UltraSoundMoney {
+    uint256 totalSupply;
+
+    function setTotalSupply() public {
+        totalSupply = 8;
+    }
+
+    function optimizedSetTotalSupply() public {
+        assembly{
+            sstore(0x00,0x08)
+        }
+    }
+}
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+solc UltraSoundMoney.sol --opcodes
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+* `setTotalSupply()`
+```
+JUMPDEST
+PUSH1 0x8
+PUSH1 0x0
+DUP2
+SWAP1
+SSTORE
+POP
+```
+* `optimizedSetTotalSupply()`
+```
+JUMPDEST
+PUSH1 0x8
+PUSH1 0x0
+SSTORE
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+[PASS] testOptimizedSetTotalSupply() (gas: 27436)
+[PASS] testSetTotalSupply() (gas: 27444)
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+[profile.default]
+src = 'src'
+out = 'out'
+libs = ['lib']
+optimizer = true <==
+optimizer-runs = 10_00_000 <==
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+```
+[PASS] testOptimizedSetTotalSupply() (gas: 27424)
+[PASS] testSetTotalSupply() (gas: 27424)
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## YUL
+* Introduction
+* Deploy the contract
+* Runtime
+* function signatures and function selectors
+* function selector
+* Internal return functions
+* ERC20 function example
+* Events
+* Custom errors
+
 </textarea></section>
 
 <section data-markdown><textarea data-template>
@@ -446,6 +705,17 @@ const gas = await contract.method.estimateGas(arg);
 * [Solidity workshop](https://github.com/androlo/solidity-workshop)
 * [Bit operation code snippets](https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
 * [EVM - Some Assembly Required by Alex Bazhenov | Devcon Bogotá](https://youtu.be/yxgU80jdwL0)
+* [Demystifying Ethereum Assembly by Joshua Riley | Devcon Bogotá](https://youtu.be/btDOvn8pLkA)
+* [Introduction to Yul+ by Nick Dodson](https://youtu.be/GTwqEYyYy6I)
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### References
+* https://hackmd.io/@gn56kcRBQc6mOi7LCgbv1g/rJez8O8st
+* https://leftasexercise.com/2021/09/05/a-deep-dive-into-solidity-contract-creation-and-the-init-code/
+* https://ethereum.org/en/developers/docs/evm/
+* https://jeancvllr.medium.com/solidity-tutorial-all-about-assembly-5acdfefde05c
+* https://github.com/crytic/evm-opcodes
 </textarea></section>
 
 
