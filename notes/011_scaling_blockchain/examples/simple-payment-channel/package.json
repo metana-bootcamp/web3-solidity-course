@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "solium": "^1.2.5",
+    "truffle": "^5.8.1"
+  },
+  "scripts": {
+    "compile": "truffle compile",
+    "test": "truffle test"
+  },
+  "name": "simple-payment-channel",
+  "version": "1.0.0",
+  "description": "Simple payment channel dapp",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {}
+}
