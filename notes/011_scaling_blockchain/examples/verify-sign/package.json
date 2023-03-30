@@ -1,0 +1,23 @@
+{
+  "name": "verify-sign",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sign.js",
+  "scripts": {
+    "test": "truffle test",
+    "compile": "truffle compile"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bignumber.js": "^9.0.1",
+    "ethereumjs-util": "^7.1.0",
+    "web3": "^1.4.0",
+    "web3-eth-accounts": "^1.4.0",
+    "web3-utils": "^1.4.0"
+  },
+  "devDependencies": {
+    "truffle": "^5.8.1"
+  }
+}
