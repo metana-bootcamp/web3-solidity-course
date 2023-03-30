@@ -30,7 +30,7 @@ contract("ReceiverPays", (accounts) => {
       .deploy({ data: ReceiverPays.bytecode })
       .send({
         from: owner,
-        gas:gas+100000,
+        gas:gas+10000,
         value: depositedAmount,
       });
     const contractAddress = receiverPaysTx.options.address;
