@@ -1,0 +1,18 @@
+{
+  "name": "long-lived-payment-channel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "solium": "^1.2.5",
+    "truffle": "^5.8.1"
+  }}
