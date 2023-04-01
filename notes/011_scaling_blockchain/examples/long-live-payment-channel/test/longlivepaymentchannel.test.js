@@ -40,7 +40,7 @@ contract(
         })
         .send({
           from: sender,
-          gas,
+          gas:gas+100000,
           value: depositAmount,
         });
       contractAddress = longLivedPaymentChannelTx.options.address;
