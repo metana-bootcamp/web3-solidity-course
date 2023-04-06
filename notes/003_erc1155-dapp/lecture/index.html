@@ -65,7 +65,7 @@
 
 #### ERC1155 and DApp
 
-*Dhruvin Parikh, December 2022*
+*Dhruvin Parikh, April 2023*
 
 </script></section>
 
@@ -122,6 +122,7 @@
         function setApprovalForAll(address _operator, bool _approved) external;
         function isApprovedForAll(address _owner, address _operator) external view returns (bool);
     }
+    /// type(I).interfaceId
     interface ERC165 {
         function supportsInterface(bytes4 interfaceID) external view returns (bool);
     }
@@ -195,8 +196,9 @@ https://ipfs.io/ipfs/QmSRuR57WYiSDWEavYj1vNGMv3SJ2vPWJ3LZn8C4xTs2Lv/9.json
   - Extensively used by many project since 2015
   - A go-to choice for "Build your first dApp" tutorials
   - An open source library with GPLv3 license
-  - Currently at version 1.8.2.
+  - Currently at version 1.9.0.
   - Functions to interact with Ethereum node via JSON-RPC protocol
+  - [Github](https://github.com/web3/web3.js) [Docs](https://web3js.readthedocs.io/en/v1.9.0/) [Landing Page](https://web3js.org/#/)
 </textarea>></section>
 
 <section data-markdown><textarea data-template>
@@ -280,6 +282,7 @@ const web3 = new Web3(new Web3.providers.IpcProvider(
 // on windows the path is: '\\\\.\\pipe\\geth.ipc' 
 // on linux the path is: '/users/myuser/.ethereum/geth.ipc'
 ```
+* IPC (Inter-Process Communication): Provides unrestricted access to all APIs, but only works when the console is run on the same host as the geth node.
 </textarea></section>
 
 
@@ -436,7 +439,8 @@ web3.eth.getTransactionReceipt(hash, function (err, receipt) {
   * Simple and intuitive
   * Utility functions in both Javascript and Typescript
   * Open source via the MIT License
-  * Currently 
+  * Currently at v6
+  * [Github](https://github.com/ethers-io/ethers.js/) [Docs](https://docs.ethers.org/v6/) [Landing Page](https://ethers.org/)
 </textarea>></section>
 
 <section data-markdown><textarea data-template>
