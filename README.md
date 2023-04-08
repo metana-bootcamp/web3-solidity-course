@@ -16,3 +16,5 @@ $ cd ./web3-solidity-course
 ```bash
 $ git submodule update --init
 ```
+
+Content in this repository cannot be shared, reused and reproduced without written consent from the author.
