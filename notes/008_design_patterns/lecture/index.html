@@ -65,7 +65,7 @@
 
 #### Design Patterns
 
-*Dhruvin Parikh, January 2023*
+*Dhruvin Parikh, April 2023*
 
 </script></section>
 
@@ -102,7 +102,8 @@ modifier restriction(bool _condition) {
     _;
 }
 
-function transferOwnership(address newOwner) public onlyOwner restriction(newOwner != address(0)) {
+function transferOwnership(address newOwner) public onlyOwner 
+    restriction(newOwner != address(0)) {
     ...
 }
 ```
@@ -117,7 +118,7 @@ function transferOwnership(address newOwner) public onlyOwner restriction(newOwn
 * Can be M of N
 * Owner to set N, M of N to change
 * Danger if several keys are lost
-
+* [MultiSigWallet](https://github.com/metana-bootcamp/web3-solidity-course/blob/main/notes/008_design_patterns/examples/MultiSigWallet.sol)
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -129,7 +130,18 @@ function transferOwnership(address newOwner) public onlyOwner restriction(newOwn
 * OpenZeppelin code for pattern 
     
 </script></section>
-    
+
+<section data-markdown><script type="text/template">
+
+## Ownership
+* Smart contracts act like accounts
+* Ownership is required to limit access to certain account activities
+* It may be desirable to transfer ownership
+* You can have different types of ownership
+* [`Ownable.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/Ownable.sol)
+* [`Ownable2Step.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/788d6a129a342d7a23a91ad553479e861845a9b2/contracts/access/Ownable2Step.sol)
+</script></section>
+
 <section data-markdown><script type="text/template">
 
 ## Roles
@@ -139,6 +151,169 @@ function transferOwnership(address newOwner) public onlyOwner restriction(newOwn
 * Assign users to roles
 * Assign roles to methods
 * OpenZeppelin implementation
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Role Based Access Control
+* Different classes of users with different rights to do things with your contract
+* Add and remove accounts from having a role
+* Verify if an account has access to do something
+* [`AccessControl.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/AccessControl.sol)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Role Based Access Control
+* Track the different roles in your contract
+* Add and remove roles
+* A starting point for more advanced access control
+* [`RBAC.sol`](https://github.com/ConsenSysMesh/real-estate-standards/blob/69266ebf00ff9456da89845968f9680db8bb0ddb/node_modules/openzeppelin-solidity/contracts/ownership/rbac/RBAC.sol)
+* [`ACL.sol`](https://github.com/nayms/contracts/blob/bfa33e8bf733d11289a8c6abce96be683606f69d/contracts/ACL.sol)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Setting up Access Control with Roles
+* Ownable
+* Granular Access control
+* [`AccessControl.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/AccessControl.sol)
+* Case Study : TimelockController 
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Simple access control: Ownable
+
+```
+Contract Ownable {
+    function owner view returns(address);
+    function transferOwnership(Address newOwner) onlyOwner;
+    function renounceOwnership() onlyOwner;
+}
+```
+
+```
+contract NFT is Ownable {
+    ownerOf()
+    transfer()
+    mint() onlyOwner
+    owner()
+}
+```
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Granular Access Control
+```
+import "AccessControl.sol"
+
+contract StableCoin is ERC20, AccessControl {
+    balanceOf()
+    transfer()
+    setFee() onlyRole(feeSetter)
+    emergencyShutdown() onlyRole(auth)
+}
+```
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Access Control Interface
+```
+interface IAccessControl {
+    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
+    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+    
+    function hasRole(bytes32 role, address account) external view returns (bool);
+    function getRoleAdmin(bytes32 role) external view returns (bytes32);
+    function grantRole(bytes32 role, address account) external;
+    function revokeRole(bytes32 role, address account) external;
+    function renounceRole(bytes32 role, address account) external;
+}
+
+bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
+require(hasRole(MINTER_ROLE,msg.sender));
+_setupRole(MINTER_ROLE,msg.sender);
+```
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Granting and Revoking Roles
+```
+contract IAccessControl {
+    function grantRole(bytes32 role, address account) onlyAdmin(role);
+    function revokeRole(bytes32 role, address account) external onlyAdmin(role);
+    function getRoleAdmin(bytes32 role) view returns(bytes32);
+}
+```
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Default Admin
+* Every role initial has a global default admin role
+* No default admin accounts
+```
+function_SetRoleAdmin(bytes32 role) internal;
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Renouncing
+```
+contract IAccessControl {
+    function renounceRole(bytes32 role, address account) external;
+}
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## CaseStudy : TimelockController
+<img src="time-lock-controller.png" width="600">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## CaseStudy : TimelockController
+<img src="tlc.png" width="600">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## TimelockController
+```
+contract TimelockController is AccessControl {
+    bygtes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
+    bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
+    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
+
+    constructor(uint256 minDelay) {
+    _setRoleAdmin(TIMELOCK_ADMIN_ROLE,TIMELOCK_ADMIN_ROLE);
+    _setRoleAdmin(PROPOSER_ROLE,TIMELOCK_ADMIN_ROLE);
+    _setRoleAdmin(EXECUTOR_ROLE,TIMELOCK_ADMIN_ROLE);
+
+    _setRole(TIMELOCK_ADMIN_ROLE,_msgSender());
+    _setRole(TIMELOCK_ADMIN_ROLE,address(this));
+
+    ...
+    }  
+    ...
+}
+```
 </script></section>
     
     
@@ -232,8 +407,10 @@ modifier preventRecursion() {
 ## Rate Limit
 
 * Limit how often a function can happen over time
+
 ```
-uint enabledAt = now; 
+uint enabledAt = now;
+
 modifier enabledEvery(uint t) {   
     if (block.timestamp >= enabledAt) {     
         enabledAt = blok.timestamp + t;     
@@ -755,179 +932,6 @@ contract MappedStructsWithIndex {
 
 <section data-markdown><script type="text/template">
 
-## Ownership
-* Smart contracts act like accounts
-* Ownership is required to limit access to certain account activities
-* It may be desirable to transfer ownership
-* You can have different types of ownership
-* [`Ownable.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/Ownable.sol)
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Role Based Access Control
-* Different classes of users with different rights to do things with your contract
-* Add and remove accounts from having a role
-* Verify if an account has access to do something
-* [`AccessControl.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/AccessControl.sol)
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## Role Based Access Control
-* Track the different roles in your contract
-* Add and remove roles
-* A starting point for more advanced access control
-* [`RBAC.sol`](https://github.com/ConsenSysMesh/real-estate-standards/blob/69266ebf00ff9456da89845968f9680db8bb0ddb/node_modules/openzeppelin-solidity/contracts/ownership/rbac/RBAC.sol)
-* [`ACL.sol`](https://github.com/nayms/contracts/blob/bfa33e8bf733d11289a8c6abce96be683606f69d/contracts/ACL.sol)
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Setting up Access Control with Roles
-* Ownable
-* Granular Access control
-* [`AccessControl.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/access/AccessControl.sol)
-* Case Study : TimelockController 
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Simple access control: Ownable
-
-```
-Contract Ownable {
-    function owner view returns(address);
-    function transferOwnership(Address newOwner) onlyOwner;
-    function renounceOwnership() onlyOwner;
-}
-```
-
-```
-contract NFT is Ownable {
-    ownerOf()
-    transfer()
-    mint() onlyOwner
-    owner()
-}
-```
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Granular Access Control
-```
-import "AccessControl.sol"
-
-contract StableCoin is ERC20, AccessControl {
-    balanceOf()
-    transfer()
-    setFee() onlyRole(feeSetter)
-    emergencyShutdown() onlyRole(auth)
-}
-```
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Access Control Interface
-```
-interface IAccessControl {
-    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
-    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
-    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
-    
-    function hasRole(bytes32 role, address account) external view returns (bool);
-    function getRoleAdmin(bytes32 role) external view returns (bytes32);
-    function grantRole(bytes32 role, address account) external;
-    function revokeRole(bytes32 role, address account) external;
-    function renounceRole(bytes32 role, address account) external;
-}
-
-bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
-require(hasRole(MINTER_ROLE,msg.sender));
-_setupRole(MINTER_ROLE,msg.sender);
-```
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Granting and Revoking Roles
-```
-contract IAccessControl {
-    function grantRole(bytes32 role, address account) onlyAdmin(role);
-    function revokeRole(bytes32 role, address account) external onlyAdmin(role);
-    function getRoleAdmin(bytes32 role) view returns(bytes32);
-}
-```
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Default Admin
-* Every role initial has a global default admin role
-* No default admin accounts
-```
-function_SetRoleAdmin(bytes32 role) internal;
-```
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## Renouncing
-```
-contract IAccessControl {
-    function renounceRole(bytes32 role, address account) external;
-}
-```
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## CaseStudy : TimelockController
-<img src="time-lock-controller.png" width="600">
-
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## CaseStudy : TimelockController
-<img src="tlc.png" width="600">
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## TimelockController
-```
-contract TimelockController is AccessControl {
-    bygtes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
-    bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
-    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
-
-    constructor(uint256 minDelay) {
-    _setRoleAdmin(TIMELOCK_ADMIN_ROLE,TIMELOCK_ADMIN_ROLE);
-    _setRoleAdmin(PROPOSER_ROLE,TIMELOCK_ADMIN_ROLE);
-    _setRoleAdmin(EXECUTOR_ROLE,TIMELOCK_ADMIN_ROLE);
-
-    _setRole(TIMELOCK_ADMIN_ROLE,_msgSender());
-    _setRole(TIMELOCK_ADMIN_ROLE,address(this));
-
-    ...
-    }  
-    ...
-}
-```
-</script></section>
-
-<section data-markdown><script type="text/template">
-
 ## Factory
 * Generate a new smart contract
 * Often used for generating new token contracts
@@ -962,6 +966,16 @@ contract Car {
 }
 ```
 </script></section>
+
+<section data-markdown><script type="text/template">
+
+## Smart Contract Development libraries
+* [OpenZeppelin](https://github.com/openZeppelin/openzeppelin-contracts)
+* [solidstate-solidity](https://github.com/solidstate-network/solidstate-solidity)
+* [solmate](https://github.com/transmissions11/solmate)
+* [Nayms Contract V2](https://github.com/nayms/contracts-v2) [Nayms Contract V3](https://github.com/nayms/contracts-v3)
+</script></section>
+
 
 <section data-markdown><script type="text/template">
 
