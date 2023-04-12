@@ -118,7 +118,7 @@ function transferOwnership(address newOwner) public onlyOwner
 * Can be M of N
 * Owner to set N, M of N to change
 * Danger if several keys are lost
-* [MultiSigWallet](https://github.com/metana-bootcamp/web3-solidity-course/blob/main/notes/008_design_patterns/examples/MultiSigWallet.sol)
+* [multi-sig](https://github.com/metana-bootcamp/web3-solidity-course/blob/main/notes/008_design_patterns/examples/multi-sig)
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -609,8 +609,10 @@ key1 => Value1
 keyn => Valuen
 ```
 ```
-mapping(key_type => value_type)
+mapping(key_type => value_type);
+
 mapping(address => uint) public balances;
+
 balances[msg.sender] = deposit;
 ```
 
@@ -627,9 +629,13 @@ struct Student {
     string name;
 }
 mapping (address => Student) public class;
+
 Student memory newStudent;
+
 newStudent.age = 21;
+
 newStudent.name = “Alice”;
+
 class[msg.sender]=newStudent;
 ```
 </script></section>
@@ -641,6 +647,7 @@ class[msg.sender]=newStudent;
     
 ```
 mapping(address => mapping(uint => bool)) lotterypicks;
+
 lotterypicks[msg.sender][2456738992] = true;
 ```
 </script></section>
@@ -679,10 +686,13 @@ lotterypicks[msg.sender][2456738992] = true;
     
 ```
 uint[] prices;
+
 prices.push(55);
 prices.push(23);
+
 uint[5] prices;
 prices[0] = 55;
+
 uint[5] prices = [uint(55), 23, 137, 67, 2];
 ```
 </script></section>
@@ -697,10 +707,14 @@ struct Student {
     uint age; 
     string name;
 }
-Student[ ] public class;
+
+Student[] public class;
+
 Student memory newStudent;
+
 newStudent.age = 21;
 newStudent.name = “Alice”;
+
 class.push(newStudent);
 ```
 </script></section>
@@ -752,7 +766,8 @@ contract simpleList {
         EntityStruct memory newEntity;    
         newEntity.entityAddress = entityAddress;    
         newEntity.entityData    = entityData;    
-        return entityStructs.push(newEntity)-1;  
+        entityStructs.push(newEntity)
+        return entityStructs.length - 1;  
     }  
     
     function getEntityCount() public constant returns(uint entityCount) {    
@@ -862,7 +877,8 @@ contract arrayWithUniqueIds {
         newEntity.entityAddress = entityAddress;    
         newEntity.entityData = entityData;    
         knownEntity[entityAddress] = true;    
-        return entityStructs.push(newEntity) - 1;  
+        entityStructs.push(newEntity)
+        return  entityStructs.length - 1;  
     }  
     
     function updateEntity(uint rowNumber, address entityAddress, uint entityData) public returns(bool success) {    
@@ -878,19 +894,15 @@ contract arrayWithUniqueIds {
 
 <section data-markdown><script type="text/template">
 
-## Mapped Structs with Index : Strength
-* Random access by unique Id or row number
-* Assurance of Id uniqueness●Enclose arrays, mappings and structs within each "record"
-* List maintains order of declaration●Count the records
-* Enumerate the Ids
-* "Soft" delete an item by setting a boolean
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Mapped Structs with Index : Weaknesses
-* Uncontrolled growth of the list
+## Mapped Structs with Index : Pros & Cons
+* ✅ Random access by unique Id or row number
+* ✅ Assurance of Id uniqueness
+* ✅ Enclose arrays, mappings and structs within each "record"
+* ✅ List maintains order of declaration 
+* ✅ Count the records
+* ✅ Enumerate the Ids
+* ✅ "Soft" delete an item by setting a boolean
+* ❌ Uncontrolled growth of the list
 </script></section>
 
 
@@ -932,39 +944,182 @@ contract MappedStructsWithIndex {
 
 <section data-markdown><script type="text/template">
 
-## Factory
-* Generate a new smart contract
-* Often used for generating new token contracts
-* [`Factory.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/4961a51cc736c7d4aa9bd2e11e4cbbaff73efee9/contracts/proxy/Clones.sol)
+## Freeing up unused data
+* Deleting simple types
+* Deleting arrays
+* Deleting structs
+* Deleting mappings
 </script></section>
 
 <section data-markdown><script type="text/template">
 
-## Factory
+## Deleting simple types
+* For simple types like integers, it does not really matter if your write `delete myInteger` or `myInteger = 0`. 
+* It will have the same effect. 
+* Depending on the context, you may choose one way over another. 
+* Generally, if it is about some `calculations = 0` is easier to read and if it is only about freeing up storage delete will be easier to read.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Deleting arrays
+* always use `delete` for deleting arrays. 
+    * create an array of length 0 for dynamic arrays 
+    * set each item of the array to 0 for static arrays. 
+* `delete myArr[index]` will create a gap. 
+* To avoid the gap and if order of the items is not important 
+``` 
+myArr[index] = myArr[myArr.length - 1]; 
+myArr.pop()
+``` 
+* Pop removes the last element and also implicitly calls `delete` on the removed element.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Deleting structs
+
+* Instead of having to write 
 ```
-contract CarFleet {   
-    address[] fleet;   
+myStructInstance = new MyStruct(0,0,address(0));
+``` 
+* you can just write 
+```
+delete myStructInstance;
+``` 
+* It will clear out each entry of your struct with one exception (next slide)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Deleting mappings
+
+* If you have a mapping in a struct or in your state in general, Solidity cannot delete it, because it does not know the keys for the mapping. 
+* Since the keys are arbitrary and not stored along, the only way to delete structs is to know the key for each stored value. 
+* A value can then be deleted by `delete myMapping[myKey]`.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Factory pattern
+* Deployments of multiple contracts with high gas-efficiency
+* Keep track of all deployed contracts
+* Save gas on multiple contract deployments
+* Quickly produce multiple instances of a smart contract at runtime
+* Dealing with a large number of contracts that all have the same functionalities
+* [clone-factory](https://github.com/metana-bootcamp/web3-solidity-course/blob/main/notes/008_design_patterns/examples/clone-factory)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Factory pattern
+* Generate a new smart contract
+* Often used for generating new token contracts
+    * Simple factory pattern
+    * Cloned factory pattern - [`Clone.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/788d6a129a342d7a23a91ad553479e861845a9b2/contracts/proxy/Clones.sol)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Simple Factory pattern
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+contract Foundation {
+    string public name;
+    address public owner;
+
+    constructor(
+        string memory _name,
+        address _owner
+    ) public {
+        name = _name;
+        owner = _owner;
+    }
     
-    function createChildContract(string make, string model) public payable {      
-        address newCar = new Car(make, model);       
-        fleet.push(newCar);    
-    }   
-    
-    function getDeployedChildContracts() public view returns (address[]) {      
-        return fleet;   
+}
+
+contract FoundationFactory {
+    Foundation[] private _foundations;
+
+    function createFoundation(
+        string memory name
+    ) public {
+        Foundation foundation = new Foundation(
+            name,
+            msg.sender
+        );
+        _foundations.push(foundation);
+    }
+
+    function allFoundations(uint256 limit, uint256 offset)
+        public
+        view
+        returns (Foundation[] memory coll)
+    {
+        return coll;
     }
 }
 
-contract Car {   
-    string public make;   
-    string public model;   
-    
-    function Car(string _make, string _model) public {      
-        make = _make;      
-        model = _model;   
-    }
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Cons of simple factory pattern
+
+* The gas cost for the CREATE opcode is presently 32,000 Gwei. Each time an instance of the Foundation contract is deployed, a gas fee of 32,000 Gwei is charged.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Clone factory pattern
+
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+
+contract FoundationFactory is Ownable2Step, CloneFactory {
+
+  address public implementation;
+
+  event FoundationCreated(address newFoundation);
+
+  constructor(address _implementation) {
+    implementation = _implementation;
+  }
+
+  function setImplementation(address _implementation) public onlyOwner {
+    implementation = _implementation;
+  }
+
+  function createFoundation(string _name) public onlyOwner {
+    address clone = Clones.clone(_implementation);
+    Foundation(clone).init(_name);
+    emit FoundationCreated(clone);
+  }
 }
 ```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Pros and cons
+* ✅ Very cheap deployment
+* ✅ Easily compatible current proxy based factories
+* ✅ Cheaper to call than a "storage-based" proxy
+* ❌ Non upgradeable
+* ❌ More expensive to ccall than a natove contract (+700 gas/call)
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -973,7 +1128,8 @@ contract Car {
 * [OpenZeppelin](https://github.com/openZeppelin/openzeppelin-contracts)
 * [solidstate-solidity](https://github.com/solidstate-network/solidstate-solidity)
 * [solmate](https://github.com/transmissions11/solmate)
-* [Nayms Contract V2](https://github.com/nayms/contracts-v2) [Nayms Contract V3](https://github.com/nayms/contracts-v3)
+* [Nayms Contract V2](https://github.com/nayms/contracts-v2) 
+* [Nayms Contract V3](https://github.com/nayms/contracts-v3)
 </script></section>
 
 
@@ -984,7 +1140,7 @@ contract Car {
 * [OpenZeppelin Access Control](https://docs.openzeppelin.com/contracts/4.x/api/access)
 * [Protect Smart Contracts from Reentrancy attacks](https://medium.com/coinmonks/protect-your-solidity-smart-contracts-from-reentrancy-attacks-9972c3af7c21)
 * [Blockchain Oracle Problem](https://blog.chain.link/what-is-the-blockchain-oracle-problem/)
-* [Nayms Smart Contract](https://github.com/nayms/contracts)
+* [Cheap Contract Deployment Through Clones](https://youtu.be/3Mw-pMmJ7TA)
 * [Smart Contract best practices](https://consensys.github.io/smart-contract-best-practices/)
 * [Strategies for Secure Access Controls](https://youtu.be/GjGzxmWZ5vA)
 </script></section>
