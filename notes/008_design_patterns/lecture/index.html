@@ -733,9 +733,9 @@ class.push(newStudent);
 ## Data Structures
     
 * Simple List Using Array : Strengths
-    * Reliably chronological order
-    * Provides a count
-    * Random access by Row Number (not Id)
+    * ✅ Reliably chronological order
+    * ✅ Provides a count
+    * ✅ Random access by Row Number (not Id)
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -743,10 +743,10 @@ class.push(newStudent);
 ## Data Structures
     
 * Simple List Using Array : Weakness
-    * random access by Id
-    * No assurance of uniqueness
-    * No check for duplicates
-    * Uncontrolled growth of the list
+    * ❌ random access by Id
+    * ❌ No assurance of uniqueness
+    * ❌ No check for duplicates
+    * ❌ Uncontrolled growth of the list
 </script></section>
 
 
@@ -779,20 +779,10 @@ contract simpleList {
 
 <section data-markdown><script type="text/template">
 
-## Data Structures : Strengths
-
-* Random access by unique Id 
-* Assurance of Id Uniqueness
-* Enclose arrays, mappings, structs within each "record"
-</script></section>
-
-<section data-markdown><script type="text/template">
-
-## Data Structures : Mapping with Struct
-
-* Unable to enumerate the keys
-* Unable to count the keys
-* Needs a manual check to distinguish a default from an explicitly "all 0" record
+## Data Structures : Array of Struct with Unique Ids : Strengths
+* ✅ Random access by Row number
+* ✅ Assurance of Id uniqueness
+* ✅ Enclose arrays, mappings and structs with each "record"
 </script></section>
 
 <section data-markdown><script type="text/template">
@@ -836,20 +826,17 @@ contract mappingWithStruct {
 
 <section data-markdown><script type="text/template">
 
-## Data Structures : Array of Struct with Unique Ids : Strengths
-* Random access by Row number
-* Assurance of Id uniqueness
-* Enclose arrays, mappings and structs with each "record"
+## Data Structures : Mapping with Struct
+
+* ✅ Random access by unique Id 
+* ✅ Assurance of Id Uniqueness
+* ✅ Enclose arrays, mappings, structs within each "record"
+* ❌ Unable to enumerate the keys
+* ❌ Unable to count the keys
+* ❌ Needs a manual check to distinguish a default from an explicitly "all 0" record
+* ❌ No random access by Id
+* ❌ Uncontrolled growth of the list
 </script></section>
-
-
-<section data-markdown><script type="text/template">
-
-## Data Structures : Mapping with Struct : Weaknesses
-* No random access by Id
-* Uncontrolled growth of the list
-</script></section>
-
 
 <section data-markdown><script type="text/template">
 
@@ -894,20 +881,6 @@ contract arrayWithUniqueIds {
 
 <section data-markdown><script type="text/template">
 
-## Mapped Structs with Index : Pros & Cons
-* ✅ Random access by unique Id or row number
-* ✅ Assurance of Id uniqueness
-* ✅ Enclose arrays, mappings and structs within each "record"
-* ✅ List maintains order of declaration 
-* ✅ Count the records
-* ✅ Enumerate the Ids
-* ✅ "Soft" delete an item by setting a boolean
-* ❌ Uncontrolled growth of the list
-</script></section>
-
-
-<section data-markdown><script type="text/template">
-
 ## Data Structures
 ```
 contract MappedStructsWithIndex {  
@@ -940,6 +913,19 @@ contract MappedStructsWithIndex {
     }
 }
 ```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Mapped Structs with Index : Pros & Cons
+* ✅ Random access by unique Id or row number
+* ✅ Assurance of Id uniqueness
+* ✅ Enclose arrays, mappings and structs within each "record"
+* ✅ List maintains order of declaration 
+* ✅ Count the records
+* ✅ Enumerate the Ids
+* ✅ "Soft" delete an item by setting a boolean
+* ❌ Uncontrolled growth of the list
 </script></section>
 
 <section data-markdown><script type="text/template">
