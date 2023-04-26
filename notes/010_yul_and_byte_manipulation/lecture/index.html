@@ -580,6 +580,20 @@ itemLoc = mapLocation(mapLoc, 456);
 </textarea></section>
 
 <section data-markdown><textarea data-template>
+### String Storage
+* String storage is same as `bytes1[]`
+* if the data is at most 31 bytes long, the elements are stored in the higher-order bytes (left aligned) and the lowest-order byte stores the value `length * 2`  in hex. 
+ * if string has 4 characters, the `length x 2` is `0x08`, 
+ * if string has 8 characters, `length x 2` is `0x10` and not ~~0x16~~
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### String Storage
+* For byte arrays that store data which is 32 or more bytes long, the main slot `p` stores `length x 2 + 1` in hex and the data is stored as usual in `keccak256(p)`.
+* You can distinguish a short array from a long array by checking if the lowest bit is set: short (not set) and long (set).
+</textarea></section>
+
+<section data-markdown><textarea data-template>
 ### Packed Storage
 ![Storage Layout](./storage.svg "Storage Layout")
 </textarea></section>
