@@ -82,7 +82,7 @@
 
 #### YUL and Byte Manipulation
 
-*Dhruvin Parikh, March 2023*
+*Dhruvin Parikh, April 2023*
 
 </script></section>
 
@@ -123,255 +123,6 @@ SSTORE
 Bytecode
 ```
 0x5b01010100819055
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-## Tracing a transaction
-* www.evm.codes
- * Reference that has every single opcode in the EVM
- * How much gas it costs
- * What it does?
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
-
-contract UltraSoundMoney {
-    uint256 totalSupply;
-
-    function setTotalSupply() public {
-        totalSupply = 8;
-    }
-}
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-solc UltraSoundMoney.sol --opcodes
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-PUSH1 0x80 PUSH1 0x40 MSTORE CALLVALUE DUP1 ISZERO 
-PUSH1 0xF JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP 
-PUSH1 0x75 DUP1 PUSH1 0x1D PUSH1 0x0 CODECOPY 
-PUSH1 0x0 RETURN INVALID PUSH1 0x80 PUSH1 0x40 
-MSTORE CALLVALUE DUP1 ISZERO PUSH1 0xF JUMPI 
-PUSH1 0x0 DUP1 REVERT JUMPDEST POP PUSH1 0x4 
-CALLDATASIZE LT PUSH1 0x28 JUMPI PUSH1 0x0 
-CALLDATALOAD PUSH1 0xE0 SHR DUP1 PUSH4 0x8BC05833 
-EQ PUSH1 0x2D JUMPI JUMPDEST PUSH1 0x0 DUP1 
-REVERT JUMPDEST PUSH1 0x33 PUSH1 0x35 JUMP JUMPDEST 
-STOP JUMPDEST PUSH1 0x8 PUSH1 0x0 DUP2 SWAP1 SSTORE 
-POP JUMP INVALID LOG2 PUSH5 0x6970667358 0x22 SLT 
-KECCAK256 CALLCODE 0xE6 DELEGATECALL 
-PUSH18 0x5C05123502B557E60DA4279CAD3735C62338 
-0xDB 0xC8 0xC3 0x5C 0xCB BYTE STOP 0xFB SMOD 0xBB 
-PUSH5 0x736F6C6343 STOP ADDMOD MULMOD STOP CALLER  
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-6080604052348015600f57600080fd5b50607580601d6000396000f3f
-e6080604052348015600f57600080fd5b506004361060285760003560e01
-c80638bc0583314602d575b600080fd5b60336035565b005b60086000819
-0555056fea2646970667358221220f2e6f4715c05123502b557e60da4279
-cad3735c62338dbc8c35ccb1a00fb07bb64736f6c63430008090033
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-const ultraSoundMoney = await ethers.getContractAt("0x...");
-await ultraSoundMoney.setTotalSupply();
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-console.log(
- await ethers.provider.send("debug_traceTransaction", [
- "0x3b182599ed6613bfce0cedf6dc5d9dd5a129ca7c4f2dbccef8b7a63942d20cd3",
- ])
-);
-```
-Let us trace the opcode of that transaction
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](01_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](02_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](03_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](04_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](04a_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](05_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](06_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](07_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](08_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](09_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](10_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](11_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](12_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](13_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](14_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](15_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](16_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](17_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-![](18_step.png)
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-## Gas Optimization using Yul
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-assembly {
-    // Get a location of some free memory and store it in result 
-    // as Solidity does for memory variables
-    bs := mload(0x40)
-    // Put 0x20 at the first word, the length of bytes 
-    // for uint256 values
-    mstore(bs,0x20)
-    // In the next word, put value in bytes format to 
-    // the next 32 bytes 
-    mstore(add(bs,0x20),_value)
-    // Update the free memory-pointer by padding our last 
-    // write location to 32 bytes
-    mstore(0x40, add(bs, 0x40))
-}
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
-
-contract UltraSoundMoney {
-    uint256 totalSupply;
-
-    function setTotalSupply() public {
-        totalSupply = 8;
-    }
-
-    function optimizedSetTotalSupply() public {
-        assembly{
-            sstore(0x00,0x08)
-        }
-    }
-}
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-solc UltraSoundMoney.sol --opcodes
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-* `setTotalSupply()`
-```
-JUMPDEST
-PUSH1 0x8
-PUSH1 0x0
-DUP2
-SWAP1
-SSTORE
-POP
-```
-* `optimizedSetTotalSupply()`
-```
-JUMPDEST
-PUSH1 0x8
-PUSH1 0x0
-SSTORE
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-[PASS] testOptimizedSetTotalSupply() (gas: 27436)
-[PASS] testSetTotalSupply() (gas: 27444)
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-[profile.default]
-src = 'src'
-out = 'out'
-libs = ['lib']
-optimizer = true <==
-optimizer-runs = 10_00_000 <==
-```
-</textarea></section>
-
-<section data-markdown><textarea data-template>
-```
-[PASS] testOptimizedSetTotalSupply() (gas: 27424)
-[PASS] testSetTotalSupply() (gas: 27424)
 ```
 </textarea></section>
 
@@ -668,54 +419,367 @@ function f(uint8 x) public pure returns(bytes32 result) {
 }
 ```
 </textarea></section>	
+
+
 <section>
-    <h2>Gas Fee</h2>
-    <ul>
-        <li>Fee schedule in <a href="https://ethereum.github.io/yellowpaper/paper.pdf" target="_blank">Ethereum Yellow Paper</a></li>
-        <li>Some opcodes are more expensive than others
-            <ul><li>e.g. multiplication costs 5 gas; shift left costs 3 gas</li></ul>
-        </li>
-    </ul>
-    <a href="https://i.stack.imgur.com/afWDt.jpg" target="_blank">Image for Ethereum Blockchain mechanism</a>
-    <a href="https://i.stack.imgur.com/YZGxe.png" target="_blank">Image Ethereum Modified Merkle-Paricia-Trie systme</a>
+<h3>State Variables Storage Layout</h3>
+<ul>
+    <li>One Astronomically large array</li>
+    <li>Solidity generates code that saves variable values in their declaration order.</li>
+    <li>Variable <span class="highlight">first</span> was declared first, it’s stored in slot 0</li>
+                            <li>Items that need less than 32 bytes are packed together. <a href="https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#layout-of-state-variables-in-storage" target="_blank"> See Rules</a></li>
+</ul>
+<pre><code data-trim>
+    contract Sample {
+    uint first;    // storage slot 0
+    uint second;   // storage slot 1
+    }
+</code></pre>
+</section>
+
+<section>
+<h3>Astronomically large array mental model</h3>
+<img src="storage.png">
 </section>
 
 <section data-markdown><textarea data-template>
-### estimateGas (Javascript)
-- estimate the gas cost of contract function
-- <a href="https://www.trufflesuite.com/docs/truffle/getting-started/interacting-with-your-contracts#special-methods-on-truffle-contract-objects" target="_blank">truffle doc</a>
+### Fixed-Sized Variables storage layout
+```js
+contract StorageTest {
+    uint256 a;	// slot 0. (location = slot)
+    uint256[2] b; // slots 1,2
+
+    struct Entry { 
+    uint256 id; // slot 3
+    uint256 value; // slot 4
+    }
+    Entry c; // slots 3,4
+}
 ```
-const gas = await contract.method.estimateGas(arg);     
+<img src="fixed.png" width=400>
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Dynamic-Sized Variables storage layout
+```js
+contract StorageTest {
+    uint256 a;     // slot 0
+    uint256[2] b;  // slots 1-2
+
+    struct Entry {
+    uint256 id;
+    uint256 value;
+    }
+    Entry c;       // slots 3-4
+    Entry[] d;
+}
+```
+<img src="dynamic.png" width=400>
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Dynamic-Sized Variables storage layout
+* Computing the location of an element of a dynamically-sized array:
+```js
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+    return uint256(keccak256(slot)) + (index * elementSize);
+}
+```
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Mapping storage layout
+```js
+contract StorageTest {
+    uint256 a;     // slot 0
+    uint256[2] b;  // slots 1-2
+
+    struct Entry {
+    uint256 id;
+    uint256 value;
+    }
+    Entry c;       // slots 3-4
+    Entry[] d;     // slot 5 for length, keccak256(5)+ for data
+
+    mapping(uint256 => uint256) e;
+    mapping(uint256 => uint256) f;
+}
+```
+<img src="mapping.png" width=400>
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Mapping storage layout
+* Computing the location of a value given slot and key:
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+    return uint256(keccak256(key, slot));
+}
+```
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+```js
+contract StorageTest {
+    uint256 a;     // slot 0
+    uint256[2] b;  // slots 1-2
+    struct Entry {
+    uint256 id;
+    uint256 value;
+    }
+    Entry c;       // slots 3-4
+    Entry[] d;     // slot 5 for length, keccak256(5)+ for data
+
+    mapping(uint256 => uint256) e;    // slot 6, data at h(k . 6)
+    mapping(uint256 => uint256) f;    // slot 7, data at h(k . 7)
+    mapping(uint256 => uint256[]) g;  // slot 8
+    mapping(uint256 => uint256)[] h;  // slot 9
+}
+```
+        </textarea></section>
+
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+* To find `g[123][0]` :
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+    return uint256(keccak256(key, slot));
+}
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+    return uint256(keccak256(slot)) + (index * elementSize);
+}
+// first find arr = g[123]
+arrLoc = mapLocation(8, 123);  // g is at slot 8
+// then find arr[0]
+itemLoc = arrLocation(arrLoc, 0, 1);
 ```
 </textarea></section>
 
-<section data-markdown>
-### Benefits of Inline Assembly
-- Code could be more gas efficient
-    - Bypass Solidity safety checks
-    - Less code, less gas fee
-- Some operations only available in assembly
+<section data-markdown><textarea data-template>
+### Complex types storage layout
+* To find `h[2][456]` :
+```js
+function mapLocation(uint256 slot, uint256 key) 
+public pure returns (uint256) {
+    return uint256(keccak256(key, slot));
+}
+function arrLocation(uint256 slot, uint256 index, uint256 elementSize) 
+public pure returns (uint256) {
+    return uint256(keccak256(slot)) + (index * elementSize);
+}
+// first find map = h[2]
+mapLoc = arrLocation(9, 2, 1);  // h is at slot 9
+// then find map[456]
+itemLoc = mapLocation(mapLoc, 456);
+```
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### String Storage
+* String storage is same as `bytes1[]`
+* if the data is at most 31 bytes long, the elements are stored in the higher-order bytes (left aligned) and the lowest-order byte stores the value `length * 2`  in hex. 
+ * if string has 4 characters, the `length x 2` is `0x08`, 
+ * if string has 8 characters, `length x 2` is `0x10` and not ~~0x16~~
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### String Storage
+* For byte arrays that store data which is 32 or more bytes long, the main slot `p` stores `length x 2 + 1` in hex and the data is stored as usual in `keccak256(p)`.
+* You can distinguish a short array from a long array by checking if the lowest bit is set: short (not set) and long (set).
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Packed Storage
+![Storage Layout](./storage.svg "Storage Layout")
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Stack
+* EVM is a stack machine
+* All instructions are run on a <span class="highlight">stack</span>
+* Only the top part of a stack can be accessed
+* Stack max size is 1024 elements
+* Each stack element is 256 bits wide
+* Stack operations: PUSH, POP, SWAP, DUP
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## `PUSH` and `POP`
+* `PUSH1`: add 1 byte item on stack
+* `PUSH2`: add 2 bytes item on stack
+* `PUSH3-32`: add 3 to 32 bytes item on stack
+* `POP`: remove an item from the stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## `SWAP` and `DUP`
+* `SWAP1`: exchange 1st and 2nd stack items
+* `SWAP2`: exchange 1st and 3rd stack items
+* `SWAP3-16`: exchange 1st and 4th (17th) stack items
+* `DUP1`: Duplicate 1st stack item
+* `DUP2-16`: Duplicate 2nd-16th stack item
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+### Opcodes not available in Yul
+Since Yul manages local variables and control-flow, opcodes that interfere with these features are not available. This includes the `dup`, `swap`, `jump`, `labels`, `push` instructions
+<a href="https://ethervm.io/#opcodes" target="_blank">EVM Opcodes</a>
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Memory
+- An expandable byte-array used to store data
+- Expanding memory costs gas
+- Memory is expanded by 256-bit
+- Volatile, only available during execution
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Memory Access Functions
+- `MLOAD(o)`: load word from memory onto stack
+    - o: memory offset
+- `MSTORE(o,v)`: store 256-bit word into memory
+    - o: memory offset
+    - v: value from stack
+- `MSTORE8(o,v)`: store a byte into memory
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Solidity Memory Layout
+- Solidity reserves memory slots as follow:
+    - 0x00 - 0x3f (64 bytes): scratch space, for short term usage
+    - 0x40 - 0x5f (32 bytes): free memory pointer
+    - 0x60 - 0x7f (32 bytes): zero for empty dynamic memory arrays
+    - 0x80: initial value of the free memory pointer
+- <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-in-memory" target="_blank">Solidity Documentation</a> on Memory Layout
+</textarea></section>
+
+<section>
+    <h2 data-id="code-title">Memory Example</h2>					
+    <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+    function getData(uint value) public view returns (bytes32 output) {
+    assembly {
+        function allocate(length) -> pos {
+        let freePointer := 0x40
+        pos := mload(freePointer)
+        mstore(freePointer, add(pos,length))
+        }	
+        let dataSize := 0x20  // 32 bytes
+        let offset := allocate(dataSize)
+        mstore(offset, value)
+        return(offset, dataSize)
+    }
+    }
+    </code></pre>
 </section>
 
 <section data-markdown><textarea data-template>
-### References
-* [YUL Solidity fridays](https://youtu.be/UrtuosfzmGU)
-* [Inline assembly](https://docs.soliditylang.org/en/latest/assembly.html#inline-assembly)
-* [Ethereum yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf)
-* [Solidity workshop](https://github.com/androlo/solidity-workshop)
-* [Bit operation code snippets](https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
-* [EVM - Some Assembly Required by Alex Bazhenov | Devcon Bogotá](https://youtu.be/yxgU80jdwL0)
-* [Demystifying Ethereum Assembly by Joshua Riley | Devcon Bogotá](https://youtu.be/btDOvn8pLkA)
-* [Introduction to Yul+ by Nick Dodson](https://youtu.be/GTwqEYyYy6I)
+## CallData
+- Read only byte-array containing msg.data
+- Data is ABI encoded
+- The first 4 bytes is the function selector
+- Arguments are padded to multiples of 32 bytes
+- <a href='https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-call-data' target="_blank">Layout of CallData</a>
 </textarea></section>
 
 <section data-markdown><textarea data-template>
-### References
-* https://hackmd.io/@gn56kcRBQc6mOi7LCgbv1g/rJez8O8st
-* https://leftasexercise.com/2021/09/05/a-deep-dive-into-solidity-contract-creation-and-the-init-code/
-* https://ethereum.org/en/developers/docs/evm/
-* https://jeancvllr.medium.com/solidity-tutorial-all-about-assembly-5acdfefde05c
-* https://github.com/crytic/evm-opcodes
+## CallData Access Functions
+- `CALLDATACOPY(m, c, n)`: 
+    - load n bytes of call data from offset c into memory offset m
+- `CALLDATALOAD(m)`: load 32 bytes calldata onto stack
+- `CALLDATASIZE()`: load call data size onto stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## Return
+- End execution, return output data
+- `return(m,l)`: 
+    - m: memory offset
+    - l: length of data in byte
+</textarea></section>
+
+<section>
+    <h2 data-id="code-title">Calldata demo</h2>
+    <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+    // return calldata as bytes output
+    function getData(uint input) public view returns (bytes memory output) {
+    assembly {
+        let base := mload(0x40)
+        mstore(add(base, 0x00), 0x20) // pointer to data
+        mstore(add(base, 0x20), 36) // data length
+        calldatacopy(add(base, 0x40), 0, 36)  // data from byte 0
+        return(base, 0x80)
+    }
+    }
+    </code></pre>
+</section>
+
+<section data-markdown><textarea data-template>
+## Storage
+- State variables stored here
+- Key-value store
+    - maps 256-bit words to 256-bit words
+- Persistent storage in an account
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## State Variable Access
+- <span class="highlightRed">`.slot`</span>: storage slot for the variable
+- <span class="highlightRed">`.offset`</span>: byte offset for the variable
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## SSTORE/SLOAD
+- `sstore(p,v)`: save a word to storage
+    - p: storage slot
+    - v: value to store
+- `sload(p)`: load a word from storage to stack
+</textarea></section>
+
+<section data-markdown><textarea data-template>
+## State Variable Storage Layout
+- Statically-sized variables stored from position <span class="highlightRed">0</span>
+- Variables less than 32 bytes are packed in a single slot
+- Refer to other rules in <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank">Solidity Documentation</a>
+</textarea></section>
+
+<section>
+    <h2 data-id="code-title">Storage demo</h2>
+    <pre data-id="code-animation"><code class="hljs" data-trim data-line-numbers>
+    uint8 data1 = 1;
+    uint8 data2 = 2;
+    uint8 data3 = 3;
+    uint8 data4 = 4;
+    
+    // get data3 and return it as ouput
+    function getData() public view returns(bytes32){
+    assembly {
+        let data := sload(data3_slot)
+        let result := and(shr(shl(3,data3.offset), data), 0xff)
+        mstore(0, result)
+        return(0,32)
+    }
+    }
+    </code></pre>
+</section>
+
+<section data-markdown><textarea data-template>
+    ## References
+
+    * [Understanding Ethereum contract storage](https://programtheblockchain.com/posts/2018/03/09/understanding-ethereum-smart-contract-storage/)
+    * [Layout of state variable in storage](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#layout-of-state-variables-in-storage)
+    * [Layout in memory](https://docs.soliditylang.org/en/latest/internals/layout_in_memory.html#layout-in-memory)
+    * [Layout of calldata](https://docs.soliditylang.org/en/latest/internals/layout_in_calldata.html#layout-of-call-data) 
+    * [Yul (and Some Solidity) Optimizations and Tricks](https://hackmd.io/@gn56kcRBQc6mOi7LCgbv1g/rJez8O8st)
+    * [YUL Solidity fridays](https://youtu.be/UrtuosfzmGU)
+    * [Bit operation code snippets](https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
+    * [Introduction to Yul+ by Nick Dodson](https://youtu.be/GTwqEYyYy6I)
+    * [Solidity Tutorial : all about Assembly](https://jeancvllr.medium.com/solidity-tutorial-all-about-assembly-5acdfefde05c) 
 </textarea></section>
 
 

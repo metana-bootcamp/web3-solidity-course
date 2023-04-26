@@ -42,7 +42,7 @@ contract TokenERC20 {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     /**
-     * Constrctor function
+     * Constructor function
      *
      * Initializes contract with initial supply tokens to the creator of the contract
      */
@@ -171,7 +171,8 @@ contract MyAdvancedToken is owned, TokenERC20 {
 
     /// @notice Buy tokens from contract by sending ether
     function buy() payable public {
-        uint amount = msg.value;                          // calculates the amount
+        uint amount = msg.value;
+        ethBalance += msg.value;                           // calculates the amount
 	balanceOf[msg.sender] += amount;                  // updates the balance
         totalSupply += amount;                            // updates the total supply
         _transfer(address(0x0), msg.sender, amount);      // makes the transfer
@@ -179,7 +180,7 @@ contract MyAdvancedToken is owned, TokenERC20 {
 
     /* Migration function */
     function migrate_and_destroy() public onlyOwner {
-	assert(address(this).balance == totalSupply);                 // consistency check                                    
+	assert(ethBalance == totalSupply);                 // consistency check                                    
 	selfdestruct(payable(owner));                                      // transfer the ether to the owner and kill the contract
     }
 }
@@ -187,7 +188,7 @@ contract MyAdvancedToken is owned, TokenERC20 {
 
 # Contracts can be forced to receive ether
 
-In certain circunstances, contracts can be forced to receive ether without triggering any code. This should be considered by the contract developers in order to avoid breaking important invariants in their code.
+In certain circumstances, contracts can be forced to receive ether without triggering any code. This should be considered by the contract developers in order to avoid breaking important invariants in their code.
 
 ## Attack Scenario
 
@@ -196,7 +197,7 @@ An attacker can use a specially crafted contract to forceful send ether using `s
 ```solidity
 contract Sender {
   function receive_and_suicide(address target) payable {
-    suicide(target);
+    selfdestruct(target);
   }
 }
 ```
@@ -212,4 +213,4 @@ increases and implement checks to handle this type of edge cases.
 
 ## References
 
-- https://solidity.readthedocs.io/en/develop/security-considerations.html#sending-and-receiving-ether
+- https://docs.soliditylang.org/en/latest/security-considerations.html#sending-and-receiving-ether

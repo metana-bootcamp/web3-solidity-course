@@ -65,7 +65,7 @@
 
 #### NFTs and Marketplaces
 
-*Dhruvin Parikh, November 2022*
+*Dhruvin Parikh, March 2023*
 
 </script></section>
 
@@ -162,10 +162,13 @@
         function setApprovalForAll(address _operator, bool _approved) external;
         function getApproved(uint256 _tokenId) external view returns (address);
         function isApprovedForAll(address _owner, address _operator) external view returns (bool);
-    }
-    interface ERC165 {
-        function supportsInterface(bytes4 interfaceID) external view returns (bool);
-    }
+     }
+
+      /// @dev Note: the ERC-165 identifier for this interface is 0x150b7a02.
+      interface ERC165 {
+        function supportsInterface(bytes4 interfaceID) external 
+        view returns (bool);
+     }
     </code></pre>
 </section>
 
@@ -241,12 +244,38 @@
 <section data-markdown><script type="text/template">
   #### IERC721 : **`transferFrom(from, to, tokenId)`**
   Transfers tokenId token from `from` to `to`.
+
+  * similar to safeTransferFrom() accept the safety check.
 </script></section>
 
 <section data-markdown><script type="text/template">
   #### IERC721 : **`safeTransferFrom(from, to, tokenId, data)`**
   Safely transfers `tokenId` token from `from` to `to`.
   <img src="Image-1.8.png" width=900>
+</script></section>
+
+<section data-markdown><script type="text/template">
+  #### use of `data` in `safeTransferFrom()`
+  * There is no particular use of data in `safeTransferFrom(from,to,tokenId,data)`  
+  * However, the original thought for the same was to use it to pass price to marketplace contract.
+  * Implementations
+   * [ERC721Market.sol](https://github.com/sz-piotr/eth-card-game/blob/master/src/ethereum/contracts/ERC721Market.sol#L20-L31)
+   * [MOckERC721Receiver.sol](https://github.com/venanetwork/prajna/blob/master/contracts/test/mocks/MockERC721Receiver.sol#L44-L57)
+   * [SafeNFT.sol](https://github.com/androolloyd/safe-nft/blob/master/packages/hardhat/contracts/SafeNFT.sol#L62-L67)
+</script></section>
+
+<section data-markdown><script type="text/template">
+* A wallet/broker/auction application MUST implement the wallet interface if it will accept safe transfers.
+```
+interface ERC721TokenReceiver {
+    function onERC721Received(
+      address _operator, 
+      address _from, 
+      uint256 _tokenId, 
+      bytes _data
+      ) external returns(bytes4);
+}
+```
 </script></section>
 
 <section>

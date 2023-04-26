@@ -65,7 +65,7 @@
 
 #### Hardhat unit testing, Mutation testing and Static Analysis
 
-*Dhruvin Parikh, December 2022*
+*Dhruvin Parikh, April 2023*
 
 </script></section>
 
@@ -73,8 +73,11 @@
 
 ## Class Plan 
 
-* Hardhat unit testing 
-* Smart Contract Analysis
+* Unit testing using hardhat
+* [Unit testing using foundry](https://github.com/metana-bootcamp/web3-solidity-course/blob/main/notes/004_testing-analysis/lecture/foundry-unit-testing.md)
+* Static Analysis
+* Dynamic Analysis
+* Mutation testing
 
 </script></section>
 
@@ -133,6 +136,140 @@
 </ul>
 </section>
 
+<section data-markdown><script type="text/template">
+
+## Significance of test 
+
+1. Line coverage
+2. Branch coverage
+3. Fully defined state transitions
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Line coverage
+
+* If a line of code was not executed during the tests, then the line coverage is not 100%. 
+* If a line was never executed, you can’t be sure if it works as expected or will revert. 
+* There is no good reason to not have 100% line coverage in a smart contract. 
+* If you are writing code, it means you expect it to be executed at some point in the future, so why not test it?
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Branch coverage
+
+* Even if every line is executed, it doesn’t mean every variation in smart contract business logic is tested.
+```
+function changeOwner(address newOwner) external {
+	require(msg.sender == owner, "onlyOwner");
+	owner = newOwner;
+}
+```
+* If you test this address by calling it with the owner, you will get 100% line coverage but not 100% branch coverage. 
+* Because, both the require statement and the owner assignment executed, but the case where the require reverted did not get tested.
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### How many branches are there to test in this case?
+
+```
+// @notice anyone can pay off someone else's loan
+// @param debtor the person who's loan the sender is making a payment for
+function payDownLoan(address debtor) external payable {
+	uint256 loanAmount = loanAmounts[debtor];
+	require(loanAmount > 0, "no such loan");
+
+	if (msg.value >= debtAmount {
+		loanAmounts[debtor] = 0;
+		emit LoanFullyRepaid(debtor);
+	} else {
+		emit LoanPayment(debtor, debtAmount, msg.value);
+		loanAmount -= msg.value;
+	}
+
+	if (msg.value > loanAmount) {
+		msg.sender.call{value: msg.value - loanAmount}("");
+	}
+}
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### How many branches are there to test in this case?
+
+```
+// @notice anyone can pay off someone else's loan
+// @param debtor the person who's loan the sender is making a payment for
+function payDownLoan(address debtor) external payable {
+  uint256 loanAmount = loanAmounts[debtor];
+  // 1. The case where the loan is zero
+  require(loanAmount > 0, "no such loan");
+
+  // 2. The case where someone pays exactly the loan size
+  // 3. The case where someone pays more than the loan size
+  if (msg.value >= debtAmount {
+    loanAmounts[debtor] = 0;
+    emit LoanFullyRepaid(debtor);
+  } else { 
+    // 4. The case where someone pays less than the loan size
+    emit LoanPayment(debtor, debtAmount, msg.value);
+    loanAmount -= msg.value;
+  }
+  // 2. The case where someone pays more than the loan size
+  if (msg.value > loanAmount) {
+    msg.sender.call{value: msg.value - loanAmount}("");
+  }
+  // It is possible to get 100% line coverage on this test by sending more 
+  // ether than the loan size and less ether than the loan size. 
+  // This would execute both branches of the if else, and the final if statement 
+  // at the end. But this would not test the else statement where 
+  // the loan is paid off exactly to zero.
+}
+```
+* The more branches your functions has, the exponentially harder it gets to unit test them. The technical word for this is *cylomatic complexity*.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Fully defined state transitions
+
+* a change in storage variables
+* contracts getting deployed or self-destructed
+* ether balances changing
+* events getting emitted, with certain messages
+* transactions reverting, with certain error messages
+<br/><br/>any accidental modifications, no matter how minor, will be caught automatically
+<br/><br/> Which state transiton should be measured in previous example?
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+* the Ether in the contract increases by the same amount the borrower pays back the loan
+* the storage variable tracking the loan size is reduced by the expected amount
+* the revert happens with the expected error message when the sender pays for a non-existent loan
+* the corresponding events and associated messages are emitted
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## To summarize
+
+* If the business logic in your smart contract changes, the tests should fail. 
+* Called “fragile” unit test in other domains. 
+* It can hurt the speed of iterating on the source code. 
+* But Solidity code is meant to be written once and never changed, so this is not a problem for smart contract testing.
+
+</script></section>
+
+
 <section>
 <h2>Solidity code coverage tools</h2>
 <ul>
@@ -163,6 +300,98 @@ function getCurrentTime() internal view virtual override returns (uint256) {
 ```
 </script></section>
 
+<section data-markdown><script type="text/template">
+
+## Internal function testing
+
+* Don’t change the function to become virtual or public to make it easier to extend, you want to test the contract you will actually deploy.
+
+```
+contract InternalFunction {
+
+	function calculateReward(uint256 depositTime) internal 
+  view returns (uint256 reward) {
+		reward = (block.timestamp - depositTime) * REWARD_RATE_PER_SECOND;
+	}
+}
+```
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Internal function testing
+
+* This function gives a linear reward rate for each unit of time that passes by.
+* The fixture (or harness) would look like this:
+
+```
+contract InternalFunctionHarness is InternalFunction {
+
+	function calculateReward(uint256 depositTime) external view 
+  returns (uint256 reward) {
+		reward = super.calculateReward(depositTime);
+	}
+}
+```
+* When you call a parent function that has the same name as the child, use the `super` keyword or the function will call itself and go into infinite recursion. 
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Internal function testing
+
+* Alternatively, you can explicitly label your test function as a harness or fixture as follows
+
+```
+contract InternalFunctionHarness is InternalFunction {
+
+	function calculateReward_HARNESS(uint256 depositTime) external view returns (uint256 reward) {
+		reward = calculateReward(depositTime);
+	}
+}
+
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Internal function testing
+
+* Don’t change the function to be public
+* Don’t override virtual functions
+* What about testing private solidity functions?
+ * There is no way to test private functions in solidity as they are not visible to the child contract.
+ * The distinction between an internal function and a private function doesn’t exist after the contract is compiled. 
+ * Therefore, you can change private functions to be internal with no negative effect on the gas cost.
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+benchmark the following code to see that changing “foo” to be internal does not affect the gas cost.
+
+```
+contract A {
+  // change this to be private
+  function foo() internal pure returns (uint256 f) {
+      f = 2;
+  }
+
+  function bar() internal pure returns (uint256 b) {
+      b = foo();
+  }
+}
+
+contract B is A {
+  // 146 gas: 0.8.7 no optimizer
+  function baz() external pure returns (uint256 b) {
+      b = bar();
+  }
+}
+
+```
+</script></section>
 
 <section data-markdown><script type="text/template">
 
@@ -183,6 +412,7 @@ await mockContract.mock.<nameOfMethod>.withArgs(<arguments>).revertsWithReason(<
 ```
 * https://ethereum-waffle.readthedocs.io/
 </script></section>
+
 
 
 <section data-markdown><script type="text/template">
@@ -303,7 +533,6 @@ await mockContract.mock.<nameOfMethod>.withArgs(<arguments>).revertsWithReason(<
 * code coverage does not actually add many assurances
 * unit test may lack proper assertions.
 </script></section>
-
 
 
 <section data-markdown><script type="text/template">
