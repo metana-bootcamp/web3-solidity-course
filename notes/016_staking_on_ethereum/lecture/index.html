@@ -82,7 +82,7 @@
 
 #### Staking On Ethereum 
 
-*Dhruvin Parikh, March 2023*
+*Dhruvin Parikh, April 2023*
 
 </script></section>
 
@@ -102,6 +102,117 @@
 
 </script></section>
 
+<section data-markdown><script type="text/template">
+
+## Protocol proposer problem
+* Validators run the protocol, but do they run it honestly?
+* System of rewards and penalties ensures compliance, but is it enough?
+![protocol-validator](protocol-validator.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Validators
+* To become a validator, you lock up 32 ETH in the deposit contract
+* After activation, validator is called upon to perform consensus duties:
+ * **Block proposals**: Make a block containing consensus and execution data
+ * **Attestations**: Provide their view of the consensus, finalise blocks
+
+<img src="./validator.png" width="250">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Protocol rewards
+* Protocol specifies rewards and penalties
+* **Rewards**
+ * **Block reward** for block proposal/correct voting
+ * **Transaction fees** from execution payload
+* **Penalties:** Inactivity penalty + Slashing for attributable consensus fault
+
+<img src="./protocol-rewards.png" width="700">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum protocol
+<img src="./protocol1.png" width="400">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum protocol
+<img src="./protocol2.png" width="400">
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Validators as block producers
+* Protocol lets validators-as-block-producers consume resources
+* Protocol constrains supply to guarantee low verification costs
+* Validators produce blocks meeting demand for transactions with supply of resources
+![block-production.png](block-production.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Proposer-agent problem
+* Ethereum protocol entrusts its execution in the hands of validators.
+* Turns out, validators themselves outsource some of their core functions!
+* Let's see how
+![proposer-agent.png](proposer-agent.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Block construction in Proof-of-Work
+* Let searchers bid for bundle inclusion at top-of-block
+* Auction between block proposer and searchers
+![pow.png](pow.png)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Block construction in Proof-of-Stake
+* In PoS, auction for top-of-block doesn’t work
+* Trust model is different with solo validators...
+* Idea: **Validators** receive full blocks from builders, builders bid for inclusion Searchers
+![pos.png](pos.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Block building in PoS
+![block-building.png](block-building.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum protocol
+![ethereum-protocol.png](ethereum-protocol.png)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+### Risks of outsourcing: Censorship resistance
+
+* Ethereum protocol: Include any and all transaction which pays the fee
+* Protocol-Proposer problem: Individual proposers may censor transactions
+* Large decentralisation of the validator set ⇒ Someone includes!
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+### Risks of outsourcing: Censorship resistance
+
+* Proposer-Builder problem: Builders may censor individual transactions,
+despite proposer’s preferences ⇒ Agency cost!
+* Solution: Proposers require inclusion of some transaction list by their builders
+
+</script></section>
 
 <section data-markdown><script type="text/template">
 
@@ -155,10 +266,81 @@
 
 <section data-markdown><script type="text/template">
 
+## Pooled staking
+
+* For users who do not feel comfortable staking 32 ETH.
+* Many of these options include what is known as 'liquid staking' which involves an ERC-20 liquidity token that represents your staked ETH.
+* Liquid staking is as simple as a token swap. 
+ * Users can hold their assets in their own wallet.
+* Pooled staking is not native to the Ethereum network. Third parties are building these solutions, and they carry their own risks.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Liquid staking
+
+* Validators are no longer principals, but agents of a set of tokenholders/depositors
+* Lido, Rocketpool, diva
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Restaking staking
+
+* Validators may submit themselves to additional slashing conditions, in order to receive extra yield, e.g., secure more systems, taking second, third, fourth... mortgage on your PoS stake
+![eigen.png](eigen.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Rollups
+
+* Secured by L1, since they pay for data availability to the protocol
+* They also require sequencers / builders to make their blocks
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum protocol
+
+![ethereum-mev.png](ethereum-mev.png)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Centralized exchanges
+
+* If you are not yet comfortable holding ETH in your own wallet. CEX can be a fallback to allow you to earn some yield on your ETH holdings with minimal oversight or effort.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Centralized exchanges trade-offs
+
+* centralized providers consolidate large pools of ETH to run large numbers of validators. This can be dangerous for the network and its users as it creates a large centralized target and point of failure, making the network more vulnerable to attack or bugs.
+
+<br/>[Ethereum wallets](https://ethereum.org/en/wallets/find-wallet/)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
 ## More Readings
 
 * [Evaluating Staking Services](https://www.attestant.io/posts/evaluating-staking-services/)
 * [Staking withdrawals](https://ethereum.org/en/staking/withdrawals/)
+* [Ethereum Staking Knowledge Base](https://kb.beaconcha.in)
+* [What is Rocket Pool](https://pintu.co.id/en/academy/post/what-is-rocket-pool)
+* [staking withdrawals](https://ethereum.org/en/staking/withdrawals/)
+* [staking withdrawals example](https://goerli.etherscan.io/address/0xea2B90Cd0443eAC26C25c5243842aB68449579Be#withdrawals)
+* [Gasper](https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/gasper/)
+* [eth2 quick update no. 19 : Contract deployment, Genesis deposits, Bootstrap consensus](https://blog.ethereum.org/2020/11/04/eth2-quick-update-no-19)
+* [The Genesis of a Beacon Chain](https://hackmd.io/@benjaminion/genesis)
+* [The Future of MEV is SUAVE](https://writings.flashbots.net/the-future-of-mev-is-suave/)
 </script></section>
 
 
