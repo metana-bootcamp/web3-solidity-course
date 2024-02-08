@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Ethereum PoS </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js/css/print/pdf.css' : '../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Ethereum : Proof Of Stake 
+
+*Dhruvin Parikh, February 2024*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Lesson Topics
+
+* The Genesis Event
+* Ethereum 2.0 Keys
+* Deposit Process
+* Rewards and Penalties
+* Attestation
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## The genesis event : keywords
+
+* [Deposit contract](https://etherscan.io/address/0x00000000219ab540356cbb839cbe05303d7705fa#code)
+* `Seconds_Per_Eth1_Block` = 14 seconds
+* `Eth1_Follow_Distance` = 2048 blocks * 14 seconds
+* `Min_Genesis_Time` = 1606824000 (12:00:00 pm UTC | Tuesday, December 1, 2020)
+* `Min_Genesis_Active_Validator_Count` = 16,384
+* `Genesis_Delay` = 7 days  
+* [Ethereum 2.0 Beacon-chain](https://kb.beaconcha.in/ethereum-staking/glossary#beacon-chain)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## The genesis event
+
+* There are two conditions that have to get triggered to get the Ethereum 2.0 chain started!
+  * The threshold of 16,384 validators needs to be hit
+  * The  ETH1 block (=Trigger block) which determines the genesis time for ETH2 cannot be earlier than  min_genesis_time.
+
+```
+Trigger ETH1 block = min_genesis_time - genesis_delay
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Genesis Event : Scenario 1
+
+![](./scenario-1.webp)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Genesis Event : Scenario 2
+
+![](./scenario-2.png)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum Staking Keys
+
+* Both of these keys (ETH 1.0 and ETH 2.0) are based on the same idea and use elliptic-curve cryptography to create keys.
+* However, Ethereum 2.0 has additional functionality, and its keys require different parameters when creating them, and use the Boneh-Lynn-Shacham (=BLS) signature scheme
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum Staking keys overview
+
+<img src="./staking-keys-overview.webp" width="275">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ethereum 2.0 keys
+
+* Compared to Ethereum 1.0, where users only have a *single private key* to access their funds, Ethereum 2.0 offers two different keys. 
+    * Validator private key
+    * Withdrawal private key
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Validator private key
+
+* Validator Private Key
+  * actively sign on-chain (ETH2) operations such as block proposals and attestations. Therefore these keys have to be held in a hot wallet.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## If Validator Private key stolen...
+
+* Get the validator slashed by:
+  * Being a proposer and sign two different beacon blocks for the same slot
+  * Being an attester and sign an attestation that "surrounds" another one.
+  * Being an attester and sign two different attestations having the same target. 
+* Force a voluntary exit, which stops the validator from "staking", and grants access to its ETH balance to the withdrawal key owner.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Validator Public key in deposit data
+* The validator public key is included in the deposit data which allows ETH2 to identify the validator.
+
+<img src="./staking-keys-public-overview.webp" width="300">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Withdrawal key overview
+
+<img src="./withdrawal-keys-overview.webp" width="400">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Withdrawal Key
+
+* The withdrawal key is required to move the validator balance which made possible after shanghai upgrade. 
+* Just like the validator keys, the withdrawal keys also consist of two components:
+ * Withdrawal private key
+ * Withdrawal public key
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Withdrawal Key security
+
+* Losing this key will lose access to the validator balance. However, the validator can still sign attestations and blocks since these actions require the validator private key, but there is little to no incentive to do so if the keys are lost.
+* To withdraw, the validator status needs to be "exited".
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Multiple validators from same wallet
+
+<img src="./multiple-validators.webp" width="550">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## BIP 44 HD Path
+
+* "Old ETH 1.0" example:
+  * `m/44'/60'/0'/0`
+
+* Path structure 
+<br/> `m / purpose' / coin_type' / account' / change / address_index`
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## ETH 2.0 Mnemonics overview
+
+<img src="./validator-mnemonic-overview.webp" width="750">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Deposit Process
+
+![](./deposit-process.webp)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Deposit Status
+
+* The Ethereum 2.0 chain only considers transactions which have been in the deposit contract for at least 2048 Ethereum 1.0 blocks to ensure they never end up in a reorged block. (=ETH1_FOLLOW_DISTANCE)
+* In addition to the 2048 Ethereum 1.0 blocks, 64 Ethereum 2.0 Epochs ****must be**** awaited before the beacon-chain recognises the deposit. During these 64 Epochs, validators vote on newly received deposits.
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Slots
+
+* 32 Slots = 1 epoch. (1 slot = 12 seconds)
+
+![](./slot.png)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Epoch
+
+* 1 epoch = 32 slots
+* Used in measuring delay during validator queue and finality
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Epoch and Slots
+
+* 2048 blocks = 2048 x 12 seconds = 24,576 seconds = 409.6 minutes = ~6.82 hours
+* 64 Epochs = 64 x 6.4 minutes = 409.6 minutes = ~6.82 hours
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Validator Status
+
+* Deposited
+* Pending
+* Active (offline and online)
+* Exiting (offline and online)
+* Slashing (offline and online)
+* Slashed
+* Exited
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Rewards
+
+* Attestation Reward
+* Block Rewards
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Attestation Rewards
+
+* Every Epoch (~6.4 minutes) a validator proposes an attestation (vote) to the network.
+* This vote consists of the following segments:
+* Committee
+* Validator Index
+* Finality vote
+* Signature
+* Chain head vote (vote on what the validator believes is the head of the chain) 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Aggregated Attestation 
+
+* Each block one or more committees are chosen to attest. 
+* A committee has a minimum of 128 validators, of which 16 are randomly selected to become an aggregator
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Attestation Inclusion life cycle
+
+<img src="./attestion-inclusion-lifecycle.png" width="800">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Attestation Inclusion life cycle
+
+* Generation
+* Propagation
+* Aggregation
+* Propagation
+* Inclusion
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Attestation Rewards
+
+![](./attestation-properties.webp)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Block Rewards
+
+* Each included attestation in a block will be rewarded (if it is the first time that is included in a block) with base_reward/8 where 8 is the Proposer_Reward_Quotient 
+
+* There is no penalty for not proposing a block.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Whistleblower rewards
+
+* A block proposer which includes slashing will be rewarded with the `slashed_validators_effective_balance / 512` where 512 is the `Whistleblower_reward_quotient`
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Readings
+
+* [Beaconchain Knowledgebase](https://kb.beaconcha.in/)
+* All ET2.0 related [posts](https://www.attestant.io/posts/) at attestant.io
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: '../../../lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          // { src: '../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
