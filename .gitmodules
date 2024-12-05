@@ -9,3 +9,11 @@
 [submodule "notes/006_security-and-audit/demo/hacks/read-only-reentrancy/lib/forge-std"]
 	path = notes/006_security-and-audit/demo/hacks/read-only-reentrancy/lib/forge-std
 	url = git@github.com:foundry-rs/forge-std
+
+[submodule "workshops/004_uniswap_v4/loyalty-points-hook"]
+	path = workshops/004_uniswap_v4/loyalty-points-hook
+	url = git@github.com:metana-bootcamp/loyalty-points-hook.git
+
+[submodule "workshops/004_uniswap_v4/take-profit-limit-order-hook"]
+	path = workshops/004_uniswap_v4/take-profit-limit-order-hook
+	url = git@github.com:metana-bootcamp/take-profit-limit-order-hook.git
