@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> UniswapV4 Maths </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Uniswap Concentrated Liquidity Math and Token Pricing
+
+*Dhruvin Parikh, December 2024*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## `$WHOAMI`
+
+* DeFi developer and Web3.0 Instructor.
+* Currently,
+    * Sr. Blockchain Engineer at frax.finance
+    * Blockchain Instructor at York University
+* Previously,  
+    * VP Engineering at $DINERO protocol
+    * CTO and lead Blockchain Developer at $OPTY fi
+    * Adjunct Professor at George Brown College
+
+</script></section>
+
+
+<section>
+    <h3>Discrete Pricing Curves</h3>
+    <div class="left" style="margin-right: 1px;">
+        <img src="uniswapv2-curve.png" >
+    </div>
+    <div class="right" style="margin-left: 1px;">
+        <img src="uniswapv3-curve.png" >
+    </div>
+</section>
+
+
+<section data-markdown><script type="text/template">
+
+## V2 & V3 Conentrated liquidity Spread
+
+<img src="uniswapv2-spread.png">
+
+<img src="uniswapv3-spread.png">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## UniswapV3 ETH/USDC Pool
+
+<img src="uniswapv3-eth-usdc-pool.png">
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Ticks
+
+<img src="ticks.png" width="800">
+
+* Ticks break up the continuous finite price curve into a curve with evenly spaced discrete points.
+
+* Each discrete point represents a specific price at which trades can occur.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Current price at tick 1
+
+<img src="ticks-1.png" width="550">
+
+* The gap between two adjacent ticks - for example, from 1 to 2, or from 1 to 0 - is the smallest possible price movement possible for these tokens relative to each other.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Tick Spacing
+
+<img src="ticks-2.png" width="750">
+
+* The gap between two adjacent ticks - called tick spacing - is the smallest relative price movement possible for a given pair of assets in a pool.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Ticks <> Prices
+
+<img src="tick-price.png" width="750">
+
+* 1.0001 was chosen because of the fact that the number implies:
+  * For each tick, the relative price moves by 0.01%.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Price at Tick = 0
+
+```
+p(i) = 1.0001 ^ i
+
+i = 0
+
+=> p(i) = 1.0001 ^ 0
+		= 1
+```
+* This implies that 1 unit of Token A = 1 unit of Token B exactly.
+* So if the tick is zero, the two tokens trade exactly 1:1 right now.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Price at Tick = 10
+
+```
+p(i) = 1.0001 ^ i
+
+i = 10
+
+=> p(i) = 1.0001 ^ 10
+		= 1.0010004501
+```
+* This implies that 1 unit of Token A = 1.0010004501 units of Token B
+* So we get slightly more than 1 unit of Token B for each unit of Token A.
+* So a positive tick value means that Token A is worth more than Token B per-unit.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+* In a specific pool, the current tick is -23421. What is the relative price of Token 0 to Token 1?
+
+  * 1 Token0 = 0.0961 Token1
+  * 0.096 Token 0 = 1 Token 1
+  * 1 Token0 = 0.961 Token1
+  * 1 Token0 = 10.401 Token1
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+* In a specific pool, the current tick is -23421. What is the relative price of Token 0 to Token 1?
+
+    * 1 Token0 = 0.0961 Token1
+    * **0.096 Token 0 = 1 Token 1**
+    * 1 Token0 = 0.961 Token1
+    * 1 Token0 = 10.401 Token1
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Recap
+
+* Ticks are discrete points on the finite pricing curve, with each point representing a specific relative price at which a trade can happen. 
+* Importantly, trades can only happen at these tick values.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Recap
+
+* The tick spacing - gap between two adjacent ticks - is the smallest possible relative price movement in a given pool. In our above examples we have used a tick spacing of 1, however certain pools may have higher tick spacing than that.
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Recap
+
+* Converting ticks to relative prices by raising to powers of 1.0001 has a nice property that with each singular tick unit the relative price movement is one basis point (or 0.01%).
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Facts
+
+* Since the curve is finite, and that the minimum tick spacing you can have is 1 (given ticks must be integers), there is actually a enforced value of the global `MIN_TICK` and `MAX_TICK` that can possibly exist.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Facts
+
+
+* Uniswap v4 stores all tick values in an `int24` data type 
+  * Has the range of [-8,388,608, 8,388,607]. 
+  * The actual enforced range is [-887,272, 887,272]
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+* If the tick min/max bound was not additionally restricted and was only enforced by the choice of the `int24` data type - what is a possible reason for why a pool could not conduct a swap if tick was actually at the maximum bound?
+  * The amount of output tokens is too high - to the point that it is not possible for normal ERC-20 contracts to have that much total supply
+  * The math is not mathing anymore at that point
+  * The computations involved will break the EVM's gas limit
+
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+* If the tick min/max bound was not additionally restricted and was only enforced by the choice of the `int24` data type - what is a possible reason for why a pool could not conduct a swap if tick was actually at the maximum bound?
+    * **The amount of output tokens is too high - to the point that it is not possible for normal ERC-20 contracts to have that much total supply**
+    * The math is not mathing anymore at that point
+    * The computations involved will break the EVM's gas limit
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ticks are not enough
+
+* Given a price range, the current price P, and an amount x of asset X - how much of asset Y is required to add liquidity to an X/Y pool to cover the desired price range?
+  * A user has x = 2 ETH. They want to create a liquidity position in an ETH/USDC pool. The current price of ETH is P = 2000 USDC. They want to add liquidity in the range of P_a = 1500 to P_b = 2500 USDC. How much USDC do they need?
+
+Refer : [UniswapV3 liquidity Math](https://atiselsts.github.io/pdfs/uniswap-v3-liquidity-math.pdf)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Solve Y
+
+<img src="calc-liquidity.png">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Q64.96 Numbers
+
+* Q64.96 numbers are a way of representing rational numbers that uses 64 bits to represent the integer part, and 96 bits to represent the fractional part of the given number.
+* A number can be converted between its decimal notation and its Q Notation with a fairly simple equation:
+
+```
+Q_n = D_n * (2^k) where k = 96
+```
+[TickMath](https://github.com/Uniswap/v4-core/blob/main/src/libraries/TickMath.sol)
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+* What is the Q Notation value for the Sqrt(P) in a pool where the current tick is 100?
+  * ~7.962 * 1028
+  * ~7.73 * 1020
+  * ~4.12 * 1054
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+* What is the Q Notation value for the Sqrt(P) in a pool where the current tick is 100?
+    * ~7.962 * 1028
+    * ~7.73 * 1020
+    * ~4.12 * 1054
+
+So why have we been talking about Ticks, Square Root Prices, and Q Notation all along?
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## On-chain orderbook
+
+```
+struct SwapParams {
+	int24 tickSpacing;
+	bool zeroForOne;
+	int256 amountSpecified;
+
+	uint160 sqrtPriceLimitX96;
+}
+```
+* The price at which their order should be fulfilled
+* How much slippage they're willing to accept
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+
+## Position rebalance hook
+
+* How much liquidity is available in a given price range?
+* How much of y is needed for a given amount of x?
+* For these as well, you will be dealing with a combination of Q64.96 numbers, ticks, and P values - and need to be able to convert between the different representations.
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: '../../../lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          // { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
