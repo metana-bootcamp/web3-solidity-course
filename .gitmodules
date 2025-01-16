@@ -17,3 +17,6 @@
 [submodule "workshops/004_uniswap_v4/take-profit-limit-order-hook"]
 	path = workshops/004_uniswap_v4/take-profit-limit-order-hook
 	url = git@github.com:metana-bootcamp/take-profit-limit-order-hook.git
+[submodule "workshops/004_uniswap_v4/gas-price-hook"]
+	path = workshops/004_uniswap_v4/gas-price-hook
+	url = git@github.com:metana-bootcamp/gas-price-hook.git
