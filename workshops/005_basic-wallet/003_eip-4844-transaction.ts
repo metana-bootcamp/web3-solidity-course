@@ -1,0 +1,2 @@
+// BLOB_TX_TYPE	Bytes1(0x03)
+// keccak256(BLOB_TX_TYPE || rlp([chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit, to, value, data, access_list, max_fee_per_blob_gas, blob_versioned_hashes]))
