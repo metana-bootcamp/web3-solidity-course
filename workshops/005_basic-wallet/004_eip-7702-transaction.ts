@@ -8,7 +8,7 @@ import { bigIntToUnpaddedBytes, bytesToBigInt, bytesToHex, bytesToUnprefixedHex,
 import { secp256k1 } from "@noble/curves/secp256k1"
 import { intToBytes, toBytes, unpadBytes } from "./bytes-utils";
 import { RLP } from "@ethereumjs/rlp"
-import { concatBytes, hexToBytes, setLengthLeft } from '@ethereumjs/util'
+import { concatBytes, hexToBytes, PrefixedHexString, setLengthLeft } from '@ethereumjs/util'
 
 dotenv.config({ path: "./.env" });
 
@@ -50,7 +50,7 @@ async function main() {
     const executorPrivateKey = process.env.EXECUTOR_PRIVATE_KEY as string
     const txSignerPrivateKey = process.env.TX_SIGNER_PRIVATE_KEY as string
     const executorAddress = process.env.EXECUTOR_ADDRESS
-    const txSignerAddress = process.env.TX_SIGNER_ADDRESS
+    const txSignerAddress = process.env.TX_SIGNER_ADDRESS as PrefixedHexString
     const helloWorld = "0x978bdF11c8CE071d051025060d96DA8A70749B1D"; // holesky
     // const erc20 = "0x7873a126cD062e159967b003036F3FDc4dcb8Aaf" // holesky
     // const erc20 = "0x5A18f3Ccc309F769b671c9b5246c72FBA14f4b99" // sepolia
