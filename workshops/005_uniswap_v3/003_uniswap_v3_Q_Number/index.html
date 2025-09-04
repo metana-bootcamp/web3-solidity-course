@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Q Number Format </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Uniswap V3
+
+*Dhruvin Parikh, Aug 2025*
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Q Number Format
+
+* Q number format is a notation for describing binary fixed-point numbers.
+
+* Design pattern in Solidity for storing fractional values, since the language does not support floating point numbers. 
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ether decimals vs Q Numbers (1)
+
+* Ether decimals : “One” Ether is actually 10^18 wei. Since we cannot store “0.5” in Solidity, we instead store 0.5 * 10^18 = 5 * 10^17
+or 500000000000000000. Essentially, multiplies by 0.5 so that the fraction gets “preserved” as an integer. This is not a perfect solution, however, since it cannot hold values smaller than 10^-18. However, 10^18 is good enough for most applications, and contracts can use a larger number if more precision is needed.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Ether decimals vs Q Numbers (2)
+
+* Q number : multiplies the fraction by a power of 2 instead of a power of 10 because multiplying (and dividing) by powers of 2 is more gas efficient in the EVM, since multiplying or dividing by powers of two can be done using bitshift operations. For example, x << n is equivalent to x * 2**n and x >> n is equivalent to x / 2**n
+
+</script></section>
+
+
+  <section>
+    <h2>Q Number Notation</h2>
+    A Q number is written in the form Qm.n where n is the power of 2 used to multiply the number by and m is the unsigned integer size of the integer portion
+    
+</section>
+
+<section>
+    <h2>Q1.1</h2>
+
+    \[
+\underbrace{1}_{\text{integer portion}} \quad
+\underbrace{0}_{\text{fractional portion}}
+\]
+
+</section>
+
+<section>
+    <h2>Q8.4</h2>
+
+    \[
+\underbrace{00000001}_{\text{whole number portion}} \quad
+\underbrace{0000}_{\text{fractional portion}}
+\]
+
+</section>
+
+<section>
+    <h2>Q4.8</h2>
+
+\[
+\underbrace{0001}_{\text{whole number portion}} \quad
+\underbrace{00000000}_{\text{fractional portion}}
+\]
+</section>
+
+<section data-markdown><script type="text/template">
+
+## The value “1” as a fixed point number
+
+* for a Q number, “one” is the 1 multiplied by 2^m
+where m is the number of bits to store the fraction. So 1 in Q64.96 is 1 x 2^96
+or 1 << 96. “One” in Q128.128 is 1 x 2^128 or 1 << 128. “One” in Q64.128 is also 1 << 128 because we only care about the number of fractional bits.
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Using Q numbers in Solidity
+
+The number of bits in a Qm.n number must be m + n bits large. Therefore:
+
+* A Q64.64 number must at least use a uint128 (128 = 64 + 64)
+* A Q64.96 number must at least use a uint160 (160 = 64 + 96)
+* A Q128.128 number must use a uint256
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## possible values of a Q1.1 number
+
+| Bits | “Under the hood” value | Float value (“under the hood” ÷ 2¹) |
+|------|-------------------------|-------------------------------------|
+| 0 0  | 0                       | 0.0                                 |
+| 0 1  | 1                       | 0.5                                 |
+| 1 0  | 2                       | 1.0                                 |
+| 1 1  | 3                       | 1.5                                 |
+
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## possible values of a Q1.2 number
+
+| Bits  | “Under the hood” value | Float value (“under the hood” ÷ 2²) |
+|-------|-------------------------|-------------------------------------|
+| 0 00  | 0                       | 0.00                                |
+| 0 01  | 1                       | 0.25 (1/4)                          |
+| 0 10  | 2                       | 0.50 (2/4)                          |
+| 0 11  | 3                       | 0.75 (3/4)                          |
+| 1 00  | 4                       | 1.00 (4/4)                          |
+| 1 01  | 5                       | 1.25 (5/4)                          |
+| 1 10  | 6                       | 1.50 (6/4)                          |
+| 1 11  | 7                       | 1.75 (7/4)                          |
+
+
+</script></section>
+
+<section>
+    <h2>bits to the right of the decimal represent fractional powers of two:</h2>
+\[
+\begin{array}{ccccccccc}
+\cdots & 1 & 1 & 1 & 1 & . & 1 & 1 & 1 & 1 & \cdots \\
+\cdots & 8 & 4 & 2 & 1 & . & \frac{1}{2} & \frac{1}{4} & \frac{1}{8} & \frac{1}{16} & \cdots
+\end{array}
+\]
+</section>
+
+<section>
+    <h2>Fixed-Point Demo</h2>
+    <iframe 
+      src="fixed-point-demo.html" 
+      width="100%" 
+      height="500px" 
+      style="border: none;">
+    </iframe>
+  </section>
+
+
+<section data-markdown><script type="text/template">
+
+## Converting an integer to a Q number
+
+<video autoplay muted loop>
+    <source src="./IntegerToQ44c.mp4" type="video/mp4">
+</video>
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Converting an Q number to an integer
+
+<video autoplay muted loop>
+    <source src="./Q44ToInteger.mp4" type="video/mp4">
+</video>
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Example : Divide 5 by 2
+
+```
+function divToQ64x64(uint64 x, uint64 y) public pure returns (uint128) {
+  // convert x (a uint64 integer)
+  // to a Q64.64 fixed-point number by left-shifting 64 bits.
+  uint128 x64_64 = x << 64;
+
+  // divide by y
+  return x64_64 / y;
+}
+
+divToQ64x64(5, 2); // returns 46116860184273879040
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Example : Multiply 5 by 0.5
+
+```
+function mulU64x64(uint128 x, uint128 y) public pure returns (uint128) {
+  // note - Solidity performs multiplication using uint128 unless
+  // explicitly upcasted. This could overflow and revert. 
+  uint256 temp = uint256(x) * uint256(y);
+  return uint128(temp >> 64);
+}
+
+mulU64x64(5 * 2**64, 2**64 / 2) // returns 46116860184273879040
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Example : Multiply 5 by 0.5, but 5 is an integer instead of a fixed point
+
+```
+function mulUint64ByQ64x64(uint64 x, uint128 y) public pure returns (uint128) {
+
+  // convert uint64 to fixed point
+  uint128 x_fp = uint128(x) << 64;
+
+  uint256 temp = uint256(x_fp) * uint256(y);
+  return uint128(temp >> 64);
+}
+
+mulUint64ByQ64x64(5, 2**64 / 2) // returns 46116860184273879040
+
+function mulUint64ByQ64x64(uint64 x, uint128 y) public pure returns (uint128) {
+
+  return uint128(uint256(x) * uint256(y));
+}
+
+mulUint64ByQ64x64(5, 2**64 / 2) // returns 46116860184273879040
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Dividing Q Numbers
+
+```
+function divQ64x64ByQ64x64(uint128 x, uint128 y) public pure returns (uint128) {
+
+  return uint128(uint256(x) << 64 / uint256(y));
+}
+
+divQ64x64ByQ64x64(5, 2**64 / 2) // returns 46116860184273879040
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: '../../../lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>

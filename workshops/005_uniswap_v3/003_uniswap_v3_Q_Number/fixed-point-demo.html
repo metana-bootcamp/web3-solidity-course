@@ -1,0 +1,135 @@
+<html><head>
+    <title>Fixed Point Number Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .result {
+            font-family: monospace;
+            font-size: 1.4em;
+            margin: 20px 0;
+            display: flex;
+            align-items: start;
+        }
+
+        input {
+            padding: 8px;
+            font-size: 1.2em;
+            width: 140px;
+        }
+
+        label {
+            display: inline-block;
+            width: 220px;
+        }
+
+        .warning {
+            color: #ff0000;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .binary-display {
+            display: inline-block;
+            font-family: monospace;
+        }
+
+        .binary-bits {
+            font-size: 1.4em;
+            letter-spacing: 2px;
+        }
+
+        .bit-labels {
+            display: flex;
+            font-size: 1em;
+            color: #666;
+            margin-top: 8px;
+            padding-left: 4px;
+            /* Fine-tune overall alignment */
+        }
+
+        .bit-label-left {
+            width: 85px;
+            text-align: left;
+        }
+
+        .bit-label-right {
+            text-align: left;
+            margin-left: 0px;
+            /* Changed from 34px to align with the second group of bits */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Q4.4 Fixed Point Number Demonstration</h2>
+        <div class="input-group">
+            <label>Enter decimal number:</label>
+            <input type="number" id="decimalInput" step="0.0625" value="1.0">
+        </div>
+
+        <div class="result">
+            <label>Fixed point (×2⁴):</label>
+            <span id="fixedPointResult">27</span>
+        </div>
+
+        <div class="result">
+            <label>Fixed point binary:</label>
+            <div class="binary-display">
+                <div class="binary-bits" id="binaryResult">0001 1011</div>
+                <div class="bit-labels">
+                    <div class="bit-label-left">Whole number bits</div>
+                    <div class="bit-label-right">Fractional bits</div>
+                </div>
+            </div>
+        </div>
+        <div id="warning" class="warning" style="display: none;">Number too large! Maximum value is 15.9375</div>
+    </div>
+    <script>
+        function updateResults() {
+            const input = parseFloat(document.getElementById('decimalInput').value) || 0;
+            const fixedPoint = Math.floor(input * Math.pow(2, 4));
+
+            // Ensure the number fits in 8 bits
+            const clampedNumber = Math.max(0, Math.min(fixedPoint, 255));
+
+            // Get 8-bit binary string and add space after first 4 bits
+            const binaryString = clampedNumber.toString(2).padStart(8, '0');
+            const formattedBinary = binaryString.slice(0, 4) + ' ' + binaryString.slice(4);
+
+            document.getElementById('fixedPointResult').textContent = clampedNumber;
+            document.getElementById('binaryResult').textContent = formattedBinary;
+
+            // Show or hide warning based on input value
+            const warning = document.getElementById('warning');
+            if (input > 15.9375) {  // 255/16 = 15.9375 is the maximum value we can represent
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+        document.getElementById('decimalInput').addEventListener('input', updateResults);
+        updateResults(); // Initial calculation
+    </script>
+
+
+
+</body></html>
