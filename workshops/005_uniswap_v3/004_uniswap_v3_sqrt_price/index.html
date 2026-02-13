@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title> Square Root Price in Uniswap V3 </title>
+
+    <meta name="author" content="Dhruvin Parikh">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="../../../reveal.js/css/theme/moon.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="../../../reveal.js/lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="../reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <style>
+      .reveal .slides h1, .reveal .slides h2, .reveal .slides h3 {
+        text-transform: none;
+      }
+
+      .two-column {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .two-column em {
+        margin: 20px;
+      }
+
+      .credits {
+          font-size: small;
+      }
+
+      .left {
+              left:-8.33%;
+              text-align: left;
+              float: left;
+              width:49%;
+              z-index:-10;
+            }
+      
+    .right {
+        left:31.25%;
+        top: 75px;
+        text-align: left;
+        float: right;
+        z-index:-10;
+        width:49%;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+<!------------------------------------------------------->
+
+
+
+<section data-markdown><script type="text/template">
+
+### Metana Web3 Solidity Bootcamp
+
+#### Uniswap V3
+
+*Dhruvin Parikh, Sep 2025*
+
+</script></section>
+
+<section>
+
+<h2>Spot price in Uniswap V2</h2> 
+
+In Uniswap V2, the protocol tracks token reserves and derives the spot price, \( p_x = \frac{y}{x}, \)
+, and total liquidity, \( L = xy, \), where \( x \) and \( y \) are the reserves of tokens X and Y.
+
+</section>
+
+<section>
+
+<h2>Spot price in Uniswap V3</h2> 
+
+<ul>
+    <li>Uniswap V3, instead, tracks the current price and liquidity, and derives the reserves.</li>
+    <li>Uniswap V3 actually stores the square root of the price,\( \sqrt{p} \),instead of the price itself.</li>
+</ul>
+
+</section>
+
+<section data-markdown><script type="text/template">
+
+## The variable sqrtPriceX96
+
+<img src="slot0.png" width=700> 
+
+[pool contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol#L56-L74)
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## Uniswap V3 stores the square root of the price as a fixed-point number.
+
+* In order to store `1.0050122696230506`,
+
+1.0050122696230506 x 2<sup>96</sup> = 79625275426524700982079509374.66678
+
+value_in_Q64.96 = floor(original_value x 2<sup>96</sup>)
+
+original_value ~ value_in_Q64.96 / 2<sup>96</sup>
+
+</script></section>
+
+<section>
+
+<h2>The relationship between \( \sqrt{p} \) and sqrtPriceX96</h2> 
+
+<ul>
+    <li>To convert \( \sqrt{p} \) to sqrtPriceX96, 
+        \[
+\text{sqrtPriceX96} = \left\lfloor \sqrt{p} \times 2^{96} \right\rfloor
+\]
+    </li>
+    <li>To convert back sqrtPriceX96 to \( \sqrt{p} \), 
+        \[
+\sqrt{p} = \frac{\text{sqrtPriceX96}}{2^{96}}
+\]
+    </li>
+</ul>
+
+</section>
+
+<section data-markdown><script type="text/template">
+
+## Calculating sqrtPriceX96 using Python
+
+```
+from decimal import Decimal, getcontext
+getcontext().prec = 100
+price = Decimal('1.0050122696230506')
+sqrtPriceX96 = price * Decimal(2) ** 96 # Decimal('79625275426524700982079509374.6667867672150016')
+original_price = sqrtPriceX96 / 2 ** 96 # Decimal('1.0050122696230506')
+```
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+## End
+
+</script></section>
+
+
+
+<!------------------------------------------------------->
+
+
+      </div>
+
+    </div>
+
+    <script src="../../../reveal.js/lib/js/head.min.js"></script>
+    <script src="../../../reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+	math: {
+          mathjax: '../../../lib/MathJax/MathJax.js',
+          config: 'TeX-AMS_SVG-full',
+	},
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '../../../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '../../../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '../../../reveal.js/plugin/math/math.js', async: true },
+           // Zoom in and out with Alt+click
+           { src: "../../../reveal.js/plugin/zoom-js/zoom.js", async: true },
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonding Curves & Dynamic Token Pricing</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal ul { font-size: 0.9em; }
+    .reveal pre code { font-size: 0.6em; }
+    .subtle { color: #bbb; font-size: 0.8em; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .calc { width: 100%; height: 420px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; overflow: hidden; background: #0b0f1c; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.52em; }
+      .calc { height: 320px; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section>
+        <h1>Bonding Curves & Dynamic Token Pricing</h1>
+        <p><span class="badge">Solidity</span> <span class="badge">Tokenomics</span> <span class="badge">DeFi</span></p>
+        <aside class="notes">"Alright, let’s fix the broken token launch experience. Gas wars suck, fixed prices are dumb. Bonding curves let the contract set price and liquidity automatically. Quick tour: what they are, shapes, and how to code them."</aside>
+      </section>
+
+      <section>
+        <h2>Why Dynamic Pricing?</h2>
+        <ul>
+          <li>Fixed price launches → gas wars, unfair distribution, poor price discovery</li>
+          <li>Bonding curve = contract sets price from math → reacts to demand</li>
+          <li>Always-on liquidity: contract buys/sells at curve price</li>
+          <li>Transparent & predictable: function is public and auditable</li>
+        </ul>
+        <aside class="notes">"Static price = chaos. With a curve, price moves with demand and the contract is your market maker. You can always buy or sell; no shady order book, just math."</aside>
+      </section>
+
+      <section>
+        <h2>What is a Bonding Curve?</h2>
+        <ul>
+          <li>Price P depends on current supply S (P = f(S))</li>
+          <li>Buy: mint → S ↑ → price rises (depending on curve)</li>
+          <li>Sell: burn → S ↓ → price falls</li>
+          <li>Contract is counterparty; no order book needed</li>
+        </ul>
+        <aside class="notes">"Think vending machine: the contract quotes a price from the curve. Buy → mint, price ticks up; sell → burn, price ticks down. Liquidity is always there because the contract is the counterparty."</aside>
+      </section>
+
+      <section>
+        <h2>Curve Types (and when)</h2>
+        <div class="two-col">
+          <div>
+            <h3>Linear</h3>
+            <p>P = mS + b</p>
+            <ul><li>Steady, predictable growth</li><li>Good for community tokens</li></ul>
+            <h3>Exponential</h3>
+            <p>P = a · e^{kS}</p>
+            <ul><li>Cheap early, ramps fast</li><li>Rewards early adopters</li></ul>
+          </div>
+          <div>
+            <h3>Logarithmic</h3>
+            <p>P = k · ln(S + c)</p>
+            <ul><li>Rises fast, then stabilizes</li><li>Bootstraps then levels</li></ul>
+            <h3>Sigmoid (S-curve)</h3>
+            <p>P = L / (1 + e^{-k(S - S0)})</p>
+            <ul><li>Slow start → rapid growth → plateau</li><li>Good for cap/plateau behavior</li></ul>
+          </div>
+        </div>
+        <aside class="notes">"Pick a vibe: linear = fair and boring (on purpose). Exponential = FOMO rocket. Log = quick lift then chill. Sigmoid = soft cap: slow start, mid sprint, then flat."</aside>
+      </section>
+
+      <!-- <section>
+        <h2>How to Use the Demos</h2>
+        <ul>
+          <li>Drag sliders (m, b, k, etc.) to show price reaction</li>
+          <li>X-axis: supply (S). Y-axis: price P(S)</li>
+          <li>Tell a story: "early buyers pay X, late buyers pay Y"</li>
+        </ul>
+        <aside class="notes">"Let’s play with the sliders. Move m or k and narrate who wins: early buyers vs late buyers. Keep reinforcing: price is just a function of supply."</aside>
+      </section> -->
+
+      <section>
+        <h2>Linear Curve (P = mS + b)</h2>
+        <ul>
+          <li>Example: m = 0.2, b = 1 → starts at 1 token/ETH, grows steadily</li>
+          <li>Use when you want predictability and fairness</li>
+          <li>Cost to mint Δ from S → S+Δ: ∫P(s)ds = m/2 · ((S+Δ)^2 − S^2) + bΔ</li>
+          <li class="subtle">Contract: <code>contracts/LinearBondingToken.sol</code></li>
+        </ul>
+        <div id="calc-linear" class="calc"></div>
+        <aside class="notes">"Linear = no surprises. Raise m, slope gets steeper; raise b, everyone starts higher. Great for community tokens where you don’t want sudden spikes."</aside>
+      </section>
+
+      <section>
+        <h2>Linear Solidity (Community Token)</h2>
+        <p class="subtle">Use case: community or access tokens with predictable price steps.</p>
+        <pre><code class="hljs">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+contract LinearBondingToken {
+    uint256 public immutable m; // slope (wei per token)
+    uint256 public immutable b; // base price
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    event Bought(address indexed buyer, uint256 amount, uint256 cost);
+    event Sold(address indexed seller, uint256 amount, uint256 refund);
+    constructor(uint256 _m, uint256 _b) { m = _m; b = _b; }
+    function price(uint256 s) public view returns (uint256) { return m * s + b; }
+    function costToMint(uint256 amount) public view returns (uint256) {
+        uint256 s1 = totalSupply;
+        uint256 s2 = totalSupply + amount;
+        return m * (s1 + s2 + 1) * amount / 2 + b * amount;
+    }
+    function mint(uint256 amount) external payable {
+        uint256 cost = costToMint(amount);
+        require(msg.value >= cost, "pay cost");
+        totalSupply += amount;
+        balanceOf[msg.sender] += amount;
+        emit Bought(msg.sender, amount, cost);
+        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+    }
+    function refund(uint256 amount) external {
+        require(balanceOf[msg.sender] >= amount, "bal");
+        uint256 s1 = totalSupply;
+        uint256 s2 = totalSupply - amount;
+        uint256 refundAmt = m * (s1 + s2 + 1) * amount / 2 + b * amount;
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        emit Sold(msg.sender, amount, refundAmt);
+        payable(msg.sender).transfer(refundAmt);
+    }
+}
+</code></pre>
+        <aside class="notes">"Notice the integral in costToMint—no loops for price. Refund mirrors mint. Keep it predictable."</aside>
+      </section>
+
+      <section>
+        <h2>Exponential Curve (P = a · e^{kS})</h2>
+        <ul>
+          <li>Example: a = 0.5, k = 0.08 → very cheap early, rockets later</li>
+          <li>Good for hype launches / strong early adopter rewards</li>
+          <li>Warn: can get expensive fast; cap supply or add fee spread</li>
+          <li class="subtle">Contract: <code>contracts/ExpoBondingToken.sol</code></li>
+        </ul>
+        <div id="calc-exp" class="calc"></div>
+        <aside class="notes">"This is the rocket. Early is dirt cheap, late gets pricey fast. Great for hype mints; dangerous without caps or fees. Slide k up to show how brutal it can get."</aside>
+      </section>
+
+      <section>
+        <h2>Exponential Solidity (Hype Launch)</h2>
+        <p class="subtle">Use case: hype mint/NFT drop with strong early adopter reward.</p>
+        <pre><code class="hljs">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+contract ExpoBondingToken {
+    using PRBMathUD60x18 for uint256;
+    uint256 public immutable a; // base
+    uint256 public immutable k; // growth (scaled 1e18)
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    event Bought(address indexed buyer, uint256 amount, uint256 cost);
+    constructor(uint256 _a, uint256 _k) { a = _a; k = _k; }
+    function price(uint256 s) public view returns (uint256) {
+        return a.mul(k.mul(s).exp()); // a * e^{k*s}
+    }
+    function costToMint(uint256 amount) public view returns (uint256) {
+        uint256 cost; uint256 s = totalSupply;
+        for (uint256 i = 0; i < amount; i++) { cost += price(s + i); }
+        return cost;
+    }
+    function mint(uint256 amount) external payable {
+        require(amount <= 50, "cap per tx");
+        uint256 cost = costToMint(amount);
+        require(msg.value >= cost, "pay cost");
+        totalSupply += amount;
+        balanceOf[msg.sender] += amount;
+        emit Bought(msg.sender, amount, cost);
+        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+    }
+}
+</code></pre>
+        <p class="subtle">Use integral approximation (not loop) in production.</p>
+        <aside class="notes">"This loop is for teaching. In production, integrate; also add per-tx caps and maybe a fee spread to resist MEV and sudden drains."</aside>
+      </section>
+
+      <section>
+        <h2>Logarithmic Curve (P = k · ln(S + c))</h2>
+        <ul>
+          <li>Example: k = 2, c = 1 → quick lift then stabilizes</li>
+          <li>Good to bootstrap liquidity, then keep price from exploding</li>
+          <li>Pick c to avoid ln(0); k tunes slope</li>
+          <li class="subtle">Contract: <code>contracts/LogBondingToken.sol</code></li>
+        </ul>
+        <div id="calc-log" class="calc"></div>
+        <aside class="notes">"This one launches quick then chills. Good for utility tokens: early buyers pay some premium, but it flattens so late users aren’t punished."</aside>
+      </section>
+
+      <section>
+        <h2>Log Solidity (Stabilizing Token)</h2>
+        <p class="subtle">Use case: stabilize price after early lift (e.g., utility token).</p>
+        <pre><code class="hljs">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+contract LogBondingToken {
+    using PRBMathUD60x18 for uint256;
+    uint256 public immutable k;
+    uint256 public immutable c;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    event Bought(address indexed buyer, uint256 amount, uint256 cost);
+    constructor(uint256 _k, uint256 _c) { k = _k; c = _c; }
+    function price(uint256 s) public view returns (uint256) { return k.mul((s + c).ln()); }
+    function costToMint(uint256 amount) public view returns (uint256) {
+        uint256 cost; uint256 s = totalSupply;
+        for (uint256 i = 0; i < amount; i++) { cost += price(s + i); }
+        return cost;
+    }
+    function mint(uint256 amount) external payable {
+        uint256 cost = costToMint(amount);
+        require(msg.value >= cost, "pay cost");
+        totalSupply += amount;
+        balanceOf[msg.sender] += amount;
+        emit Bought(msg.sender, amount, cost);
+        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+    }
+}
+</code></pre>
+        <aside class="notes">"Key: c keeps ln safe; k shapes how fast it rises before flattening. Pitch it as: good for keeping things sane after initial bootstrap."</aside>
+      </section>
+
+      <section>
+        <h2>Sigmoid (S-curve)</h2>
+        <ul>
+          <li>Example: L = 10, k = 0.2, S0 = 50 → slow start, mid surge, plateau ~10</li>
+          <li>Good when you want a soft cap / saturation behavior</li>
+          <li>Adjust S0 to shift inflection; k for steepness; L for ceiling</li>
+          <li class="subtle">Contract: <code>contracts/SigmoidBondingToken.sol</code></li>
+        </ul>
+        <div id="calc-sig" class="calc"></div>
+        <aside class="notes">"Membership vibe: cheap early, mid-stage ramp, then it flattens near L. Slide S0 to show when the ramp kicks in."</aside>
+      </section>
+
+      <section>
+        <h2>Sigmoid Solidity (Capped Growth)</h2>
+        <p class="subtle">Use case: memberships/credits with soft ceiling and mid-growth ramp.</p>
+        <pre><code class="hljs">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+contract SigmoidBondingToken {
+    using PRBMathUD60x18 for uint256;
+    uint256 public immutable L;  // ceiling price
+    uint256 public immutable k;  // steepness (1e18)
+    uint256 public immutable S0; // inflection
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    event Bought(address indexed buyer, uint256 amount, uint256 cost);
+    constructor(uint256 _L, uint256 _k, uint256 _S0) { L=_L; k=_k; S0=_S0; }
+    function price(uint256 s) public view returns (uint256) {
+        if (s >= S0) {
+            uint256 expPos = k.mul(s - S0).exp();
+            return L.mul(expPos).div(1e18 + expPos);
+        } else {
+            uint256 expPos = k.mul(S0 - s).exp();
+            return L.div(1e18 + expPos);
+        }
+    }
+    function costToMint(uint256 amount) public view returns (uint256) {
+        uint256 cost; uint256 s = totalSupply;
+        for (uint256 i = 0; i < amount; i++) cost += price(s + i);
+        return cost;
+    }
+    function mint(uint256 amount) external payable {
+        uint256 cost = costToMint(amount);
+        require(msg.value >= cost, "pay cost");
+        totalSupply += amount;
+        balanceOf[msg.sender] += amount;
+        emit Bought(msg.sender, amount, cost);
+        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+    }
+}
+</code></pre>
+        <p class="subtle">Use sigmoid to simulate saturation/ceiling pricing for memberships or bandwidth credits.</p>
+        <aside class="notes">"Translate params: L is the ceiling price, k is how sharp the bend is, S0 is where the bend happens. Perfect for soft caps."</aside>
+      </section>
+
+      <section>
+        <h2>Solidity Building Blocks</h2>
+        <ul>
+          <li>Track total supply (S) and reserve asset</li>
+          <li>Price function P(S); buy/sell use integral to avoid loops</li>
+          <li>Events: Bought/Sold (buyer, amount, cost, price)</li>
+          <li>Security: reentrancy guard, fixed-point math, caps per tx</li>
+        </ul>
+        <aside class="notes">"Production checklist: fixed-point math library, no loops for pricing, add fees/spreads, sell path, pause switch, and guardrails."</aside>
+      </section>
+
+      <section>
+        <h2>Risks & Tips</h2>
+        <ul>
+          <li>Front-running around large buys/sells → add spread/fees</li>
+          <li>Precision loss on expo/log → fixed-point libs</li>
+          <li>Liquidity drain if sells not fee-adjusted</li>
+          <li>Test edge cases: start/end supply, large Δ, pause switches</li>
+        </ul>
+        <aside class="notes">"MEV is real: spreads/fees help. Expo/log need good math libs. Always unit test start/end supply, big buys, and sell paths."</aside>
+      </section>
+
+      <section>
+        <h2>Resources</h2>
+        <ul>
+          <li>Guide: speedrunethereum.com/guides/solidity-bonding-curves-token-pricing</li>
+          <li>Math lib: prb-math</li>
+        </ul>
+        <aside class="notes">"Point them to the repo and tell them to try the sliders. If coding: install prb-math for expo/log/sigmoid."</aside>
+      </section>
+
+      <section>
+        <h2>Q&A</h2>
+        <p>Ask about curve selection, fees, edge cases, or demo steps.</p>
+        <aside class="notes">"Prompt them: Which curve for fair community? For hype NFT? What fee/spread would you add to stop MEV?"</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({ hash: true, slideNumber: true, transition: 'slide' });
+
+    window.addEventListener('load', () => {
+      const opts = { expressions: true, settingsMenu: false, zoomButtons: false, expressionsTopbar: false };
+
+      const linear = Desmos.GraphingCalculator(document.getElementById('calc-linear'), opts);
+      linear.setExpression({ id: 'm', latex: 'm=0.2', sliderBounds: { min: 0, max: 1, step: 0.01 } });
+      linear.setExpression({ id: 'b', latex: 'b=1', sliderBounds: { min: 0, max: 5, step: 0.1 } });
+      linear.setExpression({ id: 'p', latex: 'P=m\cdot x + b' });
+      linear.setExpression({ id: 'domain', latex: '0\le x \le 100' });
+
+      const exp = Desmos.GraphingCalculator(document.getElementById('calc-exp'), opts);
+      exp.setExpression({ id: 'a', latex: 'a=0.5', sliderBounds: { min: 0.1, max: 2, step: 0.05 } });
+      exp.setExpression({ id: 'k', latex: 'k=0.08', sliderBounds: { min: 0.01, max: 0.3, step: 0.01 } });
+      exp.setExpression({ id: 'p', latex: 'P=a\cdot e^{k\cdot x}' });
+      exp.setExpression({ id: 'domain', latex: '0\le x \le 80' });
+
+      const logc = Desmos.GraphingCalculator(document.getElementById('calc-log'), opts);
+      logc.setExpression({ id: 'k', latex: 'k=2', sliderBounds: { min: 0.5, max: 5, step: 0.1 } });
+      logc.setExpression({ id: 'c', latex: 'c=1', sliderBounds: { min: 0.1, max: 10, step: 0.1 } });
+      logc.setExpression({ id: 'p', latex: 'P=k\cdot \ln(x+c)' });
+      logc.setExpression({ id: 'domain', latex: '0\le x \le 100' });
+
+      const sig = Desmos.GraphingCalculator(document.getElementById('calc-sig'), opts);
+      sig.setExpression({ id: 'L', latex: 'L=10', sliderBounds: { min: 5, max: 20, step: 0.5 } });
+      sig.setExpression({ id: 'k', latex: 'k=0.2', sliderBounds: { min: 0.05, max: 0.5, step: 0.01 } });
+      sig.setExpression({ id: 's0', latex: 'S_0=50', sliderBounds: { min: 0, max: 100, step: 1 } });
+      sig.setExpression({ id: 'p', latex: 'P=\frac{L}{1+e^{-k\cdot(x-S_0)}}' });
+      sig.setExpression({ id: 'domain', latex: '0\le x \le 120' });
+    });
+  </script>
+</body>
+</html>
