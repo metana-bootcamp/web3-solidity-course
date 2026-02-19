@@ -9,16 +9,21 @@
   <script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
   <style>
     .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
-    .reveal ul { font-size: 0.9em; }
-    .reveal pre code { font-size: 0.6em; }
-    .subtle { color: #bbb; font-size: 0.8em; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.6em; line-height: 1.35; max-height: 420px; overflow-y: auto; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
     .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
-    .calc { width: 100%; height: 420px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; overflow: hidden; background: #0b0f1c; }
+    .calc { width: 100%; height: 300px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; overflow: hidden; background: #0b0f1c; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
     @media (max-width: 900px) {
       .reveal ul { font-size: 0.85em; }
       .reveal pre code { font-size: 0.52em; }
-      .calc { height: 320px; }
+      .calc { height: 240px; }
       .two-col { grid-template-columns: 1fr; }
     }
   </style>
@@ -27,305 +32,528 @@
   <div class="reveal">
     <div class="slides">
 
+      <!-- ============ INTRO ============ -->
       <section>
-        <h1>Bonding Curves & Dynamic Token Pricing</h1>
+        <h1>Bonding Curves &amp;<br>Dynamic Token Pricing</h1>
         <p><span class="badge">Solidity</span> <span class="badge">Tokenomics</span> <span class="badge">DeFi</span></p>
-        <aside class="notes">"Alright, let’s fix the broken token launch experience. Gas wars suck, fixed prices are dumb. Bonding curves let the contract set price and liquidity automatically. Quick tour: what they are, shapes, and how to code them."</aside>
+        <p class="subtle">How the smart contract becomes the market maker</p>
+        <aside class="notes">We're going to look at how bonding curves replace the old model of fixed-price token sales. Instead of every launch ending in a gas war, the contract itself sets the price using a math formula and adjusts it as people buy and sell. We'll cover four curve shapes, see them live in Desmos, then look at the Solidity.</aside>
       </section>
 
+      <!-- ============ WHY ============ -->
       <section>
-        <h2>Why Dynamic Pricing?</h2>
+        <h2>The Problem with Fixed Prices</h2>
         <ul>
-          <li>Fixed price launches → gas wars, unfair distribution, poor price discovery</li>
-          <li>Bonding curve = contract sets price from math → reacts to demand</li>
-          <li>Always-on liquidity: contract buys/sells at curve price</li>
-          <li>Transparent & predictable: function is public and auditable</li>
+          <li><strong>Gas wars</strong> &mdash; everyone fighting to be first at the same price</li>
+          <li><strong>No price discovery</strong> &mdash; price is guessed, not market-driven</li>
+          <li><strong>Unfair distribution</strong> &mdash; bots and whales front-run normal users</li>
+          <li><strong>No built-in liquidity</strong> &mdash; need to bootstrap a DEX pool separately</li>
         </ul>
-        <aside class="notes">"Static price = chaos. With a curve, price moves with demand and the contract is your market maker. You can always buy or sell; no shady order book, just math."</aside>
+        <div class="callout">
+          What if the <em>contract itself</em> could set a fair price and provide liquidity?
+        </div>
+        <aside class="notes">Think about a fixed-price mint: everyone sends a transaction at the same time, gas spikes, bots win. The price was arbitrary to begin with. With a bonding curve the contract replaces all of that with a single math function.</aside>
       </section>
 
+      <!-- ============ WHAT IS A BONDING CURVE ============ -->
       <section>
         <h2>What is a Bonding Curve?</h2>
+        <p>A math function inside the contract: <span class="formula">Price = f(Supply)</span></p>
         <ul>
-          <li>Price P depends on current supply S (P = f(S))</li>
-          <li>Buy: mint → S ↑ → price rises (depending on curve)</li>
-          <li>Sell: burn → S ↓ → price falls</li>
-          <li>Contract is counterparty; no order book needed</li>
+          <li><strong>Buy</strong> &rarr; contract <em>mints</em> tokens &rarr; supply goes up &rarr; price goes up</li>
+          <li><strong>Sell</strong> &rarr; contract <em>burns</em> tokens &rarr; supply goes down &rarr; price goes down</li>
+          <li>The contract holds ETH (or stablecoins) as a <strong>reserve</strong></li>
+          <li>No order book, no DEX needed &mdash; the curve <em>is</em> the market</li>
         </ul>
-        <aside class="notes">"Think vending machine: the contract quotes a price from the curve. Buy → mint, price ticks up; sell → burn, price ticks down. Liquidity is always there because the contract is the counterparty."</aside>
+        <div class="callout">
+          Mental model: a vending machine where each next item costs a little more than the last.
+        </div>
+        <aside class="notes">The key insight: price is not set by people — it's set by supply. The contract is the counterparty for every trade. You always know what you'll pay because the formula is public and deterministic. Let's look at the four most common shapes.</aside>
       </section>
 
+      <!-- ============ CURVE OVERVIEW ============ -->
       <section>
-        <h2>Curve Types (and when)</h2>
+        <h2>Four Curve Shapes</h2>
         <div class="two-col">
           <div>
-            <h3>Linear</h3>
-            <p>P = mS + b</p>
-            <ul><li>Steady, predictable growth</li><li>Good for community tokens</li></ul>
-            <h3>Exponential</h3>
-            <p>P = a · e^{kS}</p>
-            <ul><li>Cheap early, ramps fast</li><li>Rewards early adopters</li></ul>
+            <h3>1. Linear</h3>
+            <p class="formula">P = m&middot;S + b</p>
+            <p class="subtle">Steady, predictable &mdash; community tokens</p>
+            <h3>2. Exponential</h3>
+            <p class="formula">P = a &middot; e<sup>kS</sup></p>
+            <p class="subtle">Cheap early, rockets later &mdash; hype launches</p>
           </div>
           <div>
-            <h3>Logarithmic</h3>
-            <p>P = k · ln(S + c)</p>
-            <ul><li>Rises fast, then stabilizes</li><li>Bootstraps then levels</li></ul>
-            <h3>Sigmoid (S-curve)</h3>
-            <p>P = L / (1 + e^{-k(S - S0)})</p>
-            <ul><li>Slow start → rapid growth → plateau</li><li>Good for cap/plateau behavior</li></ul>
+            <h3>3. Logarithmic</h3>
+            <p class="formula">P = k &middot; ln(S + c)</p>
+            <p class="subtle">Quick rise then levels off &mdash; utility tokens</p>
+            <h3>4. Sigmoid (S-curve)</h3>
+            <p class="formula">P = L / (1 + e<sup>&minus;k(S&minus;S&#8320;)</sup>)</p>
+            <p class="subtle">Slow start &rarr; surge &rarr; plateau &mdash; memberships</p>
           </div>
         </div>
-        <aside class="notes">"Pick a vibe: linear = fair and boring (on purpose). Exponential = FOMO rocket. Log = quick lift then chill. Sigmoid = soft cap: slow start, mid sprint, then flat."</aside>
+        <aside class="notes">Each shape fits a different goal. Linear is the simplest — great starting point. Exponential rewards the earliest buyers hard. Log flattens out so latecomers aren't punished. Sigmoid has a built-in ceiling. We'll go through each one with a live graph and Solidity code.</aside>
       </section>
 
-      <!-- <section>
-        <h2>How to Use the Demos</h2>
-        <ul>
-          <li>Drag sliders (m, b, k, etc.) to show price reaction</li>
-          <li>X-axis: supply (S). Y-axis: price P(S)</li>
-          <li>Tell a story: "early buyers pay X, late buyers pay Y"</li>
-        </ul>
-        <aside class="notes">"Let’s play with the sliders. Move m or k and narrate who wins: early buyers vs late buyers. Keep reinforcing: price is just a function of supply."</aside>
-      </section> -->
-
+      <!-- ============ INTEGRALS (THE "AREA UNDER THE CURVE" TRICK) ============ -->
       <section>
-        <h2>Linear Curve (P = mS + b)</h2>
+        <h2>Why Integrals? (The Key Trick)</h2>
+        <p>Buying multiple tokens? Each one is priced at a different supply level.</p>
         <ul>
-          <li>Example: m = 0.2, b = 1 → starts at 1 token/ETH, grows steadily</li>
-          <li>Use when you want predictability and fairness</li>
-          <li>Cost to mint Δ from S → S+Δ: ∫P(s)ds = m/2 · ((S+Δ)^2 − S^2) + bΔ</li>
-          <li class="subtle">Contract: <code>contracts/LinearBondingToken.sol</code></li>
+          <li>Total cost = <strong>area under the curve</strong> from S to S&nbsp;+&nbsp;amount</li>
+          <li>Cost = &int;<sub>S</sub><sup>S+&Delta;</sup> P(s)&thinsp;ds</li>
+          <li>Linear &rarr; <strong>closed-form</strong> (no loop) &nbsp;|&nbsp; Exp/Log/Sigmoid &rarr; integral or sum</li>
+        </ul>
+        <div class="callout">
+          Closed-form = one formula, O(1) gas.<br>
+          Loop/sum = iterate each token, O(n) gas &mdash; fine for teaching, avoid in production.
+        </div>
+        <aside class="notes">This is the most important math concept in this whole workshop. When someone mints 10 tokens, each one is priced at a different supply level. The total cost is the area under the price curve from current supply to current supply plus 10. For linear curves we can compute that area with a simple formula — that's what makes them gas-efficient. For exponential and log, we'll use a library or approximate with a loop for clarity.</aside>
+      </section>
+
+      <!-- ============ INTEGRAL — WORKED EXAMPLE ============ -->
+      <section>
+        <h2>Integral Walkthrough: Linear Example</h2>
+        <p>Curve: <span class="formula">P(s) = 0.2s + 1</span> &nbsp; Current supply S&nbsp;=&nbsp;10, buying &Delta;&nbsp;=&nbsp;5 tokens</p>
+        <ul>
+          <li>Token 11: P(10)&nbsp;=&nbsp;3.0 &nbsp;|&nbsp; Token 12: P(11)&nbsp;=&nbsp;3.2 &nbsp;|&nbsp; &hellip; &nbsp;|&nbsp; Token 15: P(14)&nbsp;=&nbsp;3.8</li>
+          <li><strong>Loop sum:</strong> 3.0 + 3.2 + 3.4 + 3.6 + 3.8 = <strong>17.0</strong></li>
+          <li><strong>Integral:</strong> &int;<sub>10</sub><sup>15</sup>(0.2s+1)ds = [0.1s&sup2;+s]<sub>10</sub><sup>15</sup> = (22.5+15)&minus;(10+10) = <strong>17.5</strong></li>
+        </ul>
+        <div class="callout">
+          Discrete sum &ne; continuous integral (off by half-steps). Solidity adjusts: <code>m*(s1+s2+1)*amount/2 + b*amount</code>.<br>
+          Same idea applies to every curve &mdash; only the integral formula changes.
+        </div>
+        <aside class="notes">Let's make this concrete. With m=0.2 and b=1, if current supply is 10 and someone buys 5 tokens: token 11 costs P(10)=3, token 12 costs P(11)=3.2, and so on. Summing those 5 prices gives 17. The continuous integral gives 17.5 — slightly different because the integral counts fractional areas. The Solidity formula uses the discrete version with the +1 correction. The point: one formula replaces a loop. For expo/log, the integral is harder but the principle is identical.</aside>
+      </section>
+
+      <!-- ============ LINEAR — GRAPH ============ -->
+      <section>
+        <h2>Linear Curve: P = m&middot;S + b</h2>
+        <ul>
+          <li><strong>m</strong> (slope) = price growth per token &nbsp;|&nbsp; <strong>b</strong> (base) = price at supply 0</li>
+          <li>Drag the sliders to see the line tilt and shift</li>
         </ul>
         <div id="calc-linear" class="calc"></div>
-        <aside class="notes">"Linear = no surprises. Raise m, slope gets steeper; raise b, everyone starts higher. Great for community tokens where you don’t want sudden spikes."</aside>
+        <p class="subtle">X = supply, Y = price. Area under a segment = total cost to mint those tokens.</p>
+        <aside class="notes">This is the Desmos graph for the linear curve. Drag m to steepen the slope — that means each new token costs more. Drag b to raise the floor price. When someone asks "how much for 20 tokens?" it's the area under this line from current supply to supply + 20.</aside>
       </section>
 
+      <!-- ============ LINEAR — SOLIDITY ============ -->
       <section>
-        <h2>Linear Solidity (Community Token)</h2>
-        <p class="subtle">Use case: community or access tokens with predictable price steps.</p>
+        <h2>Linear Solidity</h2>
+        <p class="subtle">Use case: community tokens, access passes &mdash; predictable price steps.</p>
         <pre><code class="hljs">// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+
 contract LinearBondingToken {
-    uint256 public immutable m; // slope (wei per token)
-    uint256 public immutable b; // base price
+    uint256 public immutable m;  // slope  (wei per token&sup2;)
+    uint256 public immutable b;  // base   (wei per token)
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
+    mapping(address =&gt; uint256) public balanceOf;
+
     event Bought(address indexed buyer, uint256 amount, uint256 cost);
     event Sold(address indexed seller, uint256 amount, uint256 refund);
+
     constructor(uint256 _m, uint256 _b) { m = _m; b = _b; }
-    function price(uint256 s) public view returns (uint256) { return m * s + b; }
+
+    /// @notice Spot price at a given supply level
+    function price(uint256 s) public view returns (uint256) {
+        return m * s + b;
+    }
+
+    /// @notice Total cost to mint `amount` tokens (closed-form integral)
+    ///  Area under line from s1 to s2:
+    ///  &int;(m&middot;s + b)ds = m/2&middot;(s2&sup2; &minus; s1&sup2;) + b&middot;(s2 &minus; s1)
+    ///  With integers: m&middot;(s1 + s2 + 1)&middot;amount / 2 + b&middot;amount
     function costToMint(uint256 amount) public view returns (uint256) {
         uint256 s1 = totalSupply;
-        uint256 s2 = totalSupply + amount;
+        uint256 s2 = s1 + amount;
         return m * (s1 + s2 + 1) * amount / 2 + b * amount;
     }
+
     function mint(uint256 amount) external payable {
         uint256 cost = costToMint(amount);
-        require(msg.value >= cost, "pay cost");
+        require(msg.value &gt;= cost, "Insufficient payment");
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
         emit Bought(msg.sender, amount, cost);
-        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+        if (msg.value &gt; cost) payable(msg.sender).transfer(msg.value - cost);
     }
-    function refund(uint256 amount) external {
-        require(balanceOf[msg.sender] >= amount, "bal");
+
+    function sell(uint256 amount) external {
+        require(balanceOf[msg.sender] &gt;= amount, "Not enough tokens");
         uint256 s1 = totalSupply;
-        uint256 s2 = totalSupply - amount;
+        uint256 s2 = s1 - amount;
         uint256 refundAmt = m * (s1 + s2 + 1) * amount / 2 + b * amount;
         balanceOf[msg.sender] -= amount;
         totalSupply -= amount;
         emit Sold(msg.sender, amount, refundAmt);
         payable(msg.sender).transfer(refundAmt);
     }
-}
-</code></pre>
-        <aside class="notes">"Notice the integral in costToMint—no loops for price. Refund mirrors mint. Keep it predictable."</aside>
+}</code></pre>
+        <aside class="notes">Walk through costToMint line by line: s1 is where supply starts, s2 is where it ends, and the formula is just the discrete integral of the line. No loop — O(1) gas regardless of amount. The sell function mirrors it: same formula, but supply goes down. Point out the refund of excess ETH in mint.</aside>
       </section>
 
+      <!-- ============ PRBMath BRIDGE — WHY ============ -->
       <section>
-        <h2>Exponential Curve (P = a · e^{kS})</h2>
+        <h2>The Problem: No Floats in Solidity</h2>
+        <p>We need e<sup>x</sup>, ln(x), fractions &mdash; but Solidity only has <strong>integers</strong>.</p>
         <ul>
-          <li>Example: a = 0.5, k = 0.08 → very cheap early, rockets later</li>
-          <li>Good for hype launches / strong early adopter rewards</li>
-          <li>Warn: can get expensive fast; cap supply or add fee spread</li>
-          <li class="subtle">Contract: <code>contracts/ExpoBondingToken.sol</code></li>
+          <li><strong>Fixed-point trick:</strong> pick a scale factor (1e18) and treat every <code>uint256</code> as having 18 implicit decimals</li>
+          <li>So <code>1e18</code>&nbsp;=&nbsp;1.0, &nbsp;<code>5e17</code>&nbsp;=&nbsp;0.5, &nbsp;<code>8e16</code>&nbsp;=&nbsp;0.08</li>
+          <li><strong>PRBMath</strong> (<code>UD60x18</code> type): a library that does exp, ln, mul, div on these scaled numbers</li>
+          <li><strong>UD60x18</strong> = <em>U</em>nsigned <em>D</em>ecimal, 60 integer bits, 18 fractional digits</li>
+        </ul>
+        <div class="callout">
+          Real number 2.5 &rarr; stored as <code>2_500_000_000_000_000_000</code> (2.5 &times; 10<sup>18</sup>).
+        </div>
+        <aside class="notes">Before we code exponential or log curves we have to solve a fundamental problem: Solidity has no floating point. PRBMath fixes this with a convention: every number is an integer, but we agree that 1e18 means 1.0. So 0.5 is stored as 5 followed by 17 zeros. The library provides exp, ln, mul, div that all respect this convention. The type is called UD60x18 — Unsigned Decimal, 60 bits for the integer part, 18 digits for the fraction. Once you understand this encoding, the next three contracts are just plugging formulas in.</aside>
+      </section>
+
+      <!-- ============ PRBMath BRIDGE — HOW ============ -->
+      <section>
+        <h2>PRBMath: Wrap &rarr; Math &rarr; Unwrap</h2>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, exp, ln, mul, div} from "prb-math/UD60x18.sol";
+
+// 1. WRAP: convert a raw number into UD60x18
+UD60x18 a = ud(0.5e18);    // a = 0.5
+UD60x18 k = ud(0.08e18);   // k = 0.08
+UD60x18 s = ud(10e18);     // supply = 10
+
+// 2. MATH: use library functions (they stay in UD60x18)
+UD60x18 ks   = mul(k, s);         // 0.08 * 10 = 0.8
+UD60x18 eKs  = exp(ks);           // e^0.8 &asymp; 2.2255
+UD60x18 price = mul(a, eKs);      // 0.5 * 2.2255 &asymp; 1.1128
+
+// 3. UNWRAP: get raw uint256 back (in wei)
+uint256 priceWei = unwrap(price);  // &asymp; 1_112_749_685_157_800_000</code></pre>
+        <div class="callout">
+          <strong>Key operations:</strong> &nbsp;
+          <code>ud()</code> wraps &nbsp;|&nbsp;
+          <code>mul</code> / <code>div</code> for &times; &divide; &nbsp;|&nbsp;
+          <code>exp</code> / <code>ln</code> for e<sup>x</sup> / ln(x) &nbsp;|&nbsp;
+          <code>unwrap()</code> extracts raw uint256
+        </div>
+        <p class="subtle">This pattern repeats in every expo/log/sigmoid contract below.</p>
+        <aside class="notes">Here's the concrete workflow. Step one: wrap your raw numbers with ud(). 0.5e18 means 0.5 in fixed-point. Step two: call math functions — mul, exp, ln, div — they all take and return UD60x18. Step three: unwrap() to get a regular uint256 for comparisons or storage. Walk through the numbers: k times s equals 0.8, e to the 0.8 is about 2.23, times a gives about 1.11. That's the price of the 10th token on our exponential curve with a=0.5, k=0.08. The unwrapped value in wei is that big integer. This three-step pattern — wrap, math, unwrap — is used in every remaining contract.</aside>
+      </section>
+
+      <!-- ============ EXPONENTIAL — GRAPH ============ -->
+      <section>
+        <h2>Exponential Curve: P = a &middot; e<sup>kS</sup></h2>
+        <ul>
+          <li><strong>a</strong> = starting price (at S = 0) &nbsp;|&nbsp; <strong>k</strong> = growth rate</li>
+          <li>Drag <strong>k</strong> up to see how brutal late prices get</li>
         </ul>
         <div id="calc-exp" class="calc"></div>
-        <aside class="notes">"This is the rocket. Early is dirt cheap, late gets pricey fast. Great for hype mints; dangerous without caps or fees. Slide k up to show how brutal it can get."</aside>
+        <p class="subtle">At k = 0.08, token #50 costs ~27&times; what token #1 cost.</p>
+        <aside class="notes">This is the "FOMO curve". Early is cheap, late is brutal. Slide k from 0.05 to 0.2 and narrate: "if you got in at token 10 you paid almost nothing, at token 60 it's 100x." Great for NFT drops where you explicitly want to reward early supporters. Dangerous without caps.</aside>
       </section>
 
+      <!-- ============ EXPONENTIAL — SOLIDITY ============ -->
       <section>
-        <h2>Exponential Solidity (Hype Launch)</h2>
-        <p class="subtle">Use case: hype mint/NFT drop with strong early adopter reward.</p>
+        <h2>Exponential Solidity</h2>
+        <p class="subtle">Use case: hype launches, NFT mints &mdash; strong early-adopter reward.</p>
         <pre><code class="hljs">// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+
+import {UD60x18, ud, unwrap, exp, mul} from "prb-math/UD60x18.sol";
+
 contract ExpoBondingToken {
-    using PRBMathUD60x18 for uint256;
-    uint256 public immutable a; // base
-    uint256 public immutable k; // growth (scaled 1e18)
+    UD60x18 public immutable a;   // base price   (e.g. ud(0.5e18) = 0.5)
+    UD60x18 public immutable k;   // growth rate   (e.g. ud(0.08e18) = 0.08)
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
+    mapping(address =&gt; uint256) public balanceOf;
+
     event Bought(address indexed buyer, uint256 amount, uint256 cost);
-    constructor(uint256 _a, uint256 _k) { a = _a; k = _k; }
+
+    constructor(UD60x18 _a, UD60x18 _k) { a = _a; k = _k; }
+
+    /// @notice Price at supply s: a * e^(k * s)
     function price(uint256 s) public view returns (uint256) {
-        return a.mul(k.mul(s).exp()); // a * e^{k*s}
+        // wrap s into fixed-point, multiply by k, take e^, scale by a
+        UD60x18 ks = mul(k, ud(s * 1e18));   // k * s  (fixed-point)
+        return unwrap(mul(a, exp(ks)));        // a * e^(k*s) &rarr; raw wei
     }
+
+    /// @notice Sum prices for each token (teaching version &mdash; O(n) gas)
     function costToMint(uint256 amount) public view returns (uint256) {
-        uint256 cost; uint256 s = totalSupply;
-        for (uint256 i = 0; i < amount; i++) { cost += price(s + i); }
+        uint256 cost;
+        uint256 s = totalSupply;
+        for (uint256 i = 0; i &lt; amount; i++) {
+            cost += price(s + i);
+        }
         return cost;
     }
+
     function mint(uint256 amount) external payable {
-        require(amount <= 50, "cap per tx");
+        require(amount &lt;= 50, "Max 50 per tx");
         uint256 cost = costToMint(amount);
-        require(msg.value >= cost, "pay cost");
+        require(msg.value &gt;= cost, "Insufficient payment");
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
         emit Bought(msg.sender, amount, cost);
-        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+        if (msg.value &gt; cost) payable(msg.sender).transfer(msg.value - cost);
     }
-}
-</code></pre>
-        <p class="subtle">Use integral approximation (not loop) in production.</p>
-        <aside class="notes">"This loop is for teaching. In production, integrate; also add per-tx caps and maybe a fee spread to resist MEV and sudden drains."</aside>
+}</code></pre>
+        <div class="callout">
+          Loop is for <strong>teaching</strong>. Production: Cost&nbsp;=&nbsp;(a/k)&middot;(e<sup>k(S+&Delta;)</sup>&nbsp;&minus;&nbsp;e<sup>kS</sup>) &rarr; O(1) gas.
+        </div>
+        <aside class="notes">Walk through the PRBMath usage: ud() wraps a raw number, mul/exp do the math in fixed-point, unwrap() gives us back a uint256 in wei. The loop sums price at each integer supply level — clear to read, but O(n). In production you'd use the closed-form integral a/k times the difference of two exponentials. The per-tx cap of 50 is a safety rail.</aside>
       </section>
 
+      <!-- ============ LOGARITHMIC — GRAPH ============ -->
       <section>
-        <h2>Logarithmic Curve (P = k · ln(S + c))</h2>
+        <h2>Logarithmic Curve: P = k &middot; ln(S + c)</h2>
         <ul>
-          <li>Example: k = 2, c = 1 → quick lift then stabilizes</li>
-          <li>Good to bootstrap liquidity, then keep price from exploding</li>
-          <li>Pick c to avoid ln(0); k tunes slope</li>
-          <li class="subtle">Contract: <code>contracts/LogBondingToken.sol</code></li>
+          <li><strong>k</strong> = vertical stretch &nbsp;|&nbsp; <strong>c</strong> = shift (avoids ln&thinsp;0)</li>
+          <li>Rises fast early, then <strong>flattens</strong> &mdash; opposite of exponential</li>
         </ul>
         <div id="calc-log" class="calc"></div>
-        <aside class="notes">"This one launches quick then chills. Good for utility tokens: early buyers pay some premium, but it flattens so late users aren’t punished."</aside>
+        <p class="subtle">Early growth is steep, late growth is gentle &mdash; good for utility tokens.</p>
+        <aside class="notes">This curve is the inverse personality of exponential. It jumps quickly at low supply then levels off. Good for utility tokens where you want to bootstrap early demand with rising prices but don't want to punish latecomers with insane costs. c = 1 is the safe default to avoid ln(0).</aside>
       </section>
 
+      <!-- ============ LOGARITHMIC — SOLIDITY ============ -->
       <section>
-        <h2>Log Solidity (Stabilizing Token)</h2>
-        <p class="subtle">Use case: stabilize price after early lift (e.g., utility token).</p>
+        <h2>Logarithmic Solidity</h2>
+        <p class="subtle">Use case: utility tokens &mdash; bootstrap then stabilize price.</p>
         <pre><code class="hljs">// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+
+import {UD60x18, ud, unwrap, ln, mul} from "prb-math/UD60x18.sol";
+
 contract LogBondingToken {
-    using PRBMathUD60x18 for uint256;
-    uint256 public immutable k;
-    uint256 public immutable c;
+    UD60x18 public immutable k;   // vertical scale  (e.g. ud(2e18) = 2.0)
+    UD60x18 public immutable c;   // shift to avoid ln(0) (e.g. ud(1e18) = 1.0)
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
+    mapping(address =&gt; uint256) public balanceOf;
+
     event Bought(address indexed buyer, uint256 amount, uint256 cost);
-    constructor(uint256 _k, uint256 _c) { k = _k; c = _c; }
-    function price(uint256 s) public view returns (uint256) { return k.mul((s + c).ln()); }
+
+    constructor(UD60x18 _k, UD60x18 _c) { k = _k; c = _c; }
+
+    /// @notice Price at supply s: k * ln(s + c)
+    function price(uint256 s) public view returns (uint256) {
+        UD60x18 inner = ud(s * 1e18 + unwrap(c));  // (s + c) in fixed-point
+        return unwrap(mul(k, ln(inner)));            // k * ln(s + c)
+    }
+
+    /// @notice Sum prices (teaching version &mdash; use integral in prod)
     function costToMint(uint256 amount) public view returns (uint256) {
-        uint256 cost; uint256 s = totalSupply;
-        for (uint256 i = 0; i < amount; i++) { cost += price(s + i); }
+        uint256 cost;
+        uint256 s = totalSupply;
+        for (uint256 i = 0; i &lt; amount; i++) {
+            cost += price(s + i);
+        }
         return cost;
     }
+
     function mint(uint256 amount) external payable {
         uint256 cost = costToMint(amount);
-        require(msg.value >= cost, "pay cost");
+        require(msg.value &gt;= cost, "Insufficient payment");
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
         emit Bought(msg.sender, amount, cost);
-        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+        if (msg.value &gt; cost) payable(msg.sender).transfer(msg.value - cost);
     }
-}
-</code></pre>
-        <aside class="notes">"Key: c keeps ln safe; k shapes how fast it rises before flattening. Pitch it as: good for keeping things sane after initial bootstrap."</aside>
+}</code></pre>
+        <aside class="notes">Same PRBMath pattern: wrap, compute, unwrap. The key detail is adding c before taking ln — that's what prevents ln(0). The integral of k·ln(s+c) is k·[(s+c)·ln(s+c) − (s+c)] — you can drop that in for O(1) gas in production.</aside>
       </section>
 
+      <!-- ============ SIGMOID — GRAPH ============ -->
       <section>
-        <h2>Sigmoid (S-curve)</h2>
+        <h2>Sigmoid (S-Curve): P = L / (1 + e<sup>&minus;k(S&minus;S&#8320;)</sup>)</h2>
         <ul>
-          <li>Example: L = 10, k = 0.2, S0 = 50 → slow start, mid surge, plateau ~10</li>
-          <li>Good when you want a soft cap / saturation behavior</li>
-          <li>Adjust S0 to shift inflection; k for steepness; L for ceiling</li>
-          <li class="subtle">Contract: <code>contracts/SigmoidBondingToken.sol</code></li>
+          <li><strong>L</strong> = ceiling price &nbsp;|&nbsp; <strong>k</strong> = steepness &nbsp;|&nbsp; <strong>S&#8320;</strong> = inflection point</li>
+          <li>Three phases: slow start &rarr; rapid ramp &rarr; plateau near L</li>
         </ul>
         <div id="calc-sig" class="calc"></div>
-        <aside class="notes">"Membership vibe: cheap early, mid-stage ramp, then it flattens near L. Slide S0 to show when the ramp kicks in."</aside>
+        <p class="subtle">Slide S&#8320; to shift the ramp. Slide k to sharpen or soften it.</p>
+        <aside class="notes">The sigmoid has three clear zones: a cheap floor zone, a transition zone where price ramps fast, and a ceiling zone where it flattens near L. Move S0 to control when the transition happens. Raise k to make the transition sharper. This is perfect when you want a soft cap — price can never exceed L.</aside>
       </section>
 
+      <!-- ============ SIGMOID — SOLIDITY ============ -->
       <section>
-        <h2>Sigmoid Solidity (Capped Growth)</h2>
-        <p class="subtle">Use case: memberships/credits with soft ceiling and mid-growth ramp.</p>
+        <h2>Sigmoid Solidity</h2>
+        <p class="subtle">Use case: memberships, credits &mdash; built-in price ceiling.</p>
         <pre><code class="hljs">// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import {PRBMathUD60x18} from "prb-math/PRBMathUD60x18.sol";
+
+import {UD60x18, ud, unwrap, exp, mul, div} from "prb-math/UD60x18.sol";
+
 contract SigmoidBondingToken {
-    using PRBMathUD60x18 for uint256;
-    uint256 public immutable L;  // ceiling price
-    uint256 public immutable k;  // steepness (1e18)
-    uint256 public immutable S0; // inflection
+    UD60x18 public immutable L;    // price ceiling
+    UD60x18 public immutable k;    // steepness
+    uint256 public immutable S0;   // inflection supply
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
+    mapping(address =&gt; uint256) public balanceOf;
+
     event Bought(address indexed buyer, uint256 amount, uint256 cost);
-    constructor(uint256 _L, uint256 _k, uint256 _S0) { L=_L; k=_k; S0=_S0; }
+
+    constructor(UD60x18 _L, UD60x18 _k, uint256 _S0) { L = _L; k = _k; S0 = _S0; }
+
+    /// @notice Sigmoid price: L / (1 + e^(-k * (s - S0)))
+    ///  Split into two branches to avoid negative exponents
+    ///  (UD60x18 is unsigned &mdash; can't represent negatives)
     function price(uint256 s) public view returns (uint256) {
-        if (s >= S0) {
-            uint256 expPos = k.mul(s - S0).exp();
-            return L.mul(expPos).div(1e18 + expPos);
+        if (s &gt;= S0) {
+            // s &gt;= S0 &rarr; exponent is positive &rarr; e^(k*(s-S0))
+            UD60x18 pos = exp(mul(k, ud((s - S0) * 1e18)));
+            // L * pos / (1 + pos)  &mdash; approaches L as pos grows
+            return unwrap(div(mul(L, pos), ud(1e18 + unwrap(pos))));
         } else {
-            uint256 expPos = k.mul(S0 - s).exp();
-            return L.div(1e18 + expPos);
+            // s &lt; S0 &rarr; flip sign: 1 / (1 + e^(k*(S0-s)))
+            UD60x18 pos = exp(mul(k, ud((S0 - s) * 1e18)));
+            // L / (1 + pos)  &mdash; approaches 0 as pos grows
+            return unwrap(div(L, ud(1e18 + unwrap(pos))));
         }
     }
+
     function costToMint(uint256 amount) public view returns (uint256) {
-        uint256 cost; uint256 s = totalSupply;
-        for (uint256 i = 0; i < amount; i++) cost += price(s + i);
+        uint256 cost;
+        uint256 s = totalSupply;
+        for (uint256 i = 0; i &lt; amount; i++) cost += price(s + i);
         return cost;
     }
+
     function mint(uint256 amount) external payable {
         uint256 cost = costToMint(amount);
-        require(msg.value >= cost, "pay cost");
+        require(msg.value &gt;= cost, "Insufficient payment");
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
         emit Bought(msg.sender, amount, cost);
-        if (msg.value > cost) payable(msg.sender).transfer(msg.value - cost);
+        if (msg.value &gt; cost) payable(msg.sender).transfer(msg.value - cost);
     }
-}
-</code></pre>
-        <p class="subtle">Use sigmoid to simulate saturation/ceiling pricing for memberships or bandwidth credits.</p>
-        <aside class="notes">"Translate params: L is the ceiling price, k is how sharp the bend is, S0 is where the bend happens. Perfect for soft caps."</aside>
+}</code></pre>
+        <aside class="notes">The tricky part here is that UD60x18 is unsigned — you can't compute a negative exponent directly. So we split: when s >= S0, the exponent is positive and we use L*e^x/(1+e^x). When s &lt; S0, we flip and use L/(1+e^x). Both give the same sigmoid, just computed safely. Walk through one branch with real numbers if students look confused.</aside>
       </section>
 
+      <!-- ============ PRODUCTION CHECKLIST ============ -->
       <section>
-        <h2>Solidity Building Blocks</h2>
+        <h2>Production Checklist</h2>
         <ul>
-          <li>Track total supply (S) and reserve asset</li>
-          <li>Price function P(S); buy/sell use integral to avoid loops</li>
-          <li>Events: Bought/Sold (buyer, amount, cost, price)</li>
-          <li>Security: reentrancy guard, fixed-point math, caps per tx</li>
+          <li>&check; <strong>Closed-form integrals</strong> &mdash; avoid loops, save gas</li>
+          <li>&check; <strong>Reentrancy guard</strong> &mdash; state changes before transfers</li>
+          <li>&check; <strong>Buy/sell spread or fee</strong> &mdash; protects reserve, deters MEV</li>
+          <li>&check; <strong>Per-tx &amp; supply caps</strong> &mdash; prevent whale manipulation</li>
+          <li>&check; <strong>Pausable + Events</strong> &mdash; emergency stop; emit Bought/Sold</li>
         </ul>
-        <aside class="notes">"Production checklist: fixed-point math library, no loops for pricing, add fees/spreads, sell path, pause switch, and guardrails."</aside>
+        <div class="callout">
+          Teaching contracts above skip fees, guards, and caps for clarity. Add them before deploying with real money.
+        </div>
+        <aside class="notes">None of the contracts we showed are production-ready as-is. Before deploying: replace loops with integrals, add ReentrancyGuard from OpenZeppelin, add a buy/sell spread (e.g., sell returns 95% of the curve price), add caps, and add a pause mechanism.</aside>
       </section>
 
+      <!-- ============ RISKS ============ -->
       <section>
-        <h2>Risks & Tips</h2>
+        <h2>Risks &amp; Gotchas</h2>
         <ul>
-          <li>Front-running around large buys/sells → add spread/fees</li>
-          <li>Precision loss on expo/log → fixed-point libs</li>
-          <li>Liquidity drain if sells not fee-adjusted</li>
-          <li>Test edge cases: start/end supply, large Δ, pause switches</li>
+          <li><strong>Front-running / MEV</strong> &mdash; bots sandwich your buy. Fix: spread/fees, max slippage.</li>
+          <li><strong>Precision loss</strong> &mdash; integer math rounds badly on exp/log. Fix: PRBMath + fuzz tests.</li>
+          <li><strong>Reserve drain</strong> &mdash; sell price = buy price lets large sells empty reserve. Fix: sell at discount.</li>
+          <li><strong>Extreme params</strong> &mdash; large k on exp can overflow. Test with realistic supply ranges.</li>
         </ul>
-        <aside class="notes">"MEV is real: spreads/fees help. Expo/log need good math libs. Always unit test start/end supply, big buys, and sell paths."</aside>
+        <aside class="notes">The biggest real-world risk is MEV. A sandwich attack buys before you and sells after, pocketing the price difference. A spread (e.g., sell price = 95% of buy price) makes this unprofitable. Precision: always fuzz test with small and huge supplies. Reserve drain: never let sell return 100% — that's a bank run waiting to happen.</aside>
       </section>
 
+      <!-- ============ CHOOSING A CURVE ============ -->
+      <section>
+        <h2>Which Curve Should I Use?</h2>
+        <div class="two-col">
+          <div>
+            <h3>Linear</h3>
+            <p class="subtle">Fair, boring, predictable.<br>Community tokens, DAOs.</p>
+            <h3>Exponential</h3>
+            <p class="subtle">FOMO rocket &mdash; reward early, punish late.<br>NFT drops, hype mints.</p>
+          </div>
+          <div>
+            <h3>Logarithmic</h3>
+            <p class="subtle">Fast start, then chill.<br>Utility tokens, API credits.</p>
+            <h3>Sigmoid</h3>
+            <p class="subtle">Built-in ceiling, three phases.<br>Memberships, bandwidth credits.</p>
+          </div>
+        </div>
+        <aside class="notes">Quick recap for decision-making: Linear if you want fairness. Exponential if you want to explicitly reward early movers. Log if you want early boost but stable long-term. Sigmoid if you need a price ceiling. You can also combine: start sigmoid then switch to linear after a cap is hit.</aside>
+      </section>
+
+      <!-- ============ POWER & ROOT CURVES ============ -->
+      <section>
+        <h2>Power Curves: P = a &middot; S<sup>n</sup></h2>
+        <ul>
+          <li><strong>Quadratic</strong> (n=2): P = a&middot;S&sup2; &mdash; Bancor v1, pump.fun. Aggressive, rewards early.</li>
+          <li><strong>Square Root</strong> (n=0.5): P = a&middot;&radic;S &mdash; gentle sub-linear growth. Bancor CW=0.5.</li>
+          <li>Slide <strong>n</strong> to morph between them. <strong>a</strong> scales the price.</li>
+        </ul>
+        <div id="calc-power" class="calc"></div>
+        <p class="subtle">Bancor connector weight: n = 1/CW &minus; 1. CW=0.5 &rarr; n=1 (linear). CW=0.33 &rarr; n=2 (quadratic).</p>
+        <aside class="notes">This is the most versatile family. With one slider you can go from square root (gentle, sub-linear) through linear to quadratic (aggressive, super-linear). pump.fun uses a steep polynomial where early tokens are nearly free and late ones explode. Friend.tech is literally x squared over 16000. Bancor's connector weight maps directly to the exponent: CW=1 gives constant price, CW=0.5 gives linear, smaller CW gives steeper curves.</aside>
+      </section>
+
+      <!-- ============ BANCOR & INVERSE CURVES ============ -->
+      <section>
+        <h2>Inverse &amp; Bancor Curves</h2>
+        <ul>
+          <li><span style="color:#e74c3c">&mdash;</span> <strong>Inverse / Hyperbolic:</strong> <span class="formula">P = k / (S<sub>max</sub> &minus; S)</span> &mdash; price &rarr; &infin; near cap. Natural hard cap.</li>
+          <li><span style="color:#f39c12">&mdash;</span> <strong>Friend.tech style:</strong> <span class="formula">P = S&sup2; / 16000</span> &mdash; pure quadratic, real-world example.</li>
+          <li><strong>Bancor Power:</strong> <span class="formula">P = R / (S &middot; CW)</span> &mdash; CW (connector weight) controls curvature. CW=1 &rarr; constant, CW&lt;1 &rarr; rising.</li>
+        </ul>
+        <div id="calc-special" class="calc"></div>
+        <p class="subtle">Drag S<sub>max</sub> to shift the price wall. Drag k to scale the inverse curve.</p>
+        <aside class="notes">The red curve is inverse/hyperbolic — notice how it shoots up near the max supply. That's a natural hard cap: you never need to check supply explicitly, the price itself makes minting impossible. Drag S_max to shift where the wall hits. The orange curve is the Friend.tech model — a clean quadratic. Bancor's formula P = R/(S*CW) is another way to express power curves: R is the reserve balance, S is supply, CW is a constant between 0 and 1 that controls convexity.</aside>
+      </section>
+
+      <!-- ============ PIECEWISE & HYBRID CURVES ============ -->
+      <section>
+        <h2>Piecewise &amp; Hybrid Curves</h2>
+        <div class="two-col">
+          <div>
+            <h3>Piecewise / Step</h3>
+            <p class="formula">P = P<sub>i</sub> for tier i</p>
+            <ul>
+              <li>Fixed price per supply bracket</li>
+              <li>Simple but creates cliff dynamics at tier boundaries</li>
+              <li>Used in tiered NFT mints, ICO tranches</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Custom / Hybrid</h3>
+            <p class="formula">P = f<sub>i</sub>(S) per segment</p>
+            <ul>
+              <li>Combine curves: linear start &rarr; sigmoid mid &rarr; flat cap</li>
+              <li>Friend.tech: S&sup2;/16000 (quadratic segment)</li>
+              <li>Any monotonic f(S) can be a bonding curve</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout">
+          Key insight: pick the shape that matches your economic goal. You're not limited to one formula &mdash; stitch segments together.
+        </div>
+        <aside class="notes">Piecewise is the simplest approach: just define flat prices for each supply bracket. Tier 1 is 0.01 ETH for tokens 0-100, tier 2 is 0.05 ETH for 100-500, etc. The downside is the cliff at each boundary — everyone rushes to buy right before a tier change. Hybrid curves fix this by using smooth functions within each segment. Real projects mix and match: start with a gentle linear phase, transition to a sigmoid for the mid-range, then flatten at a cap. The key takeaway: any monotonic function that maps supply to price can be a bonding curve. Choose or combine based on your tokenomics goals.</aside>
+      </section>
+
+      <!-- ============ RESOURCES ============ -->
       <section>
         <h2>Resources</h2>
         <ul>
-          <li>Guide: speedrunethereum.com/guides/solidity-bonding-curves-token-pricing</li>
-          <li>Math lib: prb-math</li>
+          <li>PRBMath docs: <a href="https://github.com/PaulRBerger/prb-math">github.com/PaulRBerger/prb-math</a></li>
+          <li>Guide: <a href="https://speedrunethereum.com/guides/solidity-bonding-curves-token-pricing">speedrunethereum.com &mdash; Bonding Curves</a></li>
+          <li>OpenZeppelin ReentrancyGuard: <a href="https://docs.openzeppelin.com/">docs.openzeppelin.com</a></li>
         </ul>
-        <aside class="notes">"Point them to the repo and tell them to try the sliders. If coding: install prb-math for expo/log/sigmoid."</aside>
+        <aside class="notes">PRBMath is the go-to for fixed-point math. The Speed Run Ethereum guide walks through a full implementation. OpenZeppelin for the security primitives you'll want to add.</aside>
       </section>
 
+      <!-- ============ Q&A ============ -->
       <section>
-        <h2>Q&A</h2>
-        <p>Ask about curve selection, fees, edge cases, or demo steps.</p>
-        <aside class="notes">"Prompt them: Which curve for fair community? For hype NFT? What fee/spread would you add to stop MEV?"</aside>
+        <h2>Q&amp;A</h2>
+        <p>Discussion prompts:</p>
+        <ul>
+          <li>Which curve would you pick for a DAO governance token? Why?</li>
+          <li>How would you add a spread/fee to the linear contract?</li>
+          <li>What happens if someone tries to sell all tokens at once?</li>
+        </ul>
+        <aside class="notes">Prompt students: pick a scenario and defend a curve choice. Ask: what fee percentage would make sandwiching unprofitable? Walk through a sell-all scenario — does the contract have enough reserve?</aside>
       </section>
 
     </div>
@@ -338,30 +566,50 @@ contract SigmoidBondingToken {
     window.addEventListener('load', () => {
       const opts = { expressions: true, settingsMenu: false, zoomButtons: false, expressionsTopbar: false };
 
+      /* ---- LINEAR ---- */
       const linear = Desmos.GraphingCalculator(document.getElementById('calc-linear'), opts);
       linear.setExpression({ id: 'm', latex: 'm=0.2', sliderBounds: { min: 0, max: 1, step: 0.01 } });
-      linear.setExpression({ id: 'b', latex: 'b=1', sliderBounds: { min: 0, max: 5, step: 0.1 } });
-      linear.setExpression({ id: 'p', latex: 'P=m\cdot x + b' });
-      linear.setExpression({ id: 'domain', latex: '0\le x \le 100' });
+      linear.setExpression({ id: 'b', latex: 'b=1',   sliderBounds: { min: 0, max: 5, step: 0.1 } });
+      linear.setExpression({ id: 'p', latex: 'P=m\\cdot x+b', color: '#2d9cdb' });
+      linear.setMathBounds({ left: 0, right: 100, bottom: -1, top: 25 });
 
-      const exp = Desmos.GraphingCalculator(document.getElementById('calc-exp'), opts);
-      exp.setExpression({ id: 'a', latex: 'a=0.5', sliderBounds: { min: 0.1, max: 2, step: 0.05 } });
-      exp.setExpression({ id: 'k', latex: 'k=0.08', sliderBounds: { min: 0.01, max: 0.3, step: 0.01 } });
-      exp.setExpression({ id: 'p', latex: 'P=a\cdot e^{k\cdot x}' });
-      exp.setExpression({ id: 'domain', latex: '0\le x \le 80' });
+      /* ---- EXPONENTIAL ---- */
+      const expCalc = Desmos.GraphingCalculator(document.getElementById('calc-exp'), opts);
+      expCalc.setExpression({ id: 'a', latex: 'a=0.5',  sliderBounds: { min: 0.1, max: 2, step: 0.05 } });
+      expCalc.setExpression({ id: 'k', latex: 'k=0.08', sliderBounds: { min: 0.01, max: 0.3, step: 0.01 } });
+      expCalc.setExpression({ id: 'p', latex: 'P=a\\cdot e^{k\\cdot x}', color: '#e97b2e' });
+      expCalc.setMathBounds({ left: 0, right: 80, bottom: -1, top: 20 });
 
+      /* ---- LOGARITHMIC ---- */
       const logc = Desmos.GraphingCalculator(document.getElementById('calc-log'), opts);
       logc.setExpression({ id: 'k', latex: 'k=2', sliderBounds: { min: 0.5, max: 5, step: 0.1 } });
       logc.setExpression({ id: 'c', latex: 'c=1', sliderBounds: { min: 0.1, max: 10, step: 0.1 } });
-      logc.setExpression({ id: 'p', latex: 'P=k\cdot \ln(x+c)' });
-      logc.setExpression({ id: 'domain', latex: '0\le x \le 100' });
+      logc.setExpression({ id: 'p', latex: 'P=k\\cdot\\ln\\left(x+c\\right)', color: '#27ae60' });
+      logc.setMathBounds({ left: 0, right: 100, bottom: -1, top: 15 });
 
+      /* ---- SIGMOID ---- */
       const sig = Desmos.GraphingCalculator(document.getElementById('calc-sig'), opts);
-      sig.setExpression({ id: 'L', latex: 'L=10', sliderBounds: { min: 5, max: 20, step: 0.5 } });
-      sig.setExpression({ id: 'k', latex: 'k=0.2', sliderBounds: { min: 0.05, max: 0.5, step: 0.01 } });
-      sig.setExpression({ id: 's0', latex: 'S_0=50', sliderBounds: { min: 0, max: 100, step: 1 } });
-      sig.setExpression({ id: 'p', latex: 'P=\frac{L}{1+e^{-k\cdot(x-S_0)}}' });
-      sig.setExpression({ id: 'domain', latex: '0\le x \le 120' });
+      sig.setExpression({ id: 'L',  latex: 'L=10',   sliderBounds: { min: 5, max: 20, step: 0.5 } });
+      sig.setExpression({ id: 'k',  latex: 'k=0.2',  sliderBounds: { min: 0.05, max: 0.5, step: 0.01 } });
+      sig.setExpression({ id: 's0', latex: 'S_0=50',  sliderBounds: { min: 0, max: 100, step: 1 } });
+      sig.setExpression({ id: 'p',  latex: 'P=\\frac{L}{1+e^{-k\\cdot\\left(x-S_0\\right)}}', color: '#9b59b6' });
+      sig.setMathBounds({ left: 0, right: 120, bottom: -1, top: 22 });
+
+      /* ---- POWER / POLYNOMIAL ---- */
+      const power = Desmos.GraphingCalculator(document.getElementById('calc-power'), opts);
+      power.setExpression({ id: 'a', latex: 'a=0.01', sliderBounds: { min: 0.001, max: 0.5, step: 0.001 } });
+      power.setExpression({ id: 'n', latex: 'n=2',    sliderBounds: { min: 0.3, max: 4, step: 0.1 } });
+      power.setExpression({ id: 'p', latex: 'P=a\\cdot x^{n}', color: '#e74c3c' });
+      power.setMathBounds({ left: 0, right: 100, bottom: -1, top: 20 });
+
+      /* ---- INVERSE & FRIEND.TECH ---- */
+      const special = Desmos.GraphingCalculator(document.getElementById('calc-special'), opts);
+      special.setExpression({ id: 'k',    latex: 'k=100',      sliderBounds: { min: 10, max: 500, step: 10 } });
+      special.setExpression({ id: 'smax', latex: 'S_{max}=100', sliderBounds: { min: 50, max: 200, step: 5 } });
+      special.setExpression({ id: 'inv',  latex: 'P=\\frac{k}{S_{max}-x}', color: '#e74c3c' });
+      special.setExpression({ id: 'ft',   latex: 'Q=\\frac{x^{2}}{16000}', color: '#f39c12' });
+      special.setExpression({ id: 'domain', latex: '0\\le x\\le S_{max}-1' });
+      special.setMathBounds({ left: 0, right: 120, bottom: -1, top: 25 });
     });
   </script>
 </body>

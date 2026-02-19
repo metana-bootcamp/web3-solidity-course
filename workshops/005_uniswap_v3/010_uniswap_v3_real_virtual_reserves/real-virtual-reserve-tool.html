@@ -1,0 +1,674 @@
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Real Reserves and Virtual Reserves in Uniswap V3</title>
+    <meta name="robots" content="noindex, nofollow"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin: 10px auto;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        .chart-container {
+            width: 600px;
+            margin: 0 auto;
+        }
+
+        .slider-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 550px) {
+            .slider-container {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                grid-template-columns: 40px 1fr 40px 20px;
+            }
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 40px 160px 40px 20px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .value-display {
+            min-width: 30px;
+        }
+
+        .legend-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .legend-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .legend-section h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .legend-line {
+            width: 40px;
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        .legend-line-thin {
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .brown-line {
+            background-color: rgb(139, 69, 19);
+        }
+
+        .purple-line {
+            background-color: rgb(128, 0, 128);
+        }
+
+        .orange-line {
+            background-color: rgb(255, 165, 0);
+        }
+
+        .pink-line {
+            background-color: rgb(255, 0, 255);
+        }
+
+        /* Specific styling for price slider (thicker) */
+        #sweepSlider {
+            height: 8px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 4px;
+        }
+
+        #sweepSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #007acc;
+            cursor: pointer;
+        }
+
+        #sweepSlider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #007acc;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Specific styling for bottom k-sliders */
+        input[id$="Slider"]:not(#sweepSlider) {
+            height: 4px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        input[id$="Slider"]:not(#sweepSlider)::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #666;
+            cursor: pointer;
+        }
+
+        input[id$="Slider"]:not(#sweepSlider)::-moz-range-thumb {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #666;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+
+<body bgcolor="white">
+    <div class="container">
+        <h1>Real Reserves and Virtual Reserves in Uniswap V3</h1>
+        <p>Move the price slider to see how the real and virtual reserves change</p>
+        <div
+            style="text-align: center; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <label for="sweepSlider">Price (p):</label>
+            <input type="range" id="sweepSlider" min="0" max="1000" value="500" style="width: 300px;">
+            <span id="sweepValue" class="value-display" style="min-width: 60px; text-align: left;">1.000</span>
+            <p><br /></p>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="hyperbolaChart"></canvas>
+        </div>
+
+        <div class="legend-container">
+            <div class="legend-section">
+                <h4>Real Reserves</h4>
+                <div class="legend-item">
+                    <div class="legend-line purple-line"></div>
+                    <span>Real reserves (X): <span id="purpleLength">0.00</span></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line brown-line"></div>
+                    <span>Real reserves (Y): <span id="brownLength">0.00</span></span>
+                </div>
+            </div>
+            <div class="legend-section">
+                <h4>Virtual Reserves</h4>
+                <div class="legend-item">
+                    <div class="legend-line-thin pink-line"></div>
+                    <span>Virtual reserves (X): <span id="pinkLength">0.00</span></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line-thin orange-line"></div>
+                    <span>Virtual reserves (Y): <span id="orangeLength">0.00</span></span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="slider-container">
+            <div class="column">
+                <div class="controls">
+                    <label for="k1Slider">k1:</label>
+                    <input type="range" id="k1Slider" min="0" max="40" value="16">
+                    <span id="k1Value" class="value-display">16</span>
+                    <div style="width: 20px; height: 20px; background-color: rgb(54, 162, 235);"></div>
+                </div>
+                <div class="controls">
+                    <label for="k2Slider">k2:</label>
+                    <input type="range" id="k2Slider" min="0" max="40" value="36">
+                    <span id="k2Value" class="value-display">36</span>
+                    <div style="width: 20px; height: 20px; background-color: rgb(255, 99, 132);"></div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="controls">
+                    <label for="k3Slider">k3:</label>
+                    <input type="range" id="k3Slider" min="0" max="40" value="32">
+                    <span id="k3Value" class="value-display">32</span>
+                    <div style="width: 20px; height: 20px; background-color: rgb(75, 192, 192);"></div>
+                </div>
+                <div class="controls">
+                    <label for="k4Slider">k4:</label>
+                    <input type="range" id="k4Slider" min="0" max="40" value="16">
+                    <span id="k4Value" class="value-display">16</span>
+                    <div style="width: 20px; height: 20px; background-color: rgb(255, 205, 86);"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const ctx = document.getElementById('hyperbolaChart').getContext('2d');
+        const sliders = {
+            k1: document.getElementById('k1Slider'),
+            k2: document.getElementById('k2Slider'),
+            k3: document.getElementById('k3Slider'),
+            k4: document.getElementById('k4Slider')
+        };
+        const displays = {
+            k1: document.getElementById('k1Value'),
+            k2: document.getElementById('k2Value'),
+            k3: document.getElementById('k3Value'),
+            k4: document.getElementById('k4Value')
+        };
+
+        function generatePoints(k, minRatio, maxRatio) {
+            if (k === 0) return [];
+
+            const points = [];
+            const numPoints = 1000;
+            const minY = 0.01;
+            const maxY = 10;
+
+            for (let y = minY; y <= maxY; y += (maxY - minY) / numPoints) {
+                const x = k / y;
+                if (x >= minRatio * y && x <= maxRatio * y) {
+                    points.push({
+                        x: x,
+                        y: y
+                    });
+                }
+            }
+            return points;
+        }
+
+        function generateBoundaryLine(ratio) {
+            const points = [];
+            const numPoints = 100;
+            const maxCoord = 10;
+
+            for (let t = 0; t <= 1; t += 1 / numPoints) {
+                const x = maxCoord * t;
+                const y = x / ratio;
+                if (y <= maxCoord) {
+                    points.push({ x, y });
+                }
+            }
+            return points;
+        }
+
+        const boundaryRatios = [4, 2, 1, 0.5];
+
+        // Initial boundary datasets
+        const boundaryLines = boundaryRatios.map(ratio => ({
+            label: `Boundary x/y = ${ratio}`,
+            data: generateBoundaryLine(ratio),
+            showLine: true,
+            borderColor: 'rgba(128, 128, 128, 0.5)',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            order: 1,
+            ratio: ratio
+        }));
+
+        const chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    ...boundaryLines,
+                    {
+                        label: 'xy = k₁ (2y ≤ x < 4y)',
+                        data: generatePoints(16, 2, 4),
+                        showLine: true,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgb(54, 162, 235)',
+                        pointRadius: 0.5,
+                        order: 2
+                    },
+                    {
+                        label: 'xy = k₂ (y ≤ x < 2y)',
+                        data: generatePoints(36, 1, 2),
+                        showLine: true,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgb(255, 99, 132)',
+                        pointRadius: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'xy = k₃ (0.5y ≤ x < y)',
+                        data: generatePoints(32, 0.5, 1),
+                        showLine: true,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgb(75, 192, 192)',
+                        pointRadius: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'xy = k₄ (0.25y ≤ x < 0.5y)',
+                        data: generatePoints(16, 0.25, 0.5),
+                        showLine: true,
+                        borderColor: 'rgb(255, 205, 86)',
+                        backgroundColor: 'rgb(255, 205, 86)',
+                        pointRadius: 1,
+                        order: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.2,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        min: 0,
+                        max: 10,
+                        grid: {
+                            color: '#ddd'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        min: 0,
+                        max: 10,
+                        grid: {
+                            color: '#ddd'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Add sweep line dataset (RED)
+        chart.data.datasets.push({
+            label: 'Sweep Line',
+            data: [],
+            showLine: true,
+            borderColor: 'rgb(255, 0, 0)',
+            backgroundColor: 'rgb(255, 0, 0)',
+            borderWidth: 2,
+            pointRadius: 0,
+            order: 3
+        });
+
+        // Add vertical tracking line (ORANGE)
+        chart.data.datasets.push({
+            label: 'Vertical Tracking Line',
+            data: [],
+            showLine: true,
+            borderColor: 'rgb(255, 165, 0)',
+            backgroundColor: 'rgb(255, 165, 0)',
+            borderWidth: 2,
+            pointRadius: 0,
+            order: 4
+        });
+
+        // Add horizontal tracking line (PINK/MAGENTA)
+        chart.data.datasets.push({
+            label: 'Horizontal Tracking Line',
+            data: [],
+            showLine: true,
+            borderColor: 'rgb(255, 0, 255)',
+            backgroundColor: 'rgb(255, 0, 255)',
+            borderWidth: 2,
+            pointRadius: 0,
+            order: 4
+        });
+
+        // Add thick brown vertical line (overlays orange within segment)
+        chart.data.datasets.push({
+            label: 'Brown Vertical Segment',
+            data: [],
+            showLine: true,
+            borderColor: 'rgb(139, 69, 19)',
+            backgroundColor: 'rgb(139, 69, 19)',
+            borderWidth: 14,
+            pointRadius: 0,
+            order: 5
+        });
+
+        // Add thick purple horizontal line (overlays pink within segment)
+        chart.data.datasets.push({
+            label: 'Purple Horizontal Segment',
+            data: [],
+            showLine: true,
+            borderColor: 'rgb(128, 0, 128)',
+            backgroundColor: 'rgb(128, 0, 128)',
+            borderWidth: 14,
+            pointRadius: 0,
+            order: 5
+        });
+
+        const sweepLineIndex = chart.data.datasets.length - 5;
+        const verticalTrackingIndex = chart.data.datasets.length - 4;
+        const horizontalTrackingIndex = chart.data.datasets.length - 3;
+        const brownVerticalIndex = chart.data.datasets.length - 2;
+        const purpleHorizontalIndex = chart.data.datasets.length - 1;
+
+        const sweepSlider = document.getElementById('sweepSlider');
+        const sweepValue = document.getElementById('sweepValue');
+        const brownLengthDisplay = document.getElementById('brownLength');
+        const purpleLengthDisplay = document.getElementById('purpleLength');
+        const orangeLengthDisplay = document.getElementById('orangeLength');
+        const pinkLengthDisplay = document.getElementById('pinkLength');
+
+        function updateSweepLine(value) {
+            const minPrice = 0.25;
+            const maxPrice = 4;
+            const midpoint = 500;
+
+            let price;
+            if (value <= midpoint) {
+                // Scale from 4 to 1
+                price = maxPrice - (maxPrice - 1) * (value / midpoint);
+            } else {
+                // Scale from 1 to 0.25
+                price = 1 - (1 - minPrice) * ((value - midpoint) / (1000 - midpoint));
+            }
+
+            // Calculate point on ray
+            const rayY = 10; // Fixed y-coordinate at top of chart
+            const rayX = price * rayY; // x = price * y
+
+            // Update sweep line (RED)
+            if (rayX <= 10) {
+                chart.data.datasets[sweepLineIndex].data = [
+                    { x: 0, y: 0 },
+                    { x: rayX, y: rayY }
+                ];
+            } else {
+                const intersectX = 10;
+                const intersectY = intersectX / price;
+                chart.data.datasets[sweepLineIndex].data = [
+                    { x: 0, y: 0 },
+                    { x: intersectX, y: intersectY }
+                ];
+            }
+
+            // Find intersection with the active hyperbola
+            const currentK = getCurrentK(price);
+            if (currentK > 0) {
+                // Calculate intersection point with hyperbola xy = k
+                const intersectX = Math.sqrt(currentK * price);
+                const intersectY = intersectX / price;
+
+                if (intersectX <= 10 && intersectY <= 10) {
+                    // Update vertical tracking line (ORANGE) - full line to axis
+                    chart.data.datasets[verticalTrackingIndex].data = [
+                        { x: intersectX, y: intersectY },
+                        { x: intersectX, y: 0 }
+                    ];
+
+                    // Update horizontal tracking line (PINK) - full line to axis
+                    chart.data.datasets[horizontalTrackingIndex].data = [
+                        { x: intersectX, y: intersectY },
+                        { x: 0, y: intersectY }
+                    ];
+
+                    // Determine segment boundaries
+                    let minRatio, maxRatio;
+                    if (price >= 2) {
+                        // k1 segment: 2y ≤ x < 4y
+                        minRatio = 2;
+                        maxRatio = 4;
+                    } else if (price >= 1) {
+                        // k2 segment: y ≤ x < 2y
+                        minRatio = 1;
+                        maxRatio = 2;
+                    } else if (price >= 0.5) {
+                        // k3 segment: 0.5y ≤ x < y
+                        minRatio = 0.5;
+                        maxRatio = 1;
+                    } else {
+                        // k4 segment: 0.25y ≤ x < 0.5y
+                        minRatio = 0.25;
+                        maxRatio = 0.5;
+                    }
+
+                    // Find where segment boundaries intersect the hyperbola
+                    const bottomY = Math.sqrt(currentK / maxRatio); // bottommost point
+                    const leftX = minRatio * Math.sqrt(currentK / minRatio); // leftmost point x-coordinate
+
+                    // Brown vertical line: from intersection point down to bottommost point of segment
+                    chart.data.datasets[brownVerticalIndex].data = [
+                        { x: intersectX, y: intersectY },
+                        { x: intersectX, y: bottomY }
+                    ];
+
+                    // Purple horizontal line: from intersection point left to leftmost x-coordinate of segment (same y-level)
+                    chart.data.datasets[purpleHorizontalIndex].data = [
+                        { x: intersectX, y: intersectY },
+                        { x: leftX, y: intersectY }
+                    ];
+
+                    // Calculate and display line lengths
+                    const brownLength = Math.abs(intersectY - bottomY);
+                    const purpleLength = Math.abs(intersectX - leftX);
+                    const orangeLength = intersectY; // Full vertical line to axis
+                    const pinkLength = intersectX; // Full horizontal line to axis
+
+                    brownLengthDisplay.textContent = brownLength.toFixed(2);
+                    purpleLengthDisplay.textContent = purpleLength.toFixed(2);
+                    orangeLengthDisplay.textContent = orangeLength.toFixed(2);
+                    pinkLengthDisplay.textContent = pinkLength.toFixed(2);
+
+                } else {
+                    chart.data.datasets[verticalTrackingIndex].data = [];
+                    chart.data.datasets[horizontalTrackingIndex].data = [];
+                    chart.data.datasets[brownVerticalIndex].data = [];
+                    chart.data.datasets[purpleHorizontalIndex].data = [];
+                    brownLengthDisplay.textContent = '0.00';
+                    purpleLengthDisplay.textContent = '0.00';
+                    orangeLengthDisplay.textContent = '0.00';
+                    pinkLengthDisplay.textContent = '0.00';
+                }
+            } else {
+                chart.data.datasets[verticalTrackingIndex].data = [];
+                chart.data.datasets[horizontalTrackingIndex].data = [];
+                chart.data.datasets[brownVerticalIndex].data = [];
+                chart.data.datasets[purpleHorizontalIndex].data = [];
+                brownLengthDisplay.textContent = '0.00';
+                purpleLengthDisplay.textContent = '0.00';
+                orangeLengthDisplay.textContent = '0.00';
+                pinkLengthDisplay.textContent = '0.00';
+            }
+
+            // Find which boundary line we're currently crossing
+            let activeRatio = null;
+            for (let i = 0; i < boundaryRatios.length - 1; i++) {
+                const currentRatio = boundaryRatios[i];
+                const nextRatio = boundaryRatios[i + 1];
+                if (price <= currentRatio && price > nextRatio) {
+                    activeRatio = currentRatio;
+                    break;
+                }
+            }
+            // Handle the last boundary
+            if (price <= boundaryRatios[boundaryRatios.length - 1]) {
+                activeRatio = boundaryRatios[boundaryRatios.length - 1];
+            }
+
+            // Update boundary line colors
+            boundaryRatios.forEach((ratio, index) => {
+                const isActive = ratio === activeRatio;
+                const newColor = isActive ? '#00A500' : 'rgba(128, 128, 128, 0.5)';
+                const newWidth = isActive ? 4 : 2;
+                if (chart.data.datasets[index].borderColor !== newColor || chart.data.datasets[index].borderWidth !== newWidth) {
+                    chart.data.datasets[index].borderColor = newColor;
+                    chart.data.datasets[index].borderWidth = newWidth;
+                }
+            });
+
+            // Update display value - show inverted price
+            sweepValue.textContent = (1 / price).toFixed(3);
+
+            chart.update('none');
+        }
+
+        function getCurrentK(price) {
+            // Determine which k value to use based on price
+            if (price >= 2) {
+                return parseInt(sliders.k1.value);
+            } else if (price >= 1) {
+                return parseInt(sliders.k2.value);
+            } else if (price >= 0.5) {
+                return parseInt(sliders.k3.value);
+            } else {
+                return parseInt(sliders.k4.value);
+            }
+        }
+
+        sweepSlider.addEventListener('input', (e) => {
+            updateSweepLine(parseInt(e.target.value));
+        });
+
+        const debouncedUpdate = debounce((index, k) => {
+            const ratios = [[2, 4], [1, 2], [0.5, 1], [0.25, 0.5]];
+            chart.data.datasets[index + boundaryRatios.length].data = generatePoints(k, ratios[index][0], ratios[index][1]);
+            chart.update();
+        }, 50);
+
+        Object.keys(sliders).forEach((key, index) => {
+            sliders[key].addEventListener('input', (e) => {
+                const k = parseInt(e.target.value);
+                displays[key].textContent = k;
+                debouncedUpdate(index, k);
+                // Update tracking lines when k values change
+                updateSweepLine(parseInt(sweepSlider.value));
+            });
+        });
+
+        // Initialize the sweep line
+        updateSweepLine(500);  // Start at midpoint where price = 1
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1d531a5d95fc417eb1dc8de066109eab","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+
+</html>
