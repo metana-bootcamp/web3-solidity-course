@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math for Smart Contracts — Curves, Fixed-Point &amp; PRBMath</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.2em; }
+    .reveal section p { margin-top: 0.15em; margin-bottom: 0.15em; }
+    .reveal ul { font-size: 0.82em; margin-top: 0.15em; margin-bottom: 0.15em; }
+    .reveal ul li { margin-bottom: 0.1em; }
+    .reveal pre { margin: 0.25em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.3; max-height: 400px; overflow-y: auto; }
+    .subtle { color: #bbb; font-size: 0.68em; margin-top: 0.2em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }
+    .badge { display: inline-block; padding: 3px 7px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.72em; }
+    .calc { width: 100%; height: 250px; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; overflow: hidden; background: #0b0f1c; }
+    .callout, .callout-blue, .callout-green, .callout-red { padding: 6px 10px; border-radius: 6px; font-size: 0.72em; margin: 4px 0; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; }
+    .callout-blue { background: rgba(45,156,219,0.08); border-left: 3px solid #2d9cdb; }
+    .callout-green { background: rgba(39,174,96,0.08); border-left: 3px solid #27ae60; }
+    .callout-red { background: rgba(231,76,60,0.08); border-left: 3px solid #e74c3c; }
+    .formula { font-family: monospace; font-size: 1.05em; color: #f5a623; }
+    .formula-lg { font-family: monospace; font-size: 1.25em; color: #f5a623; }
+    .truth-table { width: 100%; border-collapse: collapse; font-size: 0.7em; margin: 0.3em 0; }
+    .truth-table th { background: rgba(255,255,255,0.08); padding: 4px 8px; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.2); }
+    .truth-table td { padding: 3px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .truth-table tr:hover td { background: rgba(255,255,255,0.04); }
+    .step-num { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: #f5a623; color: #000; font-weight: bold; font-size: 0.75em; margin-right: 5px; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.82em; }
+      .reveal pre code { font-size: 0.5em; }
+      .calc { height: 200px; }
+      .two-col, .three-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ══════════════════════════════════════════════
+           PART 0 — INTRO
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h1>Math for Smart Contracts</h1>
+        <h3>Curves, Fixed-Point &amp; PRBMath</h3>
+        <p><span class="badge">Pre-requisite</span> <span class="badge">Solidity</span> <span class="badge">Math</span></p>
+        <p class="subtle">Everything you need before the Bonding Curves workshop</p>
+        <aside class="notes">This workshop covers the math foundations that the bonding curves workshop assumes you know. We'll start from middle-school level math — what is a function, what does a graph mean — and build up to fixed-point arithmetic and PRBMath in Solidity. No calculus required. By the end you'll be able to read any PRBMath contract.</aside>
+      </section>
+
+      <section>
+        <h2>What You Need to Know</h2>
+        <ul>
+          <li>&check; Basic Solidity: <code>uint256</code>, functions, <code>msg.value</code></li>
+          <li>&check; What a smart contract is and how to deploy one</li>
+          <li>&cross; No calculus needed</li>
+          <li>&cross; No prior math library experience needed</li>
+        </ul>
+        <div class="callout">
+          By the end: you'll understand <strong>curves as functions</strong>, <strong>why floats don't exist in Solidity</strong>, and how to use <strong>PRBMath</strong> to do real math on-chain.
+        </div>
+        <aside class="notes">Let's set expectations. If you can write a simple Solidity contract with a state variable and a function, you're ready. We will NOT need calculus, derivatives, or integrals. We'll build intuition for those concepts visually using graphs.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 1 — FUNCTIONS: THE BUILDING BLOCK
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#2d9cdb;">Part 1: What Is a Function?</h2>
+        <p>A function is a machine: <strong>input &rarr; rule &rarr; output</strong></p>
+        <div class="two-col">
+          <div>
+            <p class="formula-lg">f(x) = 2x + 3</p>
+            <table class="truth-table">
+              <tr><th>Input (x)</th><th>Output f(x)</th></tr>
+              <tr><td>0</td><td>3</td></tr>
+              <tr><td>1</td><td>5</td></tr>
+              <tr><td>5</td><td>13</td></tr>
+              <tr><td>10</td><td>23</td></tr>
+            </table>
+          </div>
+          <div>
+            <p class="subtle" style="margin-top:0;">Same thing in Solidity:</p>
+            <pre><code class="hljs">function f(uint256 x) pure returns (uint256) {
+    return 2 * x + 3;
+}</code></pre>
+            <div class="callout">
+              Every Solidity <code>view</code>/<code>pure</code> function that takes a number and returns a number <em>is</em> a math function.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">This is the most important slide if you're coming from a non-math background. A function is just a rule: you put a number in, you get a number out. f(x) = 2x + 3 means "double the input and add 3". That table on the left IS the function for those specific inputs. The Solidity code on the right does the exact same thing. When we say "bonding curve function" later, it's literally this: a Solidity function where the input is supply and the output is price.</aside>
+      </section>
+
+      <!-- ============ GRAPHING A FUNCTION ============ -->
+      <section>
+        <h2>Graphing a Function</h2>
+        <p>A graph plots every (input, output) pair as a dot. Connect the dots &rarr; a <strong>line</strong> or <strong>curve</strong>.</p>
+        <div id="calc-intro-line" class="calc"></div>
+        <p class="subtle" style="margin-top:0.3em;"><strong>X-axis</strong> = input &nbsp;|&nbsp; <strong>Y-axis</strong> = output &nbsp;|&nbsp; Drag <strong>m</strong> to tilt, <strong>b</strong> to shift &nbsp;|&nbsp; f(x) = m&middot;x + b &rarr; in bonding curves: x = supply, y = price</p>
+        <aside class="notes">This is a live Desmos graph. The blue line represents f(x) = mx + b for every value of x at once. The x-axis is horizontal (our input), the y-axis is vertical (our output). If you pick any point on the line and look down to x, that's the input, look left to y, that's the output. Drag the m slider — it's the slope, how steep the line is. Drag b — it's where the line crosses the y-axis. In DeFi, x will be "how many tokens exist" and y will be "what's the current price". That's it — that's a bonding curve.</aside>
+      </section>
+
+      <!-- ============ SLOPE ============ -->
+      <section>
+        <h2>Slope: How Fast Does It Rise?</h2>
+        <div class="two-col">
+          <div>
+            <p class="formula">slope = &Delta;y / &Delta;x</p>
+            <ul>
+              <li><strong>m = 2</strong> &rarr; steep, output doubles per unit</li>
+              <li><strong>m = 0.1</strong> &rarr; gentle, barely changes</li>
+              <li><strong>m = 0</strong> &rarr; flat line (fixed price!)</li>
+            </ul>
+            <div class="callout">
+              In DeFi: slope = how much <strong>price increases per token</strong> minted. Try m&nbsp;=&nbsp;0 vs m&nbsp;=&nbsp;1.
+            </div>
+          </div>
+          <div>
+            <div id="calc-slope" class="calc"></div>
+          </div>
+        </div>
+        <aside class="notes">Slope is the single most important concept for bonding curves. Rise over run: for every 1 unit you move right on x, how much does y go up? If m=0, the price never changes — that's a fixed-price sale. If m=0.5, every new token costs 0.5 more than the last. If m=2, it's aggressive — prices double per token. The whole point of bonding curves is choosing the right slope (or curve shape) for your economics.</aside>
+      </section>
+
+      <!-- ============ LINEAR vs CURVED ============ -->
+      <section>
+        <h2>Straight Lines vs. Curves</h2>
+        <p>A <strong>line</strong> has constant slope. A <strong>curve</strong> has changing slope.</p>
+        <div id="calc-line-vs-curve" class="calc"></div>
+        <p class="subtle" style="margin-top:0.3em;"><span style="color:#2d9cdb;">&mdash;</span> Blue (linear): same rate &nbsp;|&nbsp; <span style="color:#e97b2e;">&mdash;</span> Orange (expo): accelerates &nbsp;|&nbsp; <span style="color:#27ae60;">&mdash;</span> Green (log): slows down &nbsp;|&nbsp; Each shape = a different economic personality.</p>
+        <aside class="notes">Here's the key insight: with a straight line, every new token adds the same price increase. With exponential, early tokens are cheap but later ones get progressively more expensive — the slope itself increases. With logarithmic, the curve rises fast early then flattens — later tokens barely increase in price. You're choosing the economic personality of your token by choosing the shape.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 2 — MEET THE CURVES
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e97b2e;">Part 2: The Five Curves You'll See in DeFi</h2>
+        <div class="three-col">
+          <div>
+            <h3>Linear</h3>
+            <p class="formula">y = mx + b</p>
+            <p class="subtle">Constant growth</p>
+          </div>
+          <div>
+            <h3>Quadratic</h3>
+            <p class="formula">y = ax&sup2;</p>
+            <p class="subtle">Accelerating growth</p>
+          </div>
+          <div>
+            <h3>Square Root</h3>
+            <p class="formula">y = &radic;x</p>
+            <p class="subtle">Decelerating growth</p>
+          </div>
+        </div>
+        <div class="two-col" style="margin-top: 12px;">
+          <div>
+            <h3>Exponential</h3>
+            <p class="formula">y = e<sup>x</sup></p>
+            <p class="subtle">Explosive growth</p>
+          </div>
+          <div>
+            <h3>Logarithmic</h3>
+            <p class="formula">y = ln(x)</p>
+            <p class="subtle">Diminishing growth</p>
+          </div>
+        </div>
+        <aside class="notes">These five shapes are the building blocks. Every bonding curve you'll encounter in DeFi is one of these, or a combination. Let's go through each one with a graph, a table of values, and what it means economically.</aside>
+      </section>
+
+      <!-- ============ LINEAR DEEP DIVE ============ -->
+      <section>
+        <h2>Linear: y = mx + b</h2>
+        <div class="two-col">
+          <div>
+            <p><strong>The idea:</strong> output grows at a constant rate.</p>
+            <table class="truth-table">
+              <tr><th>x</th><th>y (m=0.5, b=1)</th><th>&Delta;y</th></tr>
+              <tr><td>0</td><td>1.0</td><td>&mdash;</td></tr>
+              <tr><td>2</td><td>2.0</td><td>+1.0</td></tr>
+              <tr><td>4</td><td>3.0</td><td>+1.0</td></tr>
+              <tr><td>6</td><td>4.0</td><td>+1.0</td></tr>
+              <tr><td>8</td><td>5.0</td><td>+1.0</td></tr>
+            </table>
+            <div class="callout">
+              &Delta;y is always the same &rarr; <strong>straight line</strong>.
+            </div>
+          </div>
+          <div>
+            <pre><code class="hljs">// Solidity: linear pricing
+function price(uint256 supply)
+    pure returns (uint256)
+{
+    // m = 0.5 (as 5e17 in fixed-point)
+    // b = 1   (as 1e18 in fixed-point)
+    return supply * 5e17 / 1e18 + 1;
+    // simplified: supply / 2 + 1
+}</code></pre>
+            <p class="subtle"><strong>DeFi use:</strong> community tokens, DAOs. Fair and predictable &mdash; every token adds the same price bump.</p>
+          </div>
+        </div>
+        <aside class="notes">Linear is the simplest. The delta column shows that y always increases by the same amount (1.0 here) for every 2 units of x. That's what makes it a line. In Solidity, this is literally supply-times-slope-plus-base. When we say "bonding curve", a linear one is the easiest to build and audit.</aside>
+      </section>
+
+      <!-- ============ QUADRATIC DEEP DIVE ============ -->
+      <section>
+        <h2>Quadratic: y = ax&sup2;</h2>
+        <div class="two-col">
+          <div>
+            <p><strong>The idea:</strong> the further right, the faster it grows.</p>
+            <table class="truth-table">
+              <tr><th>x</th><th>y (a=1)</th><th>&Delta;y</th></tr>
+              <tr><td>1</td><td>1</td><td>&mdash;</td></tr>
+              <tr><td>2</td><td>4</td><td>+3</td></tr>
+              <tr><td>3</td><td>9</td><td>+5</td></tr>
+              <tr><td>5</td><td>25</td><td>+9</td></tr>
+            </table>
+            <div class="callout">
+              &Delta;y <em>increases</em> each step &rarr; <strong>curved upward</strong>.
+            </div>
+          </div>
+          <div>
+            <div id="calc-quadratic" class="calc"></div>
+            <p class="subtle"><strong>DeFi use:</strong> Friend.tech (P = S&sup2;/16000), pump.fun. Rewards early buyers aggressively.</p>
+          </div>
+        </div>
+        <aside class="notes">Look at the delta column: 1, 3, 5, 7, 9 — the increases themselves are increasing. That's what makes the graph curve upward. At x=1 you pay 1, at x=5 you pay 25 — that's 25x more for being late. Friend.tech uses exactly this: S squared over 16000. The first key share is basically free, the 100th costs over 0.6 ETH. This is the "FOMO curve".</aside>
+      </section>
+
+      <!-- ============ SQUARE ROOT DEEP DIVE ============ -->
+      <section>
+        <h2>Square Root: y = &radic;x</h2>
+        <div class="two-col">
+          <div>
+            <p><strong>The idea:</strong> fast early rise, then flattens.</p>
+            <table class="truth-table">
+              <tr><th>x</th><th>y = &radic;x</th><th>&Delta;y</th></tr>
+              <tr><td>1</td><td>1.0</td><td>&mdash;</td></tr>
+              <tr><td>4</td><td>2.0</td><td>+1.0</td></tr>
+              <tr><td>16</td><td>4.0</td><td>+1.0</td></tr>
+              <tr><td>100</td><td>10.0</td><td>&mdash;</td></tr>
+            </table>
+            <div class="callout">
+              To double the output you must <strong>quadruple</strong> the input.
+            </div>
+          </div>
+          <div>
+            <div id="calc-sqrt" class="calc"></div>
+            <p class="subtle"><strong>DeFi use:</strong> Bancor continuous tokens (CW = 0.5). Rewards early growth but doesn't punish latecomers.</p>
+          </div>
+        </div>
+        <aside class="notes">Square root is the opposite personality of quadratic. It rises fast at the beginning — the first 4 tokens produce a big price jump — but then flattens. To go from price 5 to price 10, you need to go from supply 25 to supply 100. That's a lot of tokens for modest price growth. This is the "fair growth" curve: early supporters get rewarded, but it's not punishing to join later.</aside>
+      </section>
+
+      <!-- ============ EXPONENTIAL DEEP DIVE ============ -->
+      <section>
+        <h2>Exponential: y = e<sup>x</sup></h2>
+        <div class="two-col">
+          <div>
+            <p><strong>The idea:</strong> output <em>multiplies</em> rather than adds.</p>
+            <table class="truth-table">
+              <tr><th>x</th><th>y = e<sup>x</sup></th><th>Ratio</th></tr>
+              <tr><td>0</td><td>1.0</td><td>&mdash;</td></tr>
+              <tr><td>1</td><td>2.7</td><td>&times;2.7</td></tr>
+              <tr><td>3</td><td>20.1</td><td>&times;2.7</td></tr>
+              <tr><td>5</td><td>148.4</td><td>&times;2.7</td></tr>
+            </table>
+            <div class="callout-red">
+              Each step <strong>multiplies by 2.7</strong>. By x=5, it's 148&times; the start!
+            </div>
+          </div>
+          <div>
+            <div id="calc-expo" class="calc"></div>
+            <p class="subtle"><strong>What is <em>e</em>?</strong> ≈ 2.71828 — a special constant. Like &pi;, it shows up everywhere in growth/decay.</p>
+          </div>
+        </div>
+        <aside class="notes">Exponential is the scariest curve. Instead of adding a fixed amount each step, you MULTIPLY by a fixed ratio each step. That ratio is e ≈ 2.718. At x=5 you're at 148 — that's 148 times the starting value in just 5 steps. This is compound growth, the same math as compound interest. In DeFi this means the 50th token might cost 1000x what the first token cost. Extremely aggressive. Only use this if you really want to reward the absolute earliest buyers.</aside>
+      </section>
+
+      <!-- ============ WHAT IS e? ============ -->
+      <section>
+        <h2>Sidebar: What Is <em>e</em>?</h2>
+        <p>You know &pi; ≈ 3.14 (circles). Meet <strong>e ≈ 2.718</strong> (growth).</p>
+        <ul>
+          <li>Imagine $1 in a bank at 100% annual interest</li>
+          <li>Compounded <strong>once</strong>: $1 &times; 2 = $2.00</li>
+          <li>Compounded <strong>twice</strong>: $1 &times; 1.5&sup2; = $2.25</li>
+          <li>Compounded <strong>daily</strong>: $1 &times; (1 + 1/365)<sup>365</sup> = $2.714...</li>
+          <li>Compounded <strong>infinitely</strong>: $1 &times; e = <strong>$2.71828...</strong></li>
+        </ul>
+        <div class="callout-blue">
+          <strong>e</strong> = the limit of (1 + 1/n)<sup>n</sup> as n &rarr; &infin;.<br>
+          It's the base rate of continuous growth. That's why e<sup>kx</sup> means "grow continuously at rate k".
+        </div>
+        <aside class="notes">If you've always wondered what e is: it comes from compound interest. If you compound 100% interest more and more frequently, the answer converges to 2.71828 — that's e. It's the natural base for continuous growth. When you see e^(k*x) in a bonding curve, it means "grow continuously at rate k per unit of supply". k controls speed, e is just the mathematical engine that makes continuous compounding work.</aside>
+      </section>
+
+      <!-- ============ LOGARITHM DEEP DIVE ============ -->
+      <section>
+        <h2>Logarithm: y = ln(x)</h2>
+        <div class="two-col">
+          <div>
+            <p><strong>The idea:</strong> inverse of expo. "What exponent gives me x?"</p>
+            <table class="truth-table">
+              <tr><th>x</th><th>y = ln(x)</th><th>&Delta;y</th></tr>
+              <tr><td>1</td><td>0.00</td><td>&mdash;</td></tr>
+              <tr><td>10</td><td>2.30</td><td>+2.30</td></tr>
+              <tr><td>100</td><td>4.61</td><td>+2.31</td></tr>
+            </table>
+            <div class="callout">
+              1&rarr;10 gains 2.3. 10&rarr;100 gains just 2.3 more. Logarithmic = diminishing returns.
+            </div>
+          </div>
+          <div>
+            <div id="calc-log-intro" class="calc"></div>
+            <p class="subtle"><strong>DeFi use:</strong> utility tokens. Fast early price growth, then stable &mdash; latecomers aren't punished.</p>
+          </div>
+        </div>
+        <aside class="notes">Logarithm is the mirror image of exponential. It asks: "e to what power gives me x?" If e^2.3 = 10, then ln(10) = 2.3. The practical meaning: ln grows fast at first, then barely moves. Going from 1 to 100 gives you ln = 4.6. Going from 100 to 10,000 would only give you another 4.6. This makes it perfect for utility tokens: early momentum pushes the price up, but it stabilizes for late adopters. Nobody gets punished for joining later.</aside>
+      </section>
+
+      <!-- ============ CURVE COMPARISON ============ -->
+      <section>
+        <h2>All Five Together</h2>
+        <div id="calc-all-five" class="calc" style="height: 260px;"></div>
+        <ul>
+          <li><span style="color:#2d9cdb;">&mdash;</span> Linear &nbsp;|&nbsp; <span style="color:#e74c3c;">&mdash;</span> Quadratic &nbsp;|&nbsp; <span style="color:#27ae60;">&mdash;</span> Square Root &nbsp;|&nbsp; <span style="color:#e97b2e;">&mdash;</span> Exponential &nbsp;|&nbsp; <span style="color:#9b59b6;">&mdash;</span> Logarithmic</li>
+        </ul>
+        <div class="callout">
+          Same input range, wildly different outputs. <strong>Choosing a curve = choosing economics.</strong>
+        </div>
+        <aside class="notes">Now you can see all five on one graph. Same x-axis range, but look how different they are at x=10. Exponential is already off the chart. Quadratic is rising fast. Linear is moderate. Square root and log are the gentlest. When a DeFi project picks a curve, they're literally picking one of these shapes to control how price behaves as supply grows. It's pure math with direct economic consequences.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 3 — AREA UNDER A CURVE (INTEGRALS, NO CALCULUS)
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#27ae60;">Part 3: Area Under a Curve</h2>
+        <p>When you buy multiple tokens, each one costs a different price. How do you find the total cost?</p>
+        <div class="callout">
+          <strong>Total cost = area under the curve</strong> between your start and end supply.
+        </div>
+        <div id="calc-area" class="calc"></div>
+        <p class="subtle">Shaded area = total ETH to buy tokens from supply 2 to 8.</p>
+        <aside class="notes">This is where people get scared because someone says "integral". Forget that word for now. Think of it as area. If the x-axis is supply and the y-axis is price, then the total cost of buying tokens from supply 2 to supply 8 is the shaded area under the curve between those two points. Each thin vertical strip is one token at its specific price. Add them all up = total cost. That's it.</aside>
+      </section>
+
+      <!-- ============ AREA — COUNTING RECTANGLES ============ -->
+      <section>
+        <h2>Counting Rectangles (The Loop Way)</h2>
+        <p>Curve: <span class="formula">P(s) = 0.5s + 1</span> &nbsp;|&nbsp; Buy tokens #3 &ndash; #7 (5 tokens)</p>
+        <div class="two-col">
+          <div>
+            <table class="truth-table">
+              <tr><th>Token</th><th>s</th><th>Price</th></tr>
+              <tr><td>3</td><td>2</td><td><strong>2.0</strong></td></tr>
+              <tr><td>4</td><td>3</td><td><strong>2.5</strong></td></tr>
+              <tr><td>5</td><td>4</td><td><strong>3.0</strong></td></tr>
+              <tr><td>6</td><td>5</td><td><strong>3.5</strong></td></tr>
+              <tr><td>7</td><td>6</td><td><strong>4.0</strong></td></tr>
+            </table>
+          </div>
+          <div>
+            <p class="formula">Total = 2+2.5+3+3.5+4 = <span style="color:#f5a623;">15.0</span></p>
+            <div class="callout">
+              Solidity: <code>for (i=0; i&lt;5; i++) cost += price(s+i);</code><br>
+              Works, but <strong>O(n) gas</strong> &mdash; expensive for large buys.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Here's the simple way: just compute the price at each supply level and add them up. Token 3 is at supply 2, so price is 2.0. Token 4 is at supply 3, price is 2.5. And so on. Total is 15 ETH. In Solidity this is literally a for loop. Problem? If someone buys 1000 tokens, that's 1000 iterations. Each costs gas. At some point it'll hit the block gas limit and fail.</aside>
+      </section>
+
+      <!-- ============ AREA — THE SHORTCUT ============ -->
+      <section>
+        <h2>The Shortcut: One Formula</h2>
+        <p>Linear curve &rarr; area = <strong>trapezoid</strong>: <span class="formula">Area = (top + bottom) &times; width / 2</span></p>
+        <div class="two-col">
+          <div>
+            <p class="subtle" style="margin:0;">Bottom = P(2) = 2.0 &nbsp;|&nbsp; Top = P(6) = 4.0 &nbsp;|&nbsp; Width = 5</p>
+            <p class="formula">= (2.0 + 4.0) &times; 5 / 2 = <span style="color:#f5a623;">15.0</span> &check;</p>
+          </div>
+          <div>
+            <div class="callout-green">
+              <strong>One multiplication replaces the entire loop.</strong><br>
+              O(1) gas instead of O(n). Works for any amount!
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          Every curve has its own shortcut (the "integral"). Linear: trapezoid. Exponential: (a/k)&middot;(e<sup>kS2</sup>&minus;e<sup>kS1</sup>). You don't derive them &mdash; just plug in.
+        </div>
+        <aside class="notes">For a straight line, the area between two x-values is a trapezoid. You just need the height at both ends and the width. (2 + 4) times 5 divided by 2 = 15. Same answer as the loop, but ONE computation instead of five. In Solidity: one formula, constant gas, works even for a million tokens. Each curve shape has its own shortcut. For linear it's the trapezoid formula. For exponential it involves e^x. For log it involves x*ln(x). You don't need to derive these — they're in textbooks and in PRBMath docs. You just need to understand WHY we use them: to avoid the gas-expensive loop.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 4 — THE SOLIDITY PROBLEM: NO FLOATS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e74c3c;">Part 4: Solidity Can't Do Decimals</h2>
+        <p>Quick: what's the result of these Solidity operations?</p>
+        <pre><code class="hljs">uint256 a = 7 / 2;    // = ?
+uint256 b = 1 / 3;    // = ?
+uint256 c = 5 / 10;   // = ?</code></pre>
+        <div class="callout-red" style="margin-top: 10px;">
+          <strong>a = 3, b = 0, c = 0</strong> &mdash; Solidity throws away the decimal part!
+        </div>
+        <ul>
+          <li>7/2 should be 3.5 &rarr; Solidity gives you <strong>3</strong> (truncates toward zero)</li>
+          <li>1/3 should be 0.333... &rarr; Solidity gives you <strong>0</strong></li>
+          <li>No <code>float</code>, no <code>double</code>, no <code>decimal</code> type exists in Solidity</li>
+        </ul>
+        <aside class="notes">This is the reality check. If you try to divide 7 by 2 in Solidity, you get 3 — not 3.5. The .5 is gone forever. 1 divided by 3 is 0. Not 0.33, just 0. There is no float type, no double, no decimal. Only integers. Now think about our curves: e^0.08 = 1.0833. How do we compute that? We need a trick.</aside>
+      </section>
+
+      <!-- ============ THE TRICK ============ -->
+      <section>
+        <h2>The Trick: Pretend Integers Are Decimals</h2>
+        <p>What if we agree: <strong>"1e18 means 1.0"</strong>?</p>
+        <table class="truth-table" style="max-width: 600px; margin: 0 auto;">
+          <tr><th>Real Number</th><th>Fixed-Point (×10<sup>18</sup>)</th><th>Solidity Literal</th></tr>
+          <tr><td>1.0</td><td>1,000,000,000,000,000,000</td><td><code>1e18</code></td></tr>
+          <tr><td>0.5</td><td>500,000,000,000,000,000</td><td><code>5e17</code></td></tr>
+          <tr><td>0.08</td><td>80,000,000,000,000,000</td><td><code>8e16</code></td></tr>
+          <tr><td>2.5</td><td>2,500,000,000,000,000,000</td><td><code>25e17</code></td></tr>
+          <tr><td>3.14159</td><td>3,141,590,000,000,000,000</td><td><code>3141590000000000000</code></td></tr>
+        </table>
+        <div class="callout">
+          This is called <strong>fixed-point arithmetic</strong>. We multiply every number by 10<sup>18</sup> before storing it. The 18 zeros are the "decimal places".
+        </div>
+        <aside class="notes">Here's the trick. We agree on a convention: every number is stored as itself times 10 to the 18th. So 1.0 is stored as 1 followed by 18 zeros. 0.5 is 5 followed by 17 zeros. Now our integers CAN represent decimals — we just have to remember to account for the scaling. This is called fixed-point arithmetic because the "decimal point" is always at a fixed position — 18 digits from the right. ERC-20 tokens already do this! When you have 1 USDC, the contract stores 1e6. Same idea, just with 18 decimals instead of 6.</aside>
+      </section>
+
+      <!-- ============ FIXED-POINT ARITHMETIC ============ -->
+      <section>
+        <h2>Fixed-Point Arithmetic: The Rules</h2>
+        <div class="two-col">
+          <div>
+            <h3>Addition &amp; Subtraction</h3>
+            <p>Just add/subtract normally:</p>
+            <pre><code class="hljs">// 1.5 + 0.3 = 1.8
+uint256 a = 15e17; // 1.5
+uint256 b = 3e17;  // 0.3
+uint256 c = a + b; // 18e17 = 1.8 ✓</code></pre>
+            <div class="callout-green">
+              Addition &amp; subtraction: <strong>no adjustment needed</strong>.
+            </div>
+          </div>
+          <div>
+            <h3>Multiplication</h3>
+            <p>Divide by 1e18 after multiplying:</p>
+            <pre><code class="hljs">// 1.5 × 0.3 = 0.45
+uint256 a = 15e17; // 1.5
+uint256 b = 3e17;  // 0.3
+uint256 c = a * b / 1e18;
+// = 45e34 / 1e18 = 45e16 = 0.45 ✓</code></pre>
+            <div class="callout-red">
+              Multiplication: <strong>must divide by 1e18</strong> to fix the double scaling.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Here's where it gets practical. Addition is easy: 1.5e18 + 0.3e18 = 1.8e18. The scales just add up normally. Multiplication is tricky: 1.5e18 times 0.3e18 = 0.45e36. That's scaled by 10^36, not 10^18! So we divide the result by 1e18 to get back to the correct scale: 0.45e18. This is the #1 gotcha in fixed-point math. If you forget the /1e18 after a multiply, your numbers will be 10^18 too large. Division is the reverse — multiply by 1e18 first, then divide.</aside>
+      </section>
+
+      <!-- ============ FIXED-POINT DIVISION ============ -->
+      <section>
+        <h2>Fixed-Point: Division Trap</h2>
+        <pre><code class="hljs">// WRONG: 3.0 / 2.0 = ???
+uint256 a = 3e18;  // 3.0
+uint256 b = 2e18;  // 2.0
+uint256 wrong = a / b;        // = 1  (lost all decimals!)
+
+// RIGHT: multiply FIRST, then divide
+uint256 right = a * 1e18 / b; // = 3e36 / 2e18 = 15e17 = 1.5 ✓</code></pre>
+        <div class="callout">
+          <strong>Rule:</strong> for fixed-point division, multiply the numerator by 1e18 <em>before</em> dividing.
+        </div>
+        <table class="truth-table" style="max-width: 650px; margin: 0.4em auto;">
+          <tr><th>Operation</th><th>Formula</th><th>Why</th></tr>
+          <tr><td>a + b</td><td><code>a + b</code></td><td>Scales match</td></tr>
+          <tr><td>a &minus; b</td><td><code>a - b</code></td><td>Scales match</td></tr>
+          <tr><td>a &times; b</td><td><code>a * b / 1e18</code></td><td>Undo double-scaling</td></tr>
+          <tr><td>a &divide; b</td><td><code>a * 1e18 / b</code></td><td>Pre-scale numerator</td></tr>
+        </table>
+        <aside class="notes">Division is even trickier. 3e18 divided by 2e18 gives you 1 — not 1.5e18! The 18 decimal places cancelled out. Fix: multiply the numerator by 1e18 first, THEN divide. 3e36 / 2e18 = 1.5e18 = 1.5. That table at the bottom is your cheat sheet. Print it out. For addition: just do it. Multiplication: divide by 1e18 at the end. Division: multiply by 1e18 at the start. Mess this up, and you'll either overflow or lose all precision.</aside>
+      </section>
+
+      <!-- ============ OVERFLOW DANGER ============ -->
+      <section>
+        <h2>Danger: Overflow</h2>
+        <pre><code class="hljs">// uint256 max = 2^256 - 1 ≈ 1.16 × 10^77
+
+// Multiplying two large fixed-point numbers:
+uint256 a = 1000e18; // 1000.0
+uint256 b = 1000e18; // 1000.0
+// a * b = 1e42 → still fits in uint256 ✓
+
+// But three multiplications chained:
+// a * b * c before dividing = 1e63 → might overflow!
+
+// Safe approach: divide between multiplications
+uint256 ab = a * b / 1e18;  // 1e42 / 1e18 = 1e24 ✓
+uint256 result = ab * c / 1e18; // stays manageable</code></pre>
+        <div class="callout-red">
+          <strong>Rule of thumb:</strong> always divide by 1e18 <em>between</em> each multiplication, not all at the end.
+        </div>
+        <p class="subtle">PRBMath handles this for you internally &mdash; that's a big reason to use it.</p>
+        <aside class="notes">Fixed-point math has a landmine: overflow. uint256 can hold up to about 1.16 times 10 to the 77th. Sounds huge, but 1e18 times 1e18 is already 1e36. Chain three multiplications and you're at 1e54. Two more and you overflow. The safe pattern: divide by 1e18 after EVERY multiplication, not at the end. PRBMath does this internally — it carefully orders operations to maximize precision while avoiding overflow. That's one of the biggest reasons to use a library instead of rolling your own math.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 5 — ENTER PRBMath
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#9b59b6;">Part 5: PRBMath — The Library</h2>
+        <p>PRBMath gives you <strong>exp, ln, sqrt, pow, mul, div</strong> — all in fixed-point.</p>
+        <div class="two-col">
+          <div>
+            <h3>Without PRBMath</h3>
+            <pre><code class="hljs">// How do you compute e^(0.08)?
+// You can't. Solidity has no exp().
+// You'd need a Taylor series:
+// e^x ≈ 1 + x + x²/2 + x³/6 + ...
+// Each term needs careful fixed-point
+// mul and div with overflow checks.
+// 20+ lines of tricky math code.</code></pre>
+          </div>
+          <div>
+            <h3>With PRBMath</h3>
+            <pre><code class="hljs">import {UD60x18, ud, exp}
+    from "prb-math/UD60x18.sol";
+
+UD60x18 result = exp(ud(0.08e18));
+// result ≈ 1.0833e18
+// Done. One line.</code></pre>
+          </div>
+        </div>
+        <div class="callout">
+          PRBMath wraps all the overflow-safe, precision-maximizing fixed-point math behind simple function calls.
+        </div>
+        <aside class="notes">This is why PRBMath exists. Without it, computing e^0.08 in Solidity requires implementing a Taylor series expansion with careful overflow management at every step. That's 20+ lines of code that's easy to get wrong. With PRBMath: one import, one function call. It handles the Taylor series, the overflow protection, the precision optimization — all under the hood. You just call exp() and get the answer.</aside>
+      </section>
+
+      <!-- ============ UD60x18 EXPLAINED ============ -->
+      <section>
+        <h2>UD60x18: The Type</h2>
+        <div class="callout-blue">
+          <strong>U</strong>nsigned <strong>D</strong>ecimal, <strong>60</strong> integer bits, <strong>18</strong> fractional digits
+        </div>
+        <ul>
+          <li>It's still a <code>uint256</code> under the hood &mdash; just wrapped in a custom type</li>
+          <li>The 18 digits = same precision as ERC-20 tokens (ETH has 18 decimals)</li>
+          <li>60 integer bits = up to ~1.15 &times; 10<sup>18</sup> before the decimal point</li>
+          <li><strong>Unsigned</strong> = no negative numbers (there's SD59x18 for signed)</li>
+        </ul>
+        <pre><code class="hljs">// UD60x18 is just a wrapper around uint256
+type UD60x18 is uint256;
+
+// The "ud" function wraps a raw uint256 into this type
+function ud(uint256 x) pure returns (UD60x18) {
+    return UD60x18.wrap(x);
+}
+
+// The "unwrap" function gets the raw uint256 back
+function unwrap(UD60x18 x) pure returns (uint256) {
+    return UD60x18.unwrap(x);
+}</code></pre>
+        <p class="subtle">Think of UD60x18 as a "labeled box" that says "I'm a fixed-point number — use special math on me".</p>
+        <aside class="notes">UD60x18 sounds intimidating but it's simple. It's a uint256 that the compiler treats as a special type so you can't accidentally mix it with regular integers. U = unsigned (no negatives), D = decimal, 60 = the integer part can be up to 60 bits wide, 18 = 18 digits of fractional precision. The ud() function is just wrapping: you give it a raw number like 5e17, it wraps it into the UD60x18 type so the compiler knows it's fixed-point. unwrap() does the reverse. That's all the type system magic — the actual number stored in memory is the same uint256.</aside>
+      </section>
+
+      <!-- ============ WRAP → MATH → UNWRAP ============ -->
+      <section>
+        <h2>The Three-Step Pattern</h2>
+        <p>Every PRBMath computation follows the same workflow:</p>
+        <div style="text-align:center; margin: 0.5em 0;">
+          <span class="step-num">1</span> <strong>WRAP</strong> raw numbers into UD60x18
+          &nbsp;&nbsp;&rarr;&nbsp;&nbsp;
+          <span class="step-num">2</span> <strong>MATH</strong> using library functions
+          &nbsp;&nbsp;&rarr;&nbsp;&nbsp;
+          <span class="step-num">3</span> <strong>UNWRAP</strong> back to uint256
+        </div>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, exp, mul} from "prb-math/UD60x18.sol";
+
+// STEP 1: WRAP — convert raw numbers to fixed-point
+UD60x18 base  = ud(0.5e18);   // 0.5 in fixed-point
+UD60x18 rate  = ud(0.08e18);  // 0.08 in fixed-point
+UD60x18 supply = ud(10e18);   // 10 in fixed-point
+
+// STEP 2: MATH — compute using library functions
+UD60x18 exponent = mul(rate, supply);  // 0.08 × 10 = 0.8
+UD60x18 growth   = exp(exponent);       // e^0.8 ≈ 2.2255
+UD60x18 price    = mul(base, growth);   // 0.5 × 2.2255 ≈ 1.1128
+
+// STEP 3: UNWRAP — get raw uint256 back
+uint256 priceWei = unwrap(price);       // ≈ 1_112_749_685_157_800_000</code></pre>
+        <div class="callout">
+          You never do <code>*</code> or <code>/</code> directly on UD60x18. Always use <code>mul()</code>, <code>div()</code>, <code>exp()</code>, <code>ln()</code>.
+        </div>
+        <aside class="notes">This is THE pattern you need to memorize. Step 1: take your raw numbers and wrap them with ud(). The number must already be in 1e18 form — so 0.5 becomes 0.5e18, and you write ud(0.5e18). Step 2: use the library's math functions. mul for multiply, div for divide, exp for e-to-the-x, ln for natural log. These functions take UD60x18 and return UD60x18. Step 3: when you need a regular uint256 for storage, comparison, or returning from a function, call unwrap(). Walk through the numbers: 0.08 times 10 equals 0.8. e to the 0.8 is about 2.23. 0.5 times 2.23 is about 1.11. That's the price of the 10th token.</aside>
+      </section>
+
+      <!-- ============ PRBMath CHEAT SHEET ============ -->
+      <section>
+        <h2>PRBMath Cheat Sheet</h2>
+        <div class="two-col">
+          <div>
+            <table class="truth-table">
+              <tr><th>Op</th><th>Code</th><th>Example</th></tr>
+              <tr><td>Wrap</td><td><code>ud(n)</code></td><td><code>ud(2e18)</code> = 2.0</td></tr>
+              <tr><td>Unwrap</td><td><code>unwrap(x)</code></td><td>raw uint256</td></tr>
+              <tr><td>a &times; b</td><td><code>mul(a,b)</code></td><td>2.0 &times; 3.0 = 6.0</td></tr>
+              <tr><td>a &divide; b</td><td><code>div(a,b)</code></td><td>6.0 &divide; 2.0 = 3.0</td></tr>
+            </table>
+          </div>
+          <div>
+            <table class="truth-table">
+              <tr><th>Op</th><th>Code</th><th>Example</th></tr>
+              <tr><td>e<sup>x</sup></td><td><code>exp(x)</code></td><td>exp(1.0) &asymp; 2.718</td></tr>
+              <tr><td>ln(x)</td><td><code>ln(x)</code></td><td>ln(e) &asymp; 1.0</td></tr>
+              <tr><td>&radic;x</td><td><code>sqrt(x)</code></td><td>sqrt(4.0) = 2.0</td></tr>
+              <tr><td>x<sup>y</sup></td><td><code>pow(x,y)</code></td><td>pow(2.0, 3.0) = 8.0</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Import:</strong> <code>import {UD60x18, ud, unwrap, exp, ln, mul, div, sqrt, pow} from "prb-math/UD60x18.sol";</code>
+        </div>
+        <aside class="notes">Keep this slide as a reference. These eight operations cover everything you need for bonding curves. The import line at the bottom pulls them all in at once. Notice: wrap is ud(), unwrap is unwrap(), math operations are function calls not operators. You never use * or / on UD60x18 values — always use mul() and div() which handle the scaling internally. Once this table clicks, you can read any PRBMath contract.</aside>
+      </section>
+
+      <!-- ============ HANDS-ON: LINEAR PRICE ============ -->
+      <section>
+        <h2>Hands-On: Build a Linear Price Function</h2>
+        <p class="subtle">Let's build <span class="formula">price(s) = 0.2 &middot; s + 1</span> using PRBMath.</p>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, mul} from "prb-math/UD60x18.sol";
+
+contract LinearPrice {
+    UD60x18 public immutable slope; // m = 0.2
+    UD60x18 public immutable base;  // b = 1.0
+
+    constructor() {
+        slope = ud(0.2e18);  // 0.2 in fixed-point
+        base  = ud(1e18);    // 1.0 in fixed-point
+    }
+
+    function price(uint256 supply) public view returns (uint256) {
+        // Step 1: WRAP supply
+        UD60x18 s = ud(supply * 1e18);
+
+        // Step 2: MATH — m * s + b
+        UD60x18 ms = mul(slope, s);     // 0.2 × supply
+        UD60x18 result = ms + base;     // + operator works for UD60x18 addition!
+
+        // Step 3: UNWRAP
+        return unwrap(result);
+    }
+}
+
+// price(0)  → 1.0e18  (= 1.0 ETH)
+// price(10) → 3.0e18  (= 3.0 ETH)
+// price(20) → 5.0e18  (= 5.0 ETH)</code></pre>
+        <div class="callout-green">
+          <strong>Addition works with +</strong> because UD60x18 overloads the operator. Multiplication needs <code>mul()</code>.
+        </div>
+        <aside class="notes">Let's put it all together. This is a complete, deployable contract. The constructor wraps our slope and base into UD60x18. The price function: wrap the supply, multiply by slope using mul(), add the base using the + operator (UD60x18 overloads + and - but not * and /), then unwrap. Let's check: price(0) = 0.2*0 + 1 = 1.0e18. price(10) = 0.2*10 + 1 = 3.0e18. Correct! This is a real bonding curve. The only thing missing is the mint function that calls this.</aside>
+      </section>
+
+      <!-- ============ HANDS-ON: EXPONENTIAL PRICE ============ -->
+      <section>
+        <h2>Hands-On: Build an Exponential Price Function</h2>
+        <p class="subtle"><span class="formula">price(s) = 0.5 &middot; e<sup>0.08&middot;s</sup></span> — the "FOMO curve".</p>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, mul, exp} from "prb-math/UD60x18.sol";
+
+contract ExpoPrice {
+    UD60x18 public immutable a; // base = 0.5
+    UD60x18 public immutable k; // rate = 0.08
+
+    constructor() {
+        a = ud(0.5e18);   // 0.5
+        k = ud(0.08e18);  // 0.08
+    }
+
+    function price(uint256 supply) public view returns (uint256) {
+        // 1. WRAP
+        UD60x18 s = ud(supply * 1e18);
+
+        // 2. MATH
+        UD60x18 ks    = mul(k, s);       // 0.08 × supply
+        UD60x18 expKs = exp(ks);          // e^(0.08 × supply)
+        UD60x18 result = mul(a, expKs);   // 0.5 × e^(0.08 × supply)
+
+        // 3. UNWRAP
+        return unwrap(result);
+    }
+}
+
+// price(0)  → 0.5e18    (= 0.50 ETH  — cheap!)
+// price(10) → 1.1127e18 (= 1.11 ETH)
+// price(50) → 27.29e18  (= 27.29 ETH — expensive!)
+// price(100)→ 1490.47e18(= 1490 ETH — insane!)</code></pre>
+        <aside class="notes">Now try exponential. Same three steps: wrap, math, unwrap. The key line is exp(ks) — that's e to the power of (0.08 times supply). Look at the price at different supplies: at 0 it's 0.5 ETH, at 10 it's 1.11, at 50 it's 27 ETH, at 100 it's 1490 ETH. That's the power of exponential growth. This is why some projects cap total supply or have a maximum price. Without PRBMath, implementing that exp() would be 50+ lines of Taylor series code.</aside>
+      </section>
+
+      <!-- ============ HANDS-ON: LOG PRICE ============ -->
+      <section>
+        <h2>Hands-On: Build a Logarithmic Price Function</h2>
+        <p class="subtle"><span class="formula">price(s) = 2 &middot; ln(s + 1)</span> — the "fair growth" curve.</p>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, mul, ln} from "prb-math/UD60x18.sol";
+
+contract LogPrice {
+    UD60x18 public immutable k; // scale = 2.0
+    UD60x18 public immutable c; // shift = 1.0 (avoids ln(0))
+
+    constructor() {
+        k = ud(2e18);
+        c = ud(1e18);
+    }
+
+    function price(uint256 supply) public view returns (uint256) {
+        // 1. WRAP
+        UD60x18 s = ud(supply * 1e18);
+
+        // 2. MATH
+        UD60x18 inner = s + c;            // supply + 1 (avoids ln(0)!)
+        UD60x18 logVal = ln(inner);        // ln(supply + 1)
+        UD60x18 result = mul(k, logVal);   // 2 × ln(supply + 1)
+
+        // 3. UNWRAP
+        return unwrap(result);
+    }
+}
+
+// price(0)  → 0.00e18  (= 0 ETH — free!)
+// price(1)  → 1.39e18  (= 1.39 ETH — quick rise)
+// price(10) → 4.79e18  (= 4.79 ETH)
+// price(100)→ 9.23e18  (= 9.23 ETH — barely moved!)
+// price(1000)→13.82e18 (= 13.82 ETH — still gentle)</code></pre>
+        <aside class="notes">Logarithmic is the gentle curve. Same pattern, but we use ln() instead of exp(). Critical detail: we add c=1 before taking ln, because ln(0) is negative infinity — it would crash. Look at the prices: 0 to 10 supply gains 4.79 ETH of price. But 100 to 1000 supply only gains 4.59 more. The curve is flattening out. Perfect for utility tokens where early adopters get rewarded but the price stabilizes over time.</aside>
+      </section>
+
+      <!-- ============ COMMON MISTAKES ============ -->
+      <section>
+        <h2>Common PRBMath Mistakes</h2>
+        <table class="truth-table">
+          <tr><th>Mistake</th><th>What Happens</th><th>Fix</th></tr>
+          <tr>
+            <td><code>ud(10)</code> instead of <code>ud(10e18)</code></td>
+            <td>Wraps 10 as 0.00000000000000001</td>
+            <td>Always multiply by 1e18 first</td>
+          </tr>
+          <tr>
+            <td><code>a * b</code> on UD60x18</td>
+            <td>Compiler error (no * operator)</td>
+            <td>Use <code>mul(a, b)</code></td>
+          </tr>
+          <tr>
+            <td><code>ln(ud(0))</code></td>
+            <td>Reverts (ln(0) = -∞)</td>
+            <td>Add shift: <code>ln(s + c)</code></td>
+          </tr>
+          <tr>
+            <td>Forgetting <code>unwrap()</code></td>
+            <td>Type mismatch: UD60x18 vs uint256</td>
+            <td>Unwrap before returning/comparing</td>
+          </tr>
+          <tr>
+            <td><code>exp(ud(100e18))</code></td>
+            <td>Overflow (e^100 is astronomical)</td>
+            <td>Keep exponents small (&lt; 133e18)</td>
+          </tr>
+        </table>
+        <div class="callout-red">
+          <strong>#1 mistake:</strong> forgetting the <code>e18</code> when wrapping. <code>ud(5)</code> &ne; <code>ud(5e18)</code>!
+        </div>
+        <aside class="notes">Let me save you hours of debugging. Mistake #1: ud(10) — this wraps the raw integer 10, which in fixed-point means 0.00000000000000001, not 10.0. You need ud(10e18). Mistake #2: using the star operator — UD60x18 supports + and - but NOT * and /. Use mul() and div(). Mistake #3: ln(0) — this is mathematically undefined and will revert. Always add a shift. Mistake #4: returning a UD60x18 when the function signature says uint256 — the compiler will catch this but it's confusing. Mistake #5: exp() of a huge number — e^100 is about 2.7 × 10^43, which when scaled by 1e18 can overflow. Keep exponents under about 133.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 6 — PUTTING IT ALL TOGETHER
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#f5a623;">Part 6: Putting It Together</h2>
+        <div class="two-col">
+          <div>
+            <h3>What You Now Know</h3>
+            <ul>
+              <li>&check; Functions: input &rarr; output</li>
+              <li>&check; Graphs: x-axis = supply, y-axis = price</li>
+              <li>&check; Slope: controls growth rate</li>
+              <li>&check; Five curve shapes and their personalities</li>
+              <li>&check; Area under curve = total cost (no calculus!)</li>
+              <li>&check; Fixed-point: multiply by 1e18</li>
+              <li>&check; PRBMath: wrap &rarr; math &rarr; unwrap</li>
+            </ul>
+          </div>
+          <div>
+            <h3>What's Next (Workshop 006)</h3>
+            <ul>
+              <li>Full buy/sell contracts with reserves</li>
+              <li>Closed-form integrals for O(1) gas</li>
+              <li>Sigmoid curves with sign handling</li>
+              <li>Production safety: reentrancy, fees, caps</li>
+              <li>Power curves, Bancor, Friend.tech</li>
+            </ul>
+            <div class="callout">
+              You have all the math you need. Workshop 006 is just plugging these pieces together.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Let's recap. You now understand that a bonding curve is just a Solidity function where supply goes in and price comes out. You can read a graph and know which shape means what economically. You know that total cost is the area under the curve. You know Solidity can't do decimals, so we use fixed-point (multiply by 1e18). And you know PRBMath: wrap, math, unwrap. Workshop 006 will build complete contracts — but the hard part (the math) is done.</aside>
+      </section>
+
+      <!-- ============ EXERCISE ============ -->
+      <section>
+        <h2>Exercise: Can You Read This?</h2>
+        <pre><code class="hljs">import {UD60x18, ud, unwrap, mul, div, exp} from "prb-math/UD60x18.sol";
+
+contract MysteryPrice {
+    function getPrice(uint256 supply) external pure returns (uint256) {
+        UD60x18 s = ud(supply * 1e18);
+        UD60x18 k = ud(0.05e18);
+        UD60x18 a = ud(2e18);
+        UD60x18 b = ud(1e18);
+
+        UD60x18 expPart = exp(mul(k, s));
+        UD60x18 result  = mul(a, expPart) + b;
+
+        return unwrap(result);
+    }
+}</code></pre>
+        <p><strong>Questions:</strong></p>
+        <ul>
+          <li>What formula does this implement? <em>(Hint: 2&middot;e<sup>0.05s</sup> + ???)</em></li>
+          <li>What is the price at supply = 0?</li>
+          <li>Is the price at supply = 100 higher or lower than 1000 ETH?</li>
+        </ul>
+        <aside class="notes">Give students 2 minutes. Answers: 1) It's P = 2·e^(0.05·s) + 1. The +1 is a floor price. 2) At s=0: 2·e^0 + 1 = 2·1 + 1 = 3.0 ETH. 3) At s=100: 2·e^5 + 1 ≈ 2·148.4 + 1 ≈ 297.8 ETH. Lower than 1000. But at s=200: 2·e^10 + 1 ≈ 44,053 ETH — way over 1000.</aside>
+      </section>
+
+      <!-- ============ INTERACTIVE PLAYGROUND ============ -->
+      <section>
+        <h2>Playground: Build Your Own Curve</h2>
+        <p>Drag the sliders to design a curve. What economic personality does it create?</p>
+        <div id="calc-playground" class="calc" style="height: 260px;"></div>
+        <ul>
+          <li>Set <strong>n = 0.5</strong> for &radic;x &nbsp;|&nbsp; <strong>n = 1</strong> for linear &nbsp;|&nbsp; <strong>n = 2</strong> for quadratic</li>
+          <li><strong>a</strong> scales the price &nbsp;|&nbsp; <strong>b</strong> sets a floor price</li>
+        </ul>
+        <p class="subtle">Formula: P = a &middot; x<sup>n</sup> + b. This single family covers most DeFi curves.</p>
+        <aside class="notes">This is your sandbox. The formula P = a·x^n + b is surprisingly powerful. With n=0.5 you get square root. n=1 is linear. n=2 is quadratic. n=3 is cubic. The a slider scales everything, and b sets a minimum price. Play with it and get an intuition for how each parameter affects the shape. This is the same family of curves that Bancor, pump.fun, and Friend.tech all use — just with different values of a, n, and b.</aside>
+      </section>
+
+      <!-- ============ RESOURCES ============ -->
+      <section>
+        <h2>Resources</h2>
+        <ul>
+          <li>PRBMath GitHub: <a href="https://github.com/PaulRBerger/prb-math">github.com/PaulRBerger/prb-math</a></li>
+          <li>PRBMath UD60x18 API: <a href="https://github.com/PaulRBerger/prb-math/blob/main/src/ud60x18/Math.sol">Math.sol source</a></li>
+          <li>Fixed-Point Tutorial: <a href="https://docs.soliditylang.org/en/latest/">Solidity docs</a></li>
+          <li>Desmos Graph Calculator: <a href="https://www.desmos.com/calculator">desmos.com/calculator</a> &mdash; practice graphing!</li>
+          <li><strong>Next:</strong> <a href="../006_bonding_curves/">Workshop 006 &mdash; Bonding Curves</a></li>
+        </ul>
+        <aside class="notes">PRBMath docs are excellent — start with the README. For practice, open Desmos and type in different formulas. Try y = 0.01x^2 and see if it matches what you expect. Then try y = 2*ln(x+1). Building visual intuition will make the Solidity code much easier to follow. When you're comfortable, move to workshop 006 where we'll build full bonding curve contracts with buy, sell, and reserves.</aside>
+      </section>
+
+      <!-- ============ Q&A ============ -->
+      <section>
+        <h2>Q&amp;A</h2>
+        <p>Quick check &mdash; can you answer these?</p>
+        <ul>
+          <li>Why can't Solidity do <code>0.5 * 3</code> natively?</li>
+          <li>What does <code>ud(5e18)</code> represent?</li>
+          <li>Why do we add <code>+ c</code> before calling <code>ln()</code>?</li>
+          <li>What's the difference between a linear and exponential curve?</li>
+        </ul>
+        <div class="callout">
+          If you can answer all four &rarr; you're ready for <strong>Workshop 006: Bonding Curves</strong>!
+        </div>
+        <aside class="notes">Quick pulse check. 1) Because Solidity only has integers — 0.5 doesn't exist, you need 5e17. 2) ud(5e18) represents the number 5.0 in fixed-point. 3) Because ln(0) is negative infinity and would revert. 4) Linear grows by a constant amount per step; exponential multiplies by a constant ratio per step — so it gets much steeper much faster.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({ hash: true, slideNumber: true, transition: 'slide' });
+
+    window.addEventListener('load', () => {
+      const opts = { expressions: true, settingsMenu: false, zoomButtons: false, expressionsTopbar: false };
+
+      /* ---- INTRO LINE ---- */
+      const introLine = Desmos.GraphingCalculator(document.getElementById('calc-intro-line'), opts);
+      introLine.setExpression({ id: 'm', latex: 'm=0.5', sliderBounds: { min: 0, max: 2, step: 0.05 } });
+      introLine.setExpression({ id: 'b', latex: 'b=1',   sliderBounds: { min: 0, max: 5, step: 0.1 } });
+      introLine.setExpression({ id: 'f', latex: 'f(x)=m\\cdot x+b', color: '#2d9cdb' });
+      introLine.setMathBounds({ left: -1, right: 20, bottom: -1, top: 15 });
+
+      /* ---- SLOPE ---- */
+      const slope = Desmos.GraphingCalculator(document.getElementById('calc-slope'), opts);
+      slope.setExpression({ id: 'm', latex: 'm=1', sliderBounds: { min: 0, max: 3, step: 0.1 } });
+      slope.setExpression({ id: 'f', latex: 'y=m\\cdot x', color: '#2d9cdb' });
+      slope.setExpression({ id: 'rise', latex: '(5, 5m)', color: '#f5a623', pointStyle: 'POINT', showLabel: true, label: 'slope = m' });
+      slope.setMathBounds({ left: -1, right: 15, bottom: -1, top: 20 });
+
+      /* ---- LINE VS CURVE ---- */
+      const lvc = Desmos.GraphingCalculator(document.getElementById('calc-line-vs-curve'), opts);
+      lvc.setExpression({ id: 'lin', latex: 'y=0.5x+1', color: '#2d9cdb' });
+      lvc.setExpression({ id: 'exp', latex: 'y=e^{0.1x}', color: '#e97b2e' });
+      lvc.setExpression({ id: 'log', latex: 'y=3\\cdot\\ln(x+1)', color: '#27ae60' });
+      lvc.setMathBounds({ left: -1, right: 30, bottom: -1, top: 20 });
+
+      /* ---- QUADRATIC ---- */
+      const quad = Desmos.GraphingCalculator(document.getElementById('calc-quadratic'), opts);
+      quad.setExpression({ id: 'a', latex: 'a=0.01', sliderBounds: { min: 0.001, max: 0.1, step: 0.001 } });
+      quad.setExpression({ id: 'f', latex: 'y=a\\cdot x^{2}', color: '#e74c3c' });
+      quad.setMathBounds({ left: -1, right: 50, bottom: -1, top: 25 });
+
+      /* ---- SQUARE ROOT ---- */
+      const sqrtCalc = Desmos.GraphingCalculator(document.getElementById('calc-sqrt'), opts);
+      sqrtCalc.setExpression({ id: 'a', latex: 'a=1', sliderBounds: { min: 0.1, max: 5, step: 0.1 } });
+      sqrtCalc.setExpression({ id: 'f', latex: 'y=a\\cdot\\sqrt{x}', color: '#27ae60' });
+      sqrtCalc.setMathBounds({ left: -1, right: 100, bottom: -1, top: 12 });
+
+      /* ---- EXPONENTIAL ---- */
+      const expoCalc = Desmos.GraphingCalculator(document.getElementById('calc-expo'), opts);
+      expoCalc.setExpression({ id: 'k', latex: 'k=0.3', sliderBounds: { min: 0.05, max: 0.5, step: 0.01 } });
+      expoCalc.setExpression({ id: 'f', latex: 'y=e^{k\\cdot x}', color: '#e97b2e' });
+      expoCalc.setMathBounds({ left: -1, right: 15, bottom: -1, top: 30 });
+
+      /* ---- LOG ---- */
+      const logCalc = Desmos.GraphingCalculator(document.getElementById('calc-log-intro'), opts);
+      logCalc.setExpression({ id: 'k', latex: 'k=2', sliderBounds: { min: 0.5, max: 5, step: 0.1 } });
+      logCalc.setExpression({ id: 'f', latex: 'y=k\\cdot\\ln(x+1)', color: '#9b59b6' });
+      logCalc.setMathBounds({ left: -1, right: 100, bottom: -2, top: 12 });
+
+      /* ---- ALL FIVE ---- */
+      const all = Desmos.GraphingCalculator(document.getElementById('calc-all-five'), opts);
+      all.setExpression({ id: 'lin',  latex: 'y=0.2x+1',         color: '#2d9cdb' });
+      all.setExpression({ id: 'quad', latex: 'y=0.02x^{2}',      color: '#e74c3c' });
+      all.setExpression({ id: 'sqrt', latex: 'y=2\\sqrt{x}',     color: '#27ae60' });
+      all.setExpression({ id: 'exp',  latex: 'y=e^{0.08x}',      color: '#e97b2e' });
+      all.setExpression({ id: 'log',  latex: 'y=2\\ln(x+1)',     color: '#9b59b6' });
+      all.setMathBounds({ left: -1, right: 50, bottom: -1, top: 30 });
+
+      /* ---- AREA UNDER CURVE ---- */
+      const area = Desmos.GraphingCalculator(document.getElementById('calc-area'), opts);
+      area.setExpression({ id: 'f', latex: 'f(x)=0.5x+1', color: '#2d9cdb' });
+      area.setExpression({ id: 'fill', latex: '1\\le y\\le f(x)\\left\\{2\\le x\\le 8\\right\\}', color: '#2d9cdb' });
+      area.setExpression({ id: 'a_pt', latex: '(2, f(2))', color: '#f5a623', pointStyle: 'POINT', showLabel: true, label: 'start: s=2' });
+      area.setExpression({ id: 'b_pt', latex: '(8, f(8))', color: '#f5a623', pointStyle: 'POINT', showLabel: true, label: 'end: s=8' });
+      area.setMathBounds({ left: -1, right: 12, bottom: -0.5, top: 7 });
+
+      /* ---- PLAYGROUND ---- */
+      const play = Desmos.GraphingCalculator(document.getElementById('calc-playground'), opts);
+      play.setExpression({ id: 'a', latex: 'a=0.1',  sliderBounds: { min: 0.001, max: 2, step: 0.001 } });
+      play.setExpression({ id: 'n', latex: 'n=1',     sliderBounds: { min: 0.1, max: 3, step: 0.1 } });
+      play.setExpression({ id: 'b', latex: 'b=0',     sliderBounds: { min: 0, max: 5, step: 0.1 } });
+      play.setExpression({ id: 'f', latex: 'P=a\\cdot x^{n}+b', color: '#f5a623' });
+      play.setMathBounds({ left: -1, right: 50, bottom: -1, top: 30 });
+    });
+  </script>
+</body>
+</html>
