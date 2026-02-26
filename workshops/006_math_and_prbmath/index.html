@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Math for Smart Contracts — Curves, Fixed-Point &amp; PRBMath</title>
+  <title>Math for Smart Contracts — Curves, Fixed-Point &amp; PRBMath Internals</title>
   <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
   <script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
@@ -32,6 +32,10 @@
     .truth-table td { padding: 3px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .truth-table tr:hover td { background: rgba(255,255,255,0.04); }
     .step-num { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: #f5a623; color: #000; font-weight: bold; font-size: 0.75em; margin-right: 5px; }
+    .highlight-line { background: rgba(245,166,35,0.15) !important; }
+    .gas-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; background: rgba(39,174,96,0.15); color: #27ae60; font-size: 0.65em; font-weight: bold; }
+    .asm-keyword { color: #e74c3c; }
+    .fn-name { color: #9b59b6; font-weight: bold; }
     @media (max-width: 900px) {
       .reveal ul { font-size: 0.82em; }
       .reveal pre code { font-size: 0.5em; }
@@ -51,7 +55,7 @@
         <h1>Math for Smart Contracts</h1>
         <h3>Curves, Fixed-Point &amp; PRBMath</h3>
         <p><span class="badge">Pre-requisite</span> <span class="badge">Solidity</span> <span class="badge">Math</span></p>
-        <p class="subtle">Everything you need before the Bonding Curves workshop</p>
+        <p class="subtle">From middle-school math to reading PRBMath source code</p>
         <aside class="notes">This workshop covers the math foundations that the bonding curves workshop assumes you know. We'll start from middle-school level math — what is a function, what does a graph mean — and build up to fixed-point arithmetic and PRBMath in Solidity. No calculus required. By the end you'll be able to read any PRBMath contract.</aside>
       </section>
 
@@ -64,7 +68,7 @@
           <li>&cross; No prior math library experience needed</li>
         </ul>
         <div class="callout">
-          By the end: you'll understand <strong>curves as functions</strong>, <strong>why floats don't exist in Solidity</strong>, and how to use <strong>PRBMath</strong> to do real math on-chain.
+          By the end: you'll understand <strong>curves as functions</strong>, <strong>why floats don't exist in Solidity</strong>, how to use <strong>PRBMath</strong>, and how it works <strong>under the hood</strong>.
         </div>
         <aside class="notes">Let's set expectations. If you can write a simple Solidity contract with a state variable and a function, you're ready. We will NOT need calculus, derivatives, or integrals. We'll build intuition for those concepts visually using graphs.</aside>
       </section>
@@ -552,7 +556,7 @@ UD60x18 result = exp(ud(0.08e18));
 
       <!-- ============ UD60x18 EXPLAINED ============ -->
       <section>
-        <h2>UD60x18: The Type</h2>
+        <h4>UD60x18: The Type</h4>
         <div class="callout-blue">
           <strong>U</strong>nsigned <strong>D</strong>ecimal, <strong>60</strong> integer bits, <strong>18</strong> fractional digits
         </div>
@@ -784,27 +788,757 @@ contract LogPrice {
         </div>
         <aside class="notes">Let me save you hours of debugging. Mistake #1: ud(10) — this wraps the raw integer 10, which in fixed-point means 0.00000000000000001, not 10.0. You need ud(10e18). Mistake #2: using the star operator — UD60x18 supports + and - but NOT * and /. Use mul() and div(). Mistake #3: ln(0) — this is mathematically undefined and will revert. Always add a shift. Mistake #4: returning a UD60x18 when the function signature says uint256 — the compiler will catch this but it's confusing. Mistake #5: exp() of a huge number — e^100 is about 2.7 × 10^43, which when scaled by 1e18 can overflow. Keep exponents under about 133.</aside>
       </section>
-
       <!-- ══════════════════════════════════════════════
-           PART 6 — PUTTING IT ALL TOGETHER
+           PART II — PRBMATH INTERNALS
            ══════════════════════════════════════════════ -->
       <section>
-        <h2 style="color:#f5a623;">Part 6: Putting It Together</h2>
+        <h1>Part II: PRBMath Internals</h1>
+        <h3>How the Math Actually Works Under the Hood</h3>
+        <p class="subtle">Now that we know how to USE PRBMath, let's open the hood and read the source code.</p>
+        <aside class="notes">We've learned to use PRBMath: wrap, call, unwrap. Now we open the hood and read the actual source code. By the end, you'll understand every technique PRBMath uses and why each exists.</aside>
+      </section>
+
+
+
+      <section>
+        <h2>What We'll Cover</h2>
+        <div class="two-col">
+          <div>
+            <p><span class="step-num">6</span> Repo Architecture &amp; Types</p>
+            <p><span class="step-num">7</span> <code>mul()</code> — Phantom Overflow</p>
+            <p><span class="step-num">8</span> <code>div()</code> — Scale-First Pattern</p>
+            <p><span class="step-num">9</span> <code>mulDiv()</code> — The 512-bit Core</p>
+          </div>
+          <div>
+            <p><span class="step-num">10</span> <code>exp()</code> — Bit Decomposition</p>
+            <p><span class="step-num">11</span> <code>ln()</code> — Binary Logarithm</p>
+            <p><span class="step-num">12</span> <code>sqrt()</code> — Newton's Method</p>
+            <p><span class="step-num">13</span> <code>pow()</code> &amp; Gas Costs</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Goal:</strong> Read PRBMath source code confidently. Know <em>why</em> each trick is needed, not just <em>what</em> it does.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 6 — REPO ARCHITECTURE
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e67e22;">Part 6: Repo Architecture</h2>
+        <p>PRBMath v4 — <code>github.com/PaulRBerg/prb-math</code></p>
+      </section>
+
+      <section>
+        <h2>Two Type Families</h2>
+        <div class="two-col">
+          <div>
+            <h3 style="color:#2d9cdb;">UD60x18</h3>
+            <p><strong>U</strong>nsigned <strong>D</strong>ecimal</p>
+            <p>60 integer digits, 18 decimals</p>
+            <p>Range: 0 → ~1.16 × 10<sup>59</sup></p>
+            <pre><code class="hljs">type UD60x18 is uint256;
+// 1.0 = 1_000_000_000_000_000_000
+// stored as a plain uint256</code></pre>
+          </div>
+          <div>
+            <h3 style="color:#e74c3c;">SD59x18</h3>
+            <p><strong>S</strong>igned <strong>D</strong>ecimal</p>
+            <p>59 integer digits, 18 decimals</p>
+            <p>Range: ~-5.8 × 10<sup>58</sup> → +5.8 × 10<sup>58</sup></p>
+            <pre><code class="hljs">type SD59x18 is int256;
+// -1.0 = -1_000_000_000_000_000_000
+// uses two's complement</code></pre>
+          </div>
+        </div>
+        <div class="callout">
+          Both are <strong>user-defined value types</strong> (Solidity 0.8.8+). Zero runtime cost — just a <code>uint256</code> / <code>int256</code> underneath.
+        </div>
+        <aside class="notes">A user-defined value type in Solidity is like a strong typedef. The compiler treats UD60x18 and uint256 as different types, so you can't accidentally mix them. But at the EVM level, they're identical — no extra storage, no extra gas for the wrapping. The 60x18 means: up to 60 digits before the decimal and 18 after. SD59x18 loses one digit for the sign bit.</aside>
+      </section>
+
+      <section>
+        <h2>File Structure (v4)</h2>
+        <pre><code class="hljs">prb-math/
+├── src/
+│   ├── Common.sol          ← mulDiv, mulDiv18, sqrt (shared)
+│   ├── ud60x18/
+│   │   ├── Casting.sol     ← wrap(), unwrap(), ud()
+│   │   ├── Constants.sol   ← UNIT, MAX, PI, E
+│   │   ├── Conversions.sol ← convert(), from UD to SD
+│   │   ├── Errors.sol      ← PRBMath_UD60x18_*
+│   │   ├── Helpers.sol     ← add, sub (using + -)
+│   │   ├── Math.sol        ← mul, div, exp, exp2, ln,
+│   │   │                      log2, log10, sqrt, pow, avg
+│   │   └── ValueType.sol   ← type UD60x18 is uint256
+│   └── sd59x18/            ← (mirrors ud60x18 structure)
+└── test/</code></pre>
+        <div class="callout">
+          We'll focus on <strong>Common.sol</strong> and <strong>ud60x18/Math.sol</strong> — that's where all the algorithms live.
+        </div>
+        <aside class="notes">The repo is cleanly organized. Common.sol contains functions shared between UD60x18 and SD59x18 — like mulDiv and sqrt. The type-specific Math.sol files contain the fixed-point aware wrappers. We'll read UD60x18 today since it's simpler (no sign handling).</aside>
+      </section>
+
+      <section>
+        <h2>The UNIT Constant</h2>
+        <pre><code class="hljs">/// @dev The unit number, which gives the decimal precision of UD60x18.
+uint256 constant uUNIT = 1e18;
+UD60x18 constant UNIT = UD60x18.wrap(1e18);</code></pre>
+        <p>Every function in PRBMath revolves around this single idea:</p>
+        <p class="formula-lg">real_value = stored_uint256 / 10<sup>18</sup></p>
+        <div class="two-col">
+          <div>
+            <table class="truth-table">
+              <tr><th>Real Value</th><th>Stored uint256</th></tr>
+              <tr><td>1.0</td><td>1_000_000_000_000_000_000</td></tr>
+              <tr><td>3.14</td><td>3_140_000_000_000_000_000</td></tr>
+              <tr><td>0.001</td><td>1_000_000_000_000_000</td></tr>
+            </table>
+          </div>
+          <div>
+            <div class="callout-green">
+              <strong>Why 10<sup>18</sup>?</strong> Matches ETH's <code>wei</code> precision. 1 ETH = 10<sup>18</sup> wei. No conversion needed when working with token amounts.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">The entire library is built on one convention: multiply your real number by 10^18. This gives you 18 decimal places of precision — more than enough for financial math. The choice of 10^18 (not 10^27 like RAY in MakerDAO) matches Ethereum's native wei denomination, making conversions between ETH amounts and UD60x18 values trivial.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 7 — mul() INTERNALS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#27ae60;">Part 7: <code>mul()</code> — Phantom Overflow</h2>
+        <p>The simplest operation reveals the deepest trick.</p>
+      </section>
+
+      <section>
+        <h2>The Problem with Naive Multiply</h2>
+        <pre><code class="hljs">// ❌ WRONG — overflows!
+function naiveMul(UD60x18 x, UD60x18 y) pure returns (UD60x18) {
+    return UD60x18.wrap(
+        UD60x18.unwrap(x) * UD60x18.unwrap(y) / 1e18
+    );
+}
+
+// x = 2.0 → stored as 2e18
+// y = 3.0 → stored as 3e18
+// x * y = 2e18 * 3e18 = 6e36  ← PHANTOM OVERFLOW!
+// 6e36 / 1e18 = 6e18 = 6.0   ← correct answer…
+//                              IF it doesn't overflow first</code></pre>
+        <div class="callout-red">
+          <strong>Phantom overflow:</strong> the intermediate <code>x * y</code> value exceeds uint256 even though the final result fits. <code>uint256.max ≈ 1.16e77</code>, but two large UD60x18 values multiplied can reach <code>~1.34e77</code>.
+        </div>
+        <aside class="notes">This is the fundamental problem of fixed-point multiplication. When you multiply two 18-decimal numbers, the intermediate result has 36 decimals — way more precision than needed, and potentially enough to overflow. The real answer is small and correct, but the intermediate value is huge. That's phantom overflow: the overflow is an artifact of the computation order, not the actual result size. PRBMath solves this with mulDiv.</aside>
+      </section>
+
+      <section>
+        <h2>PRBMath's <code>mul()</code> — Actual Source</h2>
+        <pre><code class="hljs">/// @notice Multiplies two UD60x18 numbers together,
+/// returning a new UD60x18 number.
+function mul(UD60x18 x, UD60x18 y) pure returns (UD60x18 result) {
+    result = wrap(mulDiv18(unwrap(x), unwrap(y)));
+}</code></pre>
+        <p>Just 1 line! The real work is in <span class="fn-name">mulDiv18</span>.</p>
+        <div class="callout">
+          <code>mulDiv18(a, b)</code> computes <code>(a × b) / 1e18</code> without intermediate overflow.<br>
+          It's a specialized version of the general <code>mulDiv(a, b, denominator)</code>.
+        </div>
+        <aside class="notes">The mul function itself is beautifully simple — unwrap both inputs, call mulDiv18, wrap the result. All the complexity is pushed down into mulDiv18, which is in Common.sol. mulDiv18 is optimized specifically for division by 1e18, while the general mulDiv handles any denominator. Let's look at mulDiv next.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 8 — div() INTERNALS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#2d9cdb;">Part 8: <code>div()</code> — Scale First</h2>
+        <p>Division has the <em>opposite</em> problem of multiplication.</p>
+      </section>
+
+      <section>
+        <h2>The Problem with Naive Division</h2>
+        <pre><code class="hljs">// ❌ WRONG — loses ALL precision!
+function naiveDiv(UD60x18 x, UD60x18 y) pure returns (UD60x18) {
+    return UD60x18.wrap(
+        UD60x18.unwrap(x) / UD60x18.unwrap(y)
+    );
+}
+
+// x = 1.0 → stored as 1e18
+// y = 3.0 → stored as 3e18
+// x / y = 1e18 / 3e18 = 0     ← integer division truncates!
+// Expected: 0.333...e18</code></pre>
+        <div class="callout-red">
+          <strong>Precision loss:</strong> dividing two same-scale numbers cancels out the scale factor, giving you an unscaled integer (often 0).
+        </div>
+      </section>
+
+      <section>
+        <h2>PRBMath's <code>div()</code> — Scale First</h2>
+        <pre><code class="hljs">/// @notice Divides two UD60x18 numbers, returning a UD60x18 number.
+function div(UD60x18 x, UD60x18 y) pure returns (UD60x18 result) {
+    result = wrap(mulDiv(unwrap(x), uUNIT, unwrap(y)));
+}</code></pre>
+        <p>Trick: compute <code>(x × 1e18) / y</code> instead of <code>x / y</code>.</p>
+        <div class="two-col">
+          <div>
+            <h3>Step by step</h3>
+            <p><span class="step-num">1</span> x = 1e18 (represents 1.0)</p>
+            <p><span class="step-num">2</span> Multiply by 1e18 → 1e36</p>
+            <p><span class="step-num">3</span> Divide by 3e18 → 333...e15</p>
+            <p><span class="step-num">4</span> Result ≈ 0.333e18 ✓</p>
+          </div>
+          <div>
+            <div class="callout-green">
+              By scaling up <em>before</em> dividing, we preserve 18 decimals of precision. And <code>mulDiv</code> ensures the intermediate <code>x × 1e18</code> doesn't overflow.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">This is the mirror image of the mul problem. In mul, the intermediate is too big. In div, the intermediate is too small (we lose precision). The fix: multiply by the UNIT first to add scale, THEN divide. But now we have the same phantom overflow problem — x times 1e18 could overflow! So div also uses mulDiv under the hood. Everything routes through mulDiv.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 9 — mulDiv() — THE HEART
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e74c3c;">Part 9: <code>mulDiv()</code> — The 512-bit Heart</h2>
+        <p>The most important function in PRBMath.</p>
+        <p class="subtle">~80 lines of Yul assembly that make everything else possible.</p>
+      </section>
+
+      <section>
+        <h2>mulDiv — What It Computes</h2>
+        <p class="formula-lg">mulDiv(x, y, d) = ⌊(x × y) / d⌋</p>
+        <p>…without intermediate overflow, even when <code>x × y</code> exceeds uint256!</p>
+        <div class="callout">
+          <strong>Key insight:</strong> use a <strong>512-bit intermediate</strong>. The EVM is 256-bit, so PRBMath simulates 512-bit math using two uint256 variables: <code>prod0</code> (low bits) and <code>prod1</code> (high bits).
+        </div>
+        <p class="subtle">Based on Remco Bloemen's algorithm & "Hacker's Delight" by Henry S. Warren.</p>
+        <aside class="notes">mulDiv is the mathematical core of PRBMath. Every other function — mul, div, exp, ln, pow — eventually calls mulDiv. It computes (x * y) / d with full 512-bit precision on the intermediate product. This is non-trivial: the EVM only has 256-bit arithmetic. PRBMath uses a technique from Remco Bloemen (an Ethereum researcher) that splits the 512-bit product into two 256-bit halves and performs division on the combined value. The algorithm draws on tricks from Hacker's Delight, a famous book of bit-manipulation algorithms.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Step 1: 512-bit Product</h2>
+        <pre><code class="hljs">// Compute the 512-bit product [prod1 prod0]
+uint256 prod0;  // low  256 bits of x * y
+uint256 prod1;  // high 256 bits of x * y
+assembly {
+    let mm := mulmod(x, y, not(0))  // x*y mod 2^256
+    prod0 := mul(x, y)              // low bits (wraps)
+    prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+}</code></pre>
+        <div class="two-col">
+          <div>
+            <p><span class="step-num">1</span> <code>mul(x,y)</code> gives low 256 bits (EVM wraps)</p>
+            <p><span class="step-num">2</span> <code>mulmod(x,y,2²⁵⁶-1)</code> gives <code>x*y mod (2²⁵⁶-1)</code></p>
+            <p><span class="step-num">3</span> Subtract to get <code>prod1</code> (high bits)</p>
+          </div>
+          <div>
+            <div class="callout-blue">
+              <strong>Why mulmod?</strong> The EVM <code>MULMOD</code> opcode internally uses a 512-bit intermediate — PRBMath exploits this to extract the high bits!
+            </div>
+          </div>
+        </div>
+        <aside class="notes">This is the cleverest part. The EVM's MUL opcode returns the low 256 bits of the product (it wraps on overflow). But the MULMOD opcode internally computes the full 512-bit product before taking the modulus. By using mulmod with a modulus of 2^256-1 (not(0) in Yul), we get almost the full product. The difference between mulmod result and mul result, with a borrow correction, gives us the high 256 bits. So we reconstruct the full 512-bit product using only standard EVM opcodes. Pure genius.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Step 2: Fast Path</h2>
+        <pre><code class="hljs">// Handle cases where product fits in 256 bits
+if (prod1 == 0) {
+    return prod0 / denominator;
+}</code></pre>
+        <div class="callout-green">
+          If <code>prod1 == 0</code>, the product fits in 256 bits. Just do a normal division. This is the <strong>common case</strong> for small-to-medium values — almost free! <span class="gas-tag">~40 gas</span>
+        </div>
+        <p>The expensive path (below) only runs when values are large enough to actually overflow 256 bits.</p>
+        <aside class="notes">This is an important optimization. Most of the time in practice, x * y fits in 256 bits. The 512-bit slow path only activates when dealing with genuinely large numbers — like multiplying two values that are each over 10^38. The fast path costs about 40 gas, while the full 512-bit path costs around 140 gas.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Step 3: 512-bit Division</h2>
+        <p>When <code>prod1 > 0</code>, things get interesting:</p>
+        <pre><code class="hljs">// Make sure the result is less than 2^256
+require(denominator > prod1);
+
+// Subtract 256 bit number from 512 bit number
+assembly {
+    // Compute remainder using mulmod
+    let remainder := mulmod(x, y, denominator)
+    // Subtract remainder from 512-bit product
+    prod1 := sub(prod1, gt(remainder, prod0))
+    prod0 := sub(prod0, remainder)
+}</code></pre>
+        <div class="callout">
+          After subtracting the remainder, <code>[prod1:prod0]</code> is now evenly divisible by <code>denominator</code>. The problem reduces to dividing a 512-bit number by a 256-bit divisor.
+        </div>
+        <aside class="notes">The algorithm first checks that the result will fit in 256 bits (denominator must be bigger than prod1). Then it computes the remainder of the 512-bit product divided by the denominator, using the mulmod opcode again. By subtracting this remainder from the 512-bit product, we get a value that divides evenly — no fractional bits lost. Now we need to perform the actual 512-bit division.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Step 4: Factor Out Powers of 2</h2>
+        <pre><code class="hljs">// Factor powers of two out of denominator
+// Compute largest power of two divisor of denominator.
+uint256 twos = denominator & (~denominator + 1);
+assembly {
+    // Divide denominator by twos
+    denominator := div(denominator, twos)
+    // Divide [prod1:prod0] by twos
+    prod0 := div(prod0, twos)
+    // Flip twos such that it is 2^256 / twos.
+    // If twos is zero, then it becomes one.
+    twos := add(div(sub(0, twos), twos), 1)
+}
+// Shift bits from prod1 into prod0
+prod0 |= prod1 * twos;</code></pre>
+        <div class="callout">
+          <code>twos = d & (-d)</code> isolates the lowest set bit — a classic Hacker's Delight trick. This factors out all powers of 2 from the denominator, simplifying the division.
+        </div>
+        <aside class="notes">This uses a famous bit manipulation trick: x & (-x) gives you the lowest set bit of x, which equals the largest power of 2 that divides x. By dividing both the denominator and the 512-bit product by this power of 2, we make the denominator odd. Why? Because the next step — modular inverse — only works on odd numbers. The shift from prod1 into prod0 is transferring the remaining high bits after the power-of-2 division.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Step 5: Modular Inverse</h2>
+        <pre><code class="hljs">// Compute the modular inverse of denominator mod 2^256
+// using Newton-Raphson iteration.
+// Start with a seed that is correct for four bits.
+uint256 inverse = (3 * denominator) ^ 2;
+
+// Use Newton-Raphson to double precision each step
+inverse *= 2 - denominator * inverse; // 8  bits
+inverse *= 2 - denominator * inverse; // 16 bits
+inverse *= 2 - denominator * inverse; // 32 bits
+inverse *= 2 - denominator * inverse; // 64 bits
+inverse *= 2 - denominator * inverse; // 128 bits
+inverse *= 2 - denominator * inverse; // 256 bits
+
+// Final result
+result = prod0 * inverse;</code></pre>
+        <div class="callout-green">
+          Division by <code>d</code> becomes <strong>multiplication by d's modular inverse</strong>. 6 multiplications instead of an expensive division. Each iteration doubles the precision.
+        </div>
+        <aside class="notes">This is the most magical part. Instead of actually dividing a 512-bit number (which the EVM can't do), PRBMath converts the division into a multiplication by the modular inverse. The modular inverse of d modulo 2^256 is a number inv such that d * inv = 1 (mod 2^256). Newton-Raphson iteration is used to compute this inverse: starting from a 4-bit seed, each step doubles the number of correct bits. After 6 iterations, all 256 bits are correct. Then result = prod0 * inverse gives us the exact quotient. This works because after step 4, the denominator is odd (required for the modular inverse to exist) and prod0 contains the correctly shifted product. The cost is just 6 multiplications plus a few additions — much cheaper than a 512-bit division circuit.</aside>
+      </section>
+
+      <section>
+        <h2>mulDiv — Complete Picture</h2>
+        <div class="three-col">
+          <div>
+            <p><span class="step-num">1</span> <strong>512-bit multiply</strong></p>
+            <p class="subtle">Use MULMOD to get high bits</p>
+            <p><span class="step-num">2</span> <strong>Fast path check</strong></p>
+            <p class="subtle">prod1 == 0 → normal div</p>
+          </div>
+          <div>
+            <p><span class="step-num">3</span> <strong>Subtract remainder</strong></p>
+            <p class="subtle">Make evenly divisible</p>
+            <p><span class="step-num">4</span> <strong>Factor out 2's</strong></p>
+            <p class="subtle">d &amp; (-d) trick</p>
+          </div>
+          <div>
+            <p><span class="step-num">5</span> <strong>Modular inverse</strong></p>
+            <p class="subtle">Newton-Raphson × 6 iter</p>
+            <p><span class="step-num">6</span> <strong>Multiply</strong></p>
+            <p class="subtle">prod0 × inverse = result</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Gas cost:</strong> ~140 gas for the full 512-bit path, ~40 gas for the fast path. <br>
+          For comparison: a single <code>SSTORE</code> is 20,000 gas. mulDiv is <em>cheap</em>.
+        </div>
+        <aside class="notes">Let's recap the full mulDiv algorithm. Step 1: compute the 512-bit product using MUL and MULMOD. Step 2: if it fits in 256 bits, just divide normally. Step 3: subtract the remainder so the number divides evenly. Step 4: factor out powers of 2 using the classic bit trick. Step 5: compute the modular inverse using Newton-Raphson. Step 6: multiply by the inverse to get the final result. All of this costs roughly 140 gas — less than 1% of a storage write. It's an absolute masterpiece of gas-optimized math.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 10 — exp() INTERNALS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#9b59b6;">Part 10: <code>exp()</code> — Computing e<sup>x</sup></h2>
+        <p>The hardest function. No Taylor series — too expensive.</p>
+      </section>
+
+      <section>
+        <h2>exp() Strategy: Change of Base</h2>
+        <p>PRBMath does <strong>not</strong> compute e<sup>x</sup> directly. Instead:</p>
+        <p class="formula-lg">e<sup>x</sup> = 2<sup>x × log₂(e)</sup></p>
+        <div class="two-col">
+          <div>
+            <div class="callout-red">
+              <strong>❌ Taylor series</strong><br>
+              e<sup>x</sup> = 1 + x + x²/2! + x³/3! + ...<br>
+              Needs ~20 terms → 20 mulDivs → ~3000 gas
+            </div>
+          </div>
+          <div>
+            <div class="callout-green">
+              <strong>✓ Base-2 decomposition</strong><br>
+              Convert to <code>exp2()</code> which uses bit tricks<br>
+              Much fewer operations → ~1600 gas
+            </div>
+          </div>
+        </div>
+        <pre><code class="hljs">function exp(UD60x18 x) pure returns (UD60x18 result) {
+    // x_192x64 = x * log2(e), scaled to 192.64 format
+    // then call exp2()
+    result = wrap(exp2(mulDiv18(unwrap(x), uLOG2_E)));
+}</code></pre>
+        <aside class="notes">Computing e^x using a Taylor series would require about 20 terms to get 18 digits of precision. Each term needs a mulDiv operation. Instead, PRBMath uses a change of base: e^x equals 2^(x * log2(e)). The log2(e) is a precomputed constant. Then it computes 2^y using exp2(), which exploits the binary nature of the exponent. This is much faster because computing powers of 2 maps directly to bit operations.</aside>
+      </section>
+
+      <section>
+        <h2>exp2() — The Bit Decomposition Trick</h2>
+        <p>To compute <code>2<sup>y</sup></code>, split y into integer + fraction:</p>
+        <p class="formula">2<sup>5.75</sup> = 2<sup>5</sup> × 2<sup>0.75</sup></p>
+        <div class="two-col">
+          <div>
+            <h3>Integer part: <code>2<sup>5</sup></code></h3>
+            <pre><code class="hljs">// Just a bit shift!
+result = 1 << integerPart;
+// 2^5 = 32 = 1 << 5
+// Cost: 3 gas (SHL opcode)</code></pre>
+          </div>
+          <div>
+            <h3>Fractional part: <code>2<sup>0.75</sup></code></h3>
+            <p class="subtle">This is the hard part. PRBMath uses a product of precomputed factors.</p>
+            <pre><code class="hljs">// 0.75 in binary = 0.110000...
+// 2^0.75 = 2^0.5 × 2^0.25
+//        = √2   × ⁴√2</code></pre>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Key insight:</strong> any binary fraction is a sum of negative powers of 2. So 2<sup>frac</sup> = product of precomputed 2<sup>1/2ⁿ</sup> values for each set bit.
+        </div>
+        <aside class="notes">This is the breakthrough that makes exp2 fast. Every number has a binary representation. The integer part of the exponent is trivial — just a left shift, which is a single EVM opcode. For the fractional part, we express it in binary. Each bit position corresponds to a power: 2^(1/2), 2^(1/4), 2^(1/8), etc. PRBMath precomputes and hardcodes all these values. For each set bit in the fractional part, we multiply by the corresponding precomputed factor. With 64 bits of fraction, we need at most 64 multiplications — but in practice, most bits are zero, and the constants are hardcoded right in the source.</aside>
+      </section>
+
+      <section>
+        <h2>exp2() — Actual Code (Simplified)</h2>
+        <pre><code class="hljs">// The fractional part in 192.64-bit fixed-point
+uint256 x = xValue;  // the fractional bits
+
+// For each bit position, multiply by precomputed 2^(1/2^n)
+if (x & 0x8000000000000000 > 0)    // bit 63: 2^(1/2)
+    result = (result * 0x16A09E667F3BCC909) >> 64;
+if (x & 0x4000000000000000 > 0)    // bit 62: 2^(1/4)
+    result = (result * 0x1306FE0A31B7152DF) >> 64;
+if (x & 0x2000000000000000 > 0)    // bit 61: 2^(1/8)
+    result = (result * 0x1172B83C7D517ADCE) >> 64;
+if (x & 0x1000000000000000 > 0)    // bit 60: 2^(1/16)
+    result = (result * 0x10B5586CF9890F62A) >> 64;
+// ... continues for all 64 bits ...
+if (x & 0x2 > 0)                   // bit 1: 2^(1/2^63)
+    result = (result * 0x10000000000000001) >> 64;
+if (x & 0x1 > 0)                   // bit 0: 2^(1/2^64)
+    result = (result * 0x10000000000000001) >> 64;</code></pre>
+        <div class="callout">
+          64 <code>if</code> checks, each with 1 multiply + 1 shift. No loops, no branches — pure branchless math. <span class="gas-tag">~1500 gas total</span>
+        </div>
+        <aside class="notes">This is what the actual code looks like. Each line checks one bit of the fractional exponent. If the bit is set, it multiplies the running result by the precomputed constant for that bit position. The constants like 0x16A09E667F3BCC909 are 2^(1/2) in 64.64 fixed-point format. Each multiply-and-shift costs about 8 gas. With 64 potential multiplications, the worst case is about 512 gas just for the multiplications. In practice, many bits are zero, so the actual cost is lower. The code looks repetitive, but that's the point — no loops means no jump opcodes, no loop counters, maximum predictability for the EVM.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 11 — ln() INTERNALS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e67e22;">Part 11: <code>ln()</code> — Binary Logarithm</h2>
+        <p>Same trick in reverse: <code>ln(x) = log₂(x) / log₂(e)</code></p>
+      </section>
+
+      <section>
+        <h2>ln() → log2() → Bit Extraction</h2>
+        <pre><code class="hljs">function ln(UD60x18 x) pure returns (UD60x18 result) {
+    // ln(x) = log2(x) / log2(e)
+    // But we compute: log2(x) * (1/log2(e)) = log2(x) * ln(2)
+    unchecked {
+        result = wrap(mulDiv(log2(unwrap(x)), uLOG2_E_INV, uUNIT));
+    }
+}</code></pre>
+        <p>Just like exp() delegates to exp2(), ln() delegates to <span class="fn-name">log2()</span>.</p>
+        <div class="callout">
+          <code>log2()</code> is where the real algorithm lives. It finds the binary logarithm by extracting bits one at a time — from integer part down to fractional part.
+        </div>
+        <aside class="notes">The pattern should look familiar by now. Just as exp converts to base 2, ln converts to log base 2. The natural log of x equals log2(x) times ln(2), where ln(2) is a precomputed constant. So we just need an efficient log2 implementation. And log2 can be computed using a very elegant bit-extraction algorithm.</aside>
+      </section>
+
+      <section>
+        <h2>log2() — Integer Part</h2>
+        <pre><code class="hljs">// n = integer part of log2(x)
+// Find the highest set bit using binary search
+uint256 n;
+if (xUint >= 2**128) { xUint >>= 128; n += 128; }
+if (xUint >= 2**64)  { xUint >>= 64;  n += 64;  }
+if (xUint >= 2**32)  { xUint >>= 32;  n += 32;  }
+if (xUint >= 2**16)  { xUint >>= 16;  n += 16;  }
+if (xUint >= 2**8)   { xUint >>= 8;   n += 8;   }
+if (xUint >= 2**4)   { xUint >>= 4;   n += 4;   }
+if (xUint >= 2**2)   { xUint >>= 2;   n += 2;   }
+if (xUint >= 2**1)   { n += 1; }</code></pre>
+        <div class="callout-green">
+          <strong>Binary search for the highest set bit</strong> — finds floor(log₂(x)) in exactly 8 comparisons. This is the same algorithm the EVM itself uses internally. <span class="gas-tag">~80 gas</span>
+        </div>
+        <aside class="notes">The integer part of log2 is just the position of the highest set bit. Finding it with a linear scan would take up to 256 comparisons. Instead, PRBMath uses a binary search: first check if x is at least 2^128, then 2^64, and so on. Each step narrows the range by half. After 8 comparisons, we know the exact bit position. This is O(log(256)) = O(8) — very efficient.</aside>
+      </section>
+
+      <section>
+        <h2>log2() — Fractional Part</h2>
+        <pre><code class="hljs">// y = x / 2^n  (normalize to range [1, 2))
+// Now compute fractional bits by repeated squaring
+int256 resultInt;
+// ...after integer part calculation...
+
+// Compute 64 fractional bits, one at a time
+y = (y * y) >> 127;        // square and check
+if (y >= 2 * UNIT) {       // if ≥ 2.0...
+    resultInt |= (1 << 63); // ...set bit 63
+    y >>= 1;               // normalize back
+}
+y = (y * y) >> 127;
+if (y >= 2 * UNIT) {
+    resultInt |= (1 << 62); // set bit 62
+    y >>= 1;
+}
+// ... repeat for all 64 bits ...</code></pre>
+        <div class="callout">
+          <strong>Repeated squaring:</strong> if y² ≥ 2, then the next log₂ bit is 1 (divide by 2 and continue). Otherwise it's 0. One bit per iteration, 64 iterations for 64-bit precision.
+        </div>
+        <aside class="notes">Once we have the integer part, we normalize x to the range [1, 2) by dividing by 2^n. Now we need the fractional bits of log2. The algorithm: square the number. If the result is ≥ 2, then the next fractional bit is 1 — halve the result and continue. If the result is < 2, the next bit is 0 — continue. This is based on the identity: log2(x) = 2*log2(√x), or equivalently, squaring the input doubles the logarithm. Each squaring exposes one more bit of precision. After 64 squarings, we have 64 fractional bits — more than enough for 18 decimal digits.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 12 — sqrt() INTERNALS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#27ae60;">Part 12: <code>sqrt()</code> — Newton's Method</h2>
+        <p>The oldest algorithm in PRBMath — over 3,000 years old.</p>
+      </section>
+
+      <section>
+        <h2>sqrt() — The Babylonian Method</h2>
+        <p>To find √x, repeatedly improve a guess: <span class="formula">g' = (g + x/g) / 2</span></p>
+        <pre><code class="hljs">function sqrt(uint256 x) pure returns (uint256 result) {
+    if (x == 0) return 0;
+
+    // Initial guess: closest power of 2 to √x
+    // (uses the same binary search as log2)
+    result = 1;
+    uint256 xAux = x;
+    if (xAux >= 2**128) { xAux >>= 128; result <<= 64; }
+    if (xAux >= 2**64)  { xAux >>= 64;  result <<= 32; }
+    if (xAux >= 2**32)  { xAux >>= 32;  result <<= 16; }
+    if (xAux >= 2**16)  { xAux >>= 16;  result <<= 8; }
+    if (xAux >= 2**8)   { xAux >>= 8;   result <<= 4; }
+    if (xAux >= 2**4)   { xAux >>= 4;   result <<= 2; }
+    if (xAux >= 2**2)   { result <<= 1; }
+
+    // Newton-Raphson: 7 iterations (doubles bits each time)
+    result = (result + x / result) >> 1; // ~8 bits
+    result = (result + x / result) >> 1; // ~16 bits
+    result = (result + x / result) >> 1; // ~32 bits
+    result = (result + x / result) >> 1; // ~64 bits
+    result = (result + x / result) >> 1; // ~128 bits
+    result = (result + x / result) >> 1; // ~256 bits
+    result = (result + x / result) >> 1; // exact
+
+    // Round down
+    if (result > x / result) result = x / result;
+}</code></pre>
+        <aside class="notes">The Babylonian method (also called Newton's method for square roots) is ancient — Babylonian mathematicians used it 3000+ years ago. The idea: start with a guess g. If g is too large, then x/g is too small, and vice versa. Their average (g + x/g)/2 is always closer to the true root. Newton-Raphson iteration doubles the correct bits each step. Starting from an 8-bit initial guess (from the binary search), 7 iterations gives us 256-bit precision. The final check rounds down to ensure we never overestimate.</aside>
+      </section>
+
+      <section>
+        <h2>sqrt() for UD60x18 — Scale Adjustment</h2>
+        <pre><code class="hljs">/// @notice Calculates the square root of x using the
+/// Babylonian method.
+function sqrt(UD60x18 x) pure returns (UD60x18 result) {
+    uint256 xUint = unwrap(x);
+    if (xUint > uMAX_UD60x18 / uUNIT) revert ...;
+    // Multiply by UNIT (1e18) for scale adjustment,
+    // then take integer sqrt
+    result = wrap(prbSqrt(xUint * uUNIT));
+}</code></pre>
+        <div class="two-col">
+          <div>
+            <h3>Why multiply by 1e18?</h3>
+            <p class="subtle">√(x × 1e18) = √x × √(1e18) = √x × 1e9</p>
+            <p class="subtle">But we need √x × 1e18 (UD60x18 format).</p>
+            <p class="subtle">So: √(x × 1e18 × 1e18) = √(x × 1e36) = √x × 1e18 ✓</p>
+          </div>
+          <div>
+            <div class="callout">
+              Input <code>x</code> is already scaled by 1e18. Multiply by another 1e18 before sqrt, so the result comes out correctly scaled.
+            </div>
+          </div>
+        </div>
+        <aside class="notes">The UD60x18 sqrt wrapper has a subtle scaling step. The input x is a UD60x18 value, meaning it's already multiplied by 1e18. If we just took the integer sqrt, we'd get sqrt(x * 1e18). The sqrt of the scale factor would be sqrt(1e18) = 1e9, so our result would only have 9 decimal digits instead of 18. To fix this, we multiply by 1e18 before taking the sqrt: sqrt(x * 1e18 * 1e18) = sqrt(x * 1e36) = sqrt(x) * 1e18, which is the correct UD60x18 representation.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           PART 13 — pow() AND GAS
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#e74c3c;">Part 13: <code>pow()</code> &amp; Gas Costs</h2>
+        <p>Putting it all together.</p>
+      </section>
+
+      <section>
+        <h2>pow() — Just exp(y × ln(x))</h2>
+        <pre><code class="hljs">/// @notice Raises x to the power of y.
+function pow(UD60x18 x, UD60x18 y)
+    pure returns (UD60x18 result)
+{
+    uint256 xUint = unwrap(x);
+    uint256 yUint = unwrap(y);
+
+    if (xUint == 0) return y == ZERO ? UNIT : ZERO;
+    if (yUint == uUNIT) return x;
+
+    // x^y = exp(y * ln(x))
+    // = exp2(y * log2(x))    ← base-2 version
+    result = exp2(mul(y, log2(x)));
+}</code></pre>
+        <div class="callout-green">
+          <code>pow()</code> is the most expensive function because it calls <strong>both</strong> log2 and exp2. But it's still just ~3000 gas — 15% of a single SSTORE.
+        </div>
+        <aside class="notes">pow is elegantly simple at the top level: x^y = 2^(y * log2(x)). This identity converts arbitrary exponentiation into a log followed by an exp, both in base 2. The edge cases are handled first: 0^0 = 1 by convention, 0^y = 0, x^1 = x. For everything else, we compute log2(x), multiply by y, and call exp2. The gas cost is roughly log2 (~1200 gas) + mul (~100 gas) + exp2 (~1500 gas) = ~2800 gas total.</aside>
+      </section>
+
+      <section>
+        <h2>Gas Cost Summary</h2>
+        <table class="truth-table">
+          <tr><th>Function</th><th>Algorithm</th><th>Gas (approx)</th><th>vs. Naive</th></tr>
+          <tr><td><code>mul()</code></td><td>mulDiv18</td><td><span class="gas-tag">~100</span></td><td>safe from phantom overflow</td></tr>
+          <tr><td><code>div()</code></td><td>mulDiv (scale first)</td><td><span class="gas-tag">~150</span></td><td>18-digit precision preserved</td></tr>
+          <tr><td><code>sqrt()</code></td><td>Newton × 7 iterations</td><td><span class="gas-tag">~400</span></td><td>impossible naively</td></tr>
+          <tr><td><code>exp()</code></td><td>exp2 + bit decomp</td><td><span class="gas-tag">~1600</span></td><td>Taylor: ~3000+</td></tr>
+          <tr><td><code>ln()</code></td><td>log2 + repeated squaring</td><td><span class="gas-tag">~1200</span></td><td>Taylor: ~4000+</td></tr>
+          <tr><td><code>pow()</code></td><td>exp2(y × log2(x))</td><td><span class="gas-tag">~2800</span></td><td>loop: O(n) gas</td></tr>
+        </table>
+        <div class="callout">
+          For reference: <code>SSTORE</code> = 20,000 gas, <code>SLOAD</code> = 2,100 gas, <code>LOG</code> = 375+ gas.<br>
+          All PRBMath operations are <strong>cheaper than a single storage read</strong>.
+        </div>
+        <aside class="notes">These gas costs assume the full computation path, not the fast path shortcuts. In practice, costs are often lower because many fast-path optimizations kick in for common values. The key takeaway: even the most expensive PRBMath function (pow at ~2800 gas) is cheaper than reading from storage (2100 gas for a warm slot, 2600 for cold). The library is extremely well-optimized for the EVM's gas model.</aside>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           SUMMARY AND TECHNIQUES
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2>Techniques You've Learned</h2>
+        <div class="two-col">
+          <div>
+            <table class="truth-table">
+              <tr><th>Technique</th><th>Used In</th></tr>
+              <tr><td>512-bit via MULMOD</td><td>mulDiv</td></tr>
+              <tr><td>Modular inverse</td><td>mulDiv</td></tr>
+              <tr><td>Newton-Raphson</td><td>mulDiv, sqrt</td></tr>
+              <tr><td>d &amp; (-d) bit trick</td><td>mulDiv</td></tr>
+            </table>
+          </div>
+          <div>
+            <table class="truth-table">
+              <tr><th>Technique</th><th>Used In</th></tr>
+              <tr><td>Binary search (MSB)</td><td>log2, sqrt</td></tr>
+              <tr><td>Repeated squaring</td><td>log2</td></tr>
+              <tr><td>Precomputed constants</td><td>exp2</td></tr>
+              <tr><td>Change of base</td><td>exp, ln, pow</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="callout">
+          These 8 techniques appear throughout DeFi math — Uniswap v3's <code>TickMath</code>, Balancer's <code>LogExpMath</code>, Solmate's <code>FixedPointMathLib</code>. Learn them once, read any library.
+        </div>
+      </section>
+
+      <section>
+        <h2>How Everything Connects</h2>
+        <pre><code class="hljs" style="font-size:0.65em; line-height:1.5;">
+  pow(x, y) ──→ exp2( y × log2(x) )
+                  │         │
+                  ▼         ▼
+  exp(x) ───→ exp2()    log2() ◄──── ln(x)
+                │           │
+          [bit decomp]  [repeated squaring]
+                │           │
+                ▼           ▼
+            mulDiv()    mulDiv()
+              │
+        [512-bit product]
+        [modular inverse]
+        [Newton-Raphson]
+
+  mul(x,y) ──→ mulDiv18(x, y)  ──→ mulDiv(x, y, 1e18)
+  div(x,y) ──→ mulDiv(x, 1e18, y)
+  sqrt(x)  ──→ Newton-Raphson + mulDiv for scale
+        </code></pre>
+        <p class="subtle"><code>mulDiv()</code> is the foundation. Every function ultimately relies on it.</p>
+      </section>
+
+      <!-- ══════════════════════════════════════════════
+           EXERCISES
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2>Code Reading Exercises</h2>
+        <div class="two-col">
+          <div>
+            <h3>Beginner</h3>
+            <ol style="font-size:0.72em;">
+              <li>Open <code>Common.sol</code> — find the <code>mulDiv</code> function. Count the Yul assembly blocks.</li>
+              <li>Find the 6 Newton-Raphson lines in <code>mulDiv</code>. What's the seed value?</li>
+              <li>In <code>Math.sol</code>, trace <code>mul()</code> → how many function calls deep does it go?</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Advanced</h3>
+            <ol style="font-size:0.72em;">
+              <li>In <code>exp2()</code>, find the constant for 2<sup>1/2</sup>. Verify it: compute <code>√2 × 2⁶⁴</code>.</li>
+              <li>Why does <code>log2()</code> use 192.64 format instead of 60x18?</li>
+              <li>What happens if you call <code>exp(ud(134e18))</code>? Where does it revert and why?</li>
+            </ol>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Repo:</strong> <code>npm install @prb/math</code> then open <code>node_modules/@prb/math/src/</code>
+        </div>
+      </section>
+
+      <section>
+        <h2>Further Reading</h2>
+        <ul>
+          <li><a href="https://github.com/PaulRBerg/prb-math" style="color:#2d9cdb;">PRBMath source code (v4)</a></li>
+          <li><a href="https://xn--2-umb.com/21/muldiv/" style="color:#2d9cdb;">Remco Bloemen — "Full Mul-Div"</a> — the mulDiv algorithm origin</li>
+          <li><a href="https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method" style="color:#2d9cdb;">Babylonian / Newton's method for square roots</a></li>
+          <li>Henry S. Warren, <em>Hacker's Delight</em> — the bible of bit manipulation</li>
+          <li><a href="https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/TickMath.sol" style="color:#2d9cdb;">Uniswap v3 TickMath</a> — uses the same exp/log techniques</li>
+        </ul>
+        <div class="callout-blue">
+          PRBMath is one of the best-documented Solidity libraries. The source code comments explain every step — read them!
+        </div>
+      </section>
+
+
+
+      <!-- ══════════════════════════════════════════════
+           WRAP-UP — PUTTING IT ALL TOGETHER
+           ══════════════════════════════════════════════ -->
+      <section>
+        <h2 style="color:#f5a623;">Putting It All Together</h2>
         <div class="two-col">
           <div>
             <h3>What You Now Know</h3>
             <ul>
               <li>&check; Functions: input &rarr; output</li>
               <li>&check; Graphs: x-axis = supply, y-axis = price</li>
-              <li>&check; Slope: controls growth rate</li>
               <li>&check; Five curve shapes and their personalities</li>
-              <li>&check; Area under curve = total cost (no calculus!)</li>
+              <li>&check; Area under curve = total cost</li>
               <li>&check; Fixed-point: multiply by 1e18</li>
               <li>&check; PRBMath: wrap &rarr; math &rarr; unwrap</li>
+              <li>&check; mulDiv: 512-bit safe arithmetic</li>
+              <li>&check; How exp, ln, sqrt, pow work internally</li>
             </ul>
           </div>
           <div>
-            <h3>What's Next (Workshop 006)</h3>
+            <h3>What's Next</h3>
             <ul>
               <li>Full buy/sell contracts with reserves</li>
               <li>Closed-form integrals for O(1) gas</li>
@@ -813,11 +1547,11 @@ contract LogPrice {
               <li>Power curves, Bancor, Friend.tech</li>
             </ul>
             <div class="callout">
-              You have all the math you need. Workshop 006 is just plugging these pieces together.
+              You have all the math and internals knowledge you need. The bonding curves workshop is just plugging these pieces together.
             </div>
           </div>
         </div>
-        <aside class="notes">Let's recap. You now understand that a bonding curve is just a Solidity function where supply goes in and price comes out. You can read a graph and know which shape means what economically. You know that total cost is the area under the curve. You know Solidity can't do decimals, so we use fixed-point (multiply by 1e18). And you know PRBMath: wrap, math, unwrap. Workshop 006 will build complete contracts — but the hard part (the math) is done.</aside>
+        <aside class="notes">Let's recap everything. You understand that a bonding curve is just a Solidity function where supply goes in and price comes out. You can read a graph and know which shape means what economically. You know total cost is the area under the curve. You know Solidity can't do decimals, so we use fixed-point (multiply by 1e18). You know PRBMath's wrap-math-unwrap pattern. And now you know the internals: mulDiv's 512-bit trick, how exp uses bit decomposition, how ln uses repeated squaring, and how sqrt uses Newton's method. The bonding curves workshop will build complete contracts using all of this.</aside>
       </section>
 
       <!-- ============ EXERCISE ============ -->
@@ -868,9 +1602,9 @@ contract MysteryPrice {
           <li>PRBMath UD60x18 API: <a href="https://github.com/PaulRBerger/prb-math/blob/main/src/ud60x18/Math.sol">Math.sol source</a></li>
           <li>Fixed-Point Tutorial: <a href="https://docs.soliditylang.org/en/latest/">Solidity docs</a></li>
           <li>Desmos Graph Calculator: <a href="https://www.desmos.com/calculator">desmos.com/calculator</a> &mdash; practice graphing!</li>
-          <li><strong>Next:</strong> <a href="../006_bonding_curves/">Workshop 006 &mdash; Bonding Curves</a></li>
+          <li><strong>Next:</strong> <a href="../007_bonding_curves/">Workshop 007 &mdash; Bonding Curves</a></li>
         </ul>
-        <aside class="notes">PRBMath docs are excellent — start with the README. For practice, open Desmos and type in different formulas. Try y = 0.01x^2 and see if it matches what you expect. Then try y = 2*ln(x+1). Building visual intuition will make the Solidity code much easier to follow. When you're comfortable, move to workshop 006 where we'll build full bonding curve contracts with buy, sell, and reserves.</aside>
+        <aside class="notes">PRBMath docs are excellent — start with the README. For practice, open Desmos and type in different formulas. Try y = 0.01x^2 and see if it matches what you expect. Then try y = 2*ln(x+1). Building visual intuition will make the Solidity code much easier to follow. When you're comfortable, move to workshop 007 where we'll build full bonding curve contracts with buy, sell, and reserves.</aside>
       </section>
 
       <!-- ============ Q&A ============ -->
@@ -884,7 +1618,7 @@ contract MysteryPrice {
           <li>What's the difference between a linear and exponential curve?</li>
         </ul>
         <div class="callout">
-          If you can answer all four &rarr; you're ready for <strong>Workshop 006: Bonding Curves</strong>!
+          If you can answer all four &rarr; you're ready for <strong>Workshop 007: Bonding Curves</strong>!
         </div>
         <aside class="notes">Quick pulse check. 1) Because Solidity only has integers — 0.5 doesn't exist, you need 5e17. 2) ud(5e18) represents the number 5.0 in fixed-point. 3) Because ln(0) is negative infinity and would revert. 4) Linear grows by a constant amount per step; exponential multiplies by a constant ratio per step — so it gets much steeper much faster.</aside>
       </section>
@@ -893,8 +1627,9 @@ contract MysteryPrice {
   </div>
 
   <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
   <script>
-    Reveal.initialize({ hash: true, slideNumber: true, transition: 'slide' });
+    Reveal.initialize({ hash: true, slideNumber: true, transition: 'slide', plugins: [ RevealNotes ] });
 
     window.addEventListener('load', () => {
       const opts = { expressions: true, settingsMenu: false, zoomButtons: false, expressionsTopbar: false };
