@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 2: Finite Fields &amp; Modular Arithmetic</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Finite Fields &amp;<br>Modular Arithmetic</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 2 of 6</span></p>
+        <p class="subtle">The number system that powers all of modern cryptography</p>
+        <aside class="notes">Welcome to Workshop 2 where we cover finite fields and modular arithmetic. This is the single most important math concept for ZK proofs because ALL ZK computations happen inside finite fields. If you understand this workshop, everything else becomes much more approachable.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Why finite fields matter for ZK</li>
+          <li>Modular arithmetic refresher</li>
+          <li>What is a finite field?</li>
+          <li>Additive &amp; multiplicative inverses</li>
+          <li>Fermat's Little Theorem</li>
+          <li>Division without precision loss</li>
+          <li>Modular square roots</li>
+          <li>Polynomials in finite fields</li>
+          <li>Python demos &amp; Practice problems</li>
+        </ul>
+        <aside class="notes">Here's our roadmap for the next hour. We'll start with motivation, build the core concepts, and end with hands-on Python demos. The key takeaway is that finite fields let us do exact arithmetic — no rounding errors, no floating point issues — which is critical for cryptographic proofs.</aside>
+      </section>
+
+      <!-- ============ WHY FINITE FIELDS ============ -->
+      <section>
+        <h2>Why Finite Fields?</h2>
+        <div class="two-col">
+          <div>
+            <h3>The Problem</h3>
+            <ul>
+              <li>Real number math &rarr; rounding errors</li>
+              <li>Floating point &rarr; imprecise</li>
+              <li>Infinite sets &rarr; can't enumerate</li>
+              <li>Cryptography needs <strong>exact</strong> answers</li>
+            </ul>
+          </div>
+          <div>
+            <h3>The Solution</h3>
+            <ul>
+              <li>Finite fields give <strong>exact</strong> arithmetic</li>
+              <li>Division produces integers, not fractions</li>
+              <li>Bounded set &rarr; practical for computers</li>
+              <li>Foundation of elliptic curve crypto</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">In regular math, dividing 1 by 3 gives 0.333... which we can't represent exactly. In a finite field modulo 7, dividing 1 by 3 gives exactly 5, because 5 times 3 mod 7 equals 1. This exactness is why all ZK computations happen in finite fields.</aside>
+      </section>
+
+      <!-- ============ MODULAR ARITHMETIC ============ -->
+      <section>
+        <h2>Modular Arithmetic Refresher</h2>
+        <p>Think of a <strong>clock</strong>: after 12, it wraps back to 1</p>
+        <div class="callout">
+          <p><span class="formula">a mod n</span> = remainder when a is divided by n</p>
+        </div>
+        <ul>
+          <li><span class="formula">17 mod 5 = 2</span> &nbsp; (17 = 3&times;5 + 2)</li>
+          <li><span class="formula">23 mod 7 = 2</span> &nbsp; (23 = 3&times;7 + 2)</li>
+          <li><span class="formula">100 mod 11 = 1</span> &nbsp; (100 = 9&times;11 + 1)</li>
+        </ul>
+        <p class="subtle">We say 17 is <em>congruent</em> to 2 modulo 5, written 17 &equiv; 2 (mod 5)</p>
+        <aside class="notes">Modular arithmetic is arithmetic with a wrapping point. Most of you have seen this before. The key idea is that we only care about the remainder. Two numbers are congruent if they have the same remainder when divided by the modulus.</aside>
+      </section>
+
+      <!-- ============ MODULAR OPERATIONS ============ -->
+      <section>
+        <h2>Operations in Modular Arithmetic</h2>
+        <p>All operations mod p (let p = 7):</p>
+        <table>
+          <tr><th>Operation</th><th>Example</th><th>Result</th></tr>
+          <tr><td>Addition</td><td>5 + 4 mod 7</td><td>2</td></tr>
+          <tr><td>Subtraction</td><td>2 - 5 mod 7</td><td>4</td></tr>
+          <tr><td>Multiplication</td><td>3 &times; 4 mod 7</td><td>5</td></tr>
+          <tr><td>Exponentiation</td><td>3&sup2; mod 7</td><td>2</td></tr>
+        </table>
+        <div class="callout-blue">
+          <strong>Key rule:</strong> You can take mod at any intermediate step &mdash; the result is the same.
+          <br>(a + b) mod p = ((a mod p) + (b mod p)) mod p
+        </div>
+        <aside class="notes">The operations work exactly as you'd expect. The important insight is that you can reduce at any step — this is what makes modular arithmetic efficient even with huge numbers. Notice subtraction can produce what looks like a negative number, but 2 minus 5 mod 7 is 4 because negative 3 mod 7 is 4.</aside>
+      </section>
+
+      <!-- ============ FINITE FIELD DEFINITION ============ -->
+      <section>
+        <h2>What is a Finite Field?</h2>
+        <div class="callout">
+          A finite field <span class="formula">𝔽ₚ</span> (or GF(p)) is:<br>
+          The set {0, 1, 2, ..., p-1} with addition and multiplication mod p,<br>
+          where <strong>p is prime</strong>.
+        </div>
+        <ul>
+          <li><strong>Closed</strong> under +, &minus;, &times;, &divide; (except &divide; by 0)</li>
+          <li><strong>Associative</strong> and <strong>commutative</strong></li>
+          <li>Has <strong>additive identity</strong> (0) and <strong>multiplicative identity</strong> (1)</li>
+          <li>Every element has an <strong>additive inverse</strong> and a <strong>multiplicative inverse</strong></li>
+        </ul>
+        <p class="subtle">Why prime? Because composite moduli lose the property that every non-zero element has a multiplicative inverse.</p>
+        <aside class="notes">A field is a set where you can add, subtract, multiply, and divide (except by zero) and always stay in the set. The critical requirement is that p must be prime. If p were 6, then 2 times 3 equals 0 mod 6 — we'd have zero divisors, which breaks the field properties. With a prime modulus, every non-zero element has a unique multiplicative inverse.</aside>
+      </section>
+
+      <!-- ============ WHY PRIME ============ -->
+      <section>
+        <h2>Why Must p Be Prime?</h2>
+        <pre><code class="language-python"># Composite modulus: p = 6
+# 2 × 3 = 6 ≡ 0 (mod 6)  ← zero divisors!
+# This means 2 has no multiplicative inverse mod 6
+
+# Prime modulus: p = 7
+# Every non-zero element has an inverse:
+for a in range(1, 7):
+    inv = pow(a, -1, 7)
+    print(f"{a} × {inv} ≡ {(a * inv) % 7} (mod 7)")
+
+# Output:
+# 1 × 1 ≡ 1 (mod 7)
+# 2 × 4 ≡ 1 (mod 7)
+# 3 × 5 ≡ 1 (mod 7)
+# 4 × 2 ≡ 1 (mod 7)
+# 5 × 3 ≡ 1 (mod 7)
+# 6 × 6 ≡ 1 (mod 7)</code></pre>
+        <aside class="notes">With a composite modulus like 6, 2 times 3 gives 0 even though neither is zero. This is a disaster for cryptography because it means we can't divide by 2 or 3. With prime 7, every single non-zero element pairs up with exactly one inverse. Notice the symmetry: the inverse of 2 is 4, and the inverse of 4 is 2.</aside>
+      </section>
+
+      <!-- ============ ADDITIVE INVERSE ============ -->
+      <section>
+        <h2>Additive Inverses</h2>
+        <p>The additive inverse of <span class="formula">a</span> is the element <span class="formula">b</span> such that <span class="formula">a + b &equiv; 0 (mod p)</span></p>
+        <div class="callout">
+          <span class="formula">-a &equiv; p - a (mod p)</span>
+        </div>
+        <table>
+          <tr><th>Element (mod 7)</th><th>Additive Inverse</th><th>Verification</th></tr>
+          <tr><td>0</td><td>0</td><td>0 + 0 = 0</td></tr>
+          <tr><td>1</td><td>6</td><td>1 + 6 = 7 &equiv; 0</td></tr>
+          <tr><td>2</td><td>5</td><td>2 + 5 = 7 &equiv; 0</td></tr>
+          <tr><td>3</td><td>4</td><td>3 + 4 = 7 &equiv; 0</td></tr>
+        </table>
+        <p class="subtle">Every element has a unique additive inverse. There are no "negative numbers" — just inverses.</p>
+        <aside class="notes">In a finite field, there are no negative numbers. Instead, each element has an additive inverse that sums to zero. The inverse of a is simply p minus a. So in mod 7, "negative 3" is actually 4, because 3 plus 4 is 7, which is 0 mod 7. This is conceptually important — when we work with elliptic curves later, the idea of "negating" a point follows the same principle.</aside>
+      </section>
+
+      <!-- ============ MULTIPLICATIVE INVERSE ============ -->
+      <section>
+        <h2>Multiplicative Inverses</h2>
+        <p>The multiplicative inverse of <span class="formula">a</span> is the element <span class="formula">b</span> such that <span class="formula">a &times; b &equiv; 1 (mod p)</span></p>
+        <div class="two-col">
+          <div>
+            <h3>By Brute Force</h3>
+            <pre><code class="language-python"># Find inverse of 3 mod 7
+p = 7
+for b in range(1, p):
+    if (3 * b) % p == 1:
+        print(f"3⁻¹ ≡ {b} (mod {p})")
+# 3⁻¹ ≡ 5 (mod 7)</code></pre>
+          </div>
+          <div>
+            <h3>Python Built-in</h3>
+            <pre><code class="language-python"># Python 3.8+ has built-in
+# modular inverse
+inv = pow(3, -1, 7)
+print(inv)  # 5
+
+# Verify
+assert (3 * 5) % 7 == 1</code></pre>
+          </div>
+        </div>
+        <aside class="notes">The multiplicative inverse is the key operation that makes finite fields powerful. Python 3.8+ has this built in with the pow function's third argument. For 3 mod 7, the inverse is 5 because 3 times 5 is 15, and 15 mod 7 is 1. This is how we'll do "division" in finite fields.</aside>
+      </section>
+
+      <!-- ============ FERMATS LITTLE THEOREM ============ -->
+      <section>
+        <h2>Fermat's Little Theorem</h2>
+        <div class="callout">
+          If p is prime and a is not divisible by p, then:<br>
+          <span class="formula">a<sup>p-1</sup> &equiv; 1 (mod p)</span>
+        </div>
+        <ul>
+          <li>Direct consequence: <span class="formula">a<sup>-1</sup> &equiv; a<sup>p-2</sup> (mod p)</span></li>
+          <li>This gives us a formula for computing inverses!</li>
+        </ul>
+        <pre><code class="language-python"># Verify Fermat's Little Theorem
+p = 7
+for a in range(1, p):
+    result = pow(a, p - 1, p)
+    inv_fermat = pow(a, p - 2, p)
+    inv_builtin = pow(a, -1, p)
+    print(f"a={a}: a^(p-1)={result}, a^(p-2)={inv_fermat}, inv={inv_builtin}")
+    assert result == 1
+    assert inv_fermat == inv_builtin</code></pre>
+        <p class="subtle">This theorem is the theoretical foundation for efficient modular inverse computation.</p>
+        <aside class="notes">Fermat's Little Theorem tells us that any non-zero element raised to the power p minus 1 gives 1. This is incredibly useful because it means we can compute inverses using exponentiation: the inverse of a is a to the power p minus 2. Under the hood, Python's pow function uses this approach combined with fast exponentiation. In ZK proofs, this appears everywhere when we need to compute division in circuits.</aside>
+      </section>
+
+      <!-- ============ DIVISION ============ -->
+      <section>
+        <h2>Division Without Precision Loss</h2>
+        <p>In regular math: <span class="formula">1 &divide; 3 = 0.333...</span> (imprecise!)</p>
+        <p>In 𝔽₇: <span class="formula">1 &divide; 3 = 1 &times; 3<sup>-1</sup> = 1 &times; 5 = 5</span></p>
+        <div class="callout-blue">
+          <strong>Verify:</strong> 5 &times; 3 = 15 &equiv; 1 (mod 7) &check;
+        </div>
+        <pre><code class="language-python">p = 7
+
+# "Divide" 1 by 3 in the finite field
+result = (1 * pow(3, -1, p)) % p
+print(f"1 ÷ 3 ≡ {result} (mod {p})")  # 5
+
+# More examples
+print(f"5 ÷ 2 ≡ {(5 * pow(2, -1, p)) % p} (mod {p})")  # 6
+# Verify: 6 × 2 = 12 ≡ 5 (mod 7) ✓
+
+print(f"10 ÷ 4 ≡ {(10 * pow(4, -1, p)) % p} (mod {p})")  # 6
+# Verify: 6 × 4 = 24 ≡ 3 (mod 7)... wait, 10 mod 7 = 3 ✓</code></pre>
+        <aside class="notes">This is the magic of finite fields for ZK: division always produces an exact integer result. There are no fractions, no rounding, no precision loss. When we divide 1 by 3 in mod 7, we get 5, and we can verify this is correct because 5 times 3 mod 7 is 1. This property is essential for ZK proofs because circuits need exact computation.</aside>
+      </section>
+
+      <!-- ============ RATIONAL NUMBERS ============ -->
+      <section>
+        <h2>Encoding Rational Numbers</h2>
+        <p>Any rational number a/b can be mapped into 𝔽ₚ:</p>
+        <div class="callout">
+          <span class="formula">a/b &mapsto; a &times; b<sup>-1</sup> (mod p)</span>
+        </div>
+        <pre><code class="language-python">p = 17
+
+# Map 1/3 into the field
+one_third = (1 * pow(3, -1, p)) % p
+print(f"1/3 ≡ {one_third} (mod {p})")  # 6
+
+# Map 3/5 into the field
+three_fifths = (3 * pow(5, -1, p)) % p
+print(f"3/5 ≡ {three_fifths} (mod {p})")  # 4
+
+# Verify: 1/3 + 3/5 = 14/15 in regular math
+regular_sum = (1*5 + 3*3) / (3*5)  # 14/15
+field_sum = (one_third + three_fifths) % p
+fourteen_fifteenths = (14 * pow(15, -1, p)) % p
+
+print(f"1/3 + 3/5 = {field_sum} (mod {p})")
+print(f"14/15 = {fourteen_fifteenths} (mod {p})")
+assert field_sum == fourteen_fifteenths  # ✓ Homomorphism!</code></pre>
+        <aside class="notes">This is a powerful result: rational number arithmetic over the reals is homomorphic to finite field arithmetic. The mapping preserves addition and multiplication. So 1/3 plus 3/5 equals 14/15 in regular math, and when we map each of those three fractions into the field, the relationship still holds. This is our first glimpse of a homomorphism, which we'll study in depth in Workshop 5.</aside>
+      </section>
+
+      <!-- ============ GALOIS LIBRARY ============ -->
+      <section>
+        <h2>Python galois Library</h2>
+        <pre><code class="language-python">from galois import GF
+
+# Create a finite field of order 7
+GF7 = GF(7)
+
+# Elements behave like regular numbers but are always mod 7
+a = GF7(5)
+b = GF7(3)
+
+print(f"a + b = {a + b}")      # 1  (8 mod 7)
+print(f"a * b = {a * b}")      # 1  (15 mod 7)
+print(f"a / b = {a / b}")      # 4  (5 × 3⁻¹ mod 7)
+print(f"a ** 2 = {a ** 2}")    # 4  (25 mod 7)
+print(f"-a = {-a}")            # 2  (7 - 5)
+
+# Works with larger primes too
+GF101 = GF(101)
+x = GF101(50)
+print(f"50⁻¹ mod 101 = {GF101(1) / x}")  # multiplicative inverse</code></pre>
+        <p class="subtle">pip install galois  &mdash; Useful for experimentation and verification</p>
+        <aside class="notes">The galois library in Python wraps everything nicely. When you create a GF7 element, all operations automatically stay in the field. This is great for experimenting and verifying your understanding. You'll want to install this library and play with it. Notice division just works — it automatically computes the modular inverse behind the scenes.</aside>
+      </section>
+
+      <!-- ============ MODULAR SQUARE ROOTS ============ -->
+      <section>
+        <h2>Modular Square Roots</h2>
+        <p>In regular math: &radic;9 = &plusmn;3</p>
+        <p>In finite fields: &radic;a mod p might have 0 or 2 solutions</p>
+        <pre><code class="language-python">p = 11
+
+# Which elements have square roots mod 11?
+for a in range(0, p):
+    roots = [x for x in range(p) if (x * x) % p == a]
+    if roots:
+        print(f"√{a} mod {p} = {roots}")
+
+# Output:
+# √0 mod 11 = [0]
+# √1 mod 11 = [1, 10]     ← 1² = 10² ≡ 1
+# √3 mod 11 = [5, 6]      ← 5² = 6² ≡ 3
+# √4 mod 11 = [2, 9]      ← 2² = 9² ≡ 4
+# √5 mod 11 = [4, 7]      ← 4² = 7² ≡ 5
+# √9 mod 11 = [3, 8]      ← 3² = 8² ≡ 9</code></pre>
+        <div class="callout-blue">
+          Notice: the two roots always sum to p! (e.g., 5 + 6 = 11)<br>
+          They are additive inverses of each other — just like &plusmn;3 in regular math.
+        </div>
+        <aside class="notes">Not every element in a finite field has a square root. Exactly half of the non-zero elements are quadratic residues, meaning they have square roots. When a square root exists, there are always exactly two solutions, and they're additive inverses of each other. This is directly analogous to how the square root of 9 is plus or minus 3 in regular math. We'll need modular square roots when working with elliptic curves in Workshop 6.</aside>
+      </section>
+
+      <!-- ============ EULER'S CRITERION ============ -->
+      <section>
+        <h2>Testing for Square Roots: Euler's Criterion</h2>
+        <div class="callout">
+          <span class="formula">a<sup>(p-1)/2</sup> &equiv; 1 (mod p)</span> &rArr; a has a square root<br>
+          <span class="formula">a<sup>(p-1)/2</sup> &equiv; p-1 (mod p)</span> &rArr; a does NOT have a square root
+        </div>
+        <pre><code class="language-python">p = 11
+
+# Test which elements are quadratic residues
+for a in range(1, p):
+    euler = pow(a, (p - 1) // 2, p)
+    has_sqrt = euler == 1
+    print(f"a={a:2d}: a^((p-1)/2) = {euler:2d} → {'has' if has_sqrt else 'NO'} sqrt")
+
+# Elements with square roots: 1, 3, 4, 5, 9  (5 out of 10)
+# Elements without:           2, 6, 7, 8, 10  (5 out of 10)
+# Exactly half!</code></pre>
+        <aside class="notes">Euler's criterion gives us a fast way to check if an element has a square root without actually computing it. This is important for performance: testing costs one exponentiation, while finding the root is more complex. Notice exactly half of non-zero elements are quadratic residues. This fact comes up in number theory proofs related to ZK schemes.</aside>
+      </section>
+
+      <!-- ============ POLYNOMIALS IN FINITE FIELDS ============ -->
+      <section>
+        <h2>Polynomials in Finite Fields</h2>
+        <p>Polynomials work the same way &mdash; just reduce coefficients mod p</p>
+        <pre><code class="language-python">from galois import GF, Poly
+
+GF7 = GF(7)
+
+# f(x) = 3x² + 2x + 5  over GF(7)
+f = Poly([3, 2, 5], field=GF7)
+print(f"f(x) = {f}")
+
+# Evaluate at x = 4
+print(f"f(4) = {f(GF7(4))}")  # 3(16) + 2(4) + 5 = 61 ≡ 5 mod 7
+
+# g(x) = x + 3
+g = Poly([1, 3], field=GF7)
+
+# Polynomial addition
+print(f"f + g = {f + g}")
+
+# Polynomial multiplication
+print(f"f * g = {f * g}")</code></pre>
+        <div class="callout">
+          Polynomials over finite fields are central to ZK proofs!<br>
+          QAP, PLONK, and other ZK schemes encode computations as polynomial equations.
+        </div>
+        <aside class="notes">Everything we've learned about finite field arithmetic extends naturally to polynomials. The coefficients are finite field elements, and all operations reduce mod p. This is where it connects directly to ZK: modern proof systems like Groth16 and PLONK encode computations as polynomial equations over finite fields. The ability to evaluate, add, and multiply polynomials in finite fields is the heart of these systems.</aside>
+      </section>
+
+      <!-- ============ SCHWARTZ-ZIPPEL ============ -->
+      <section>
+        <h2>Why Polynomials Matter for ZK</h2>
+        <h3>Schwartz-Zippel Lemma (Intuition)</h3>
+        <div class="callout-blue">
+          If two polynomials of degree d agree at more than d points, they must be the <strong>same</strong> polynomial.
+        </div>
+        <ul>
+          <li>A degree-d polynomial has at most d roots</li>
+          <li>If p(x) - q(x) = 0 at d+1 points &rarr; p(x) = q(x)</li>
+          <li>Over a large field, random evaluation is almost certainly unique</li>
+        </ul>
+        <div class="callout">
+          <strong>ZK Insight:</strong> The prover encodes their computation as a polynomial.<br>
+          The verifier checks it at a random point.<br>
+          If it passes, the polynomial (and computation) is almost certainly correct.
+        </div>
+        <aside class="notes">This is a key insight: if I claim my polynomial equals yours, we don't need to compare all coefficients. We can just evaluate both at a random point. If they agree, the probability they're different is vanishingly small — at most d over p, where d is the degree. For a 256-bit prime, this probability is negligible. This is the core verification trick in most ZK proof systems.</aside>
+      </section>
+
+      <!-- ============ LINEAR SYSTEMS ============ -->
+      <section>
+        <h2>Linear Systems in Finite Fields</h2>
+        <p>Solve 3x + 5y &equiv; 2 (mod 7) and x + 4y &equiv; 6 (mod 7)</p>
+        <pre><code class="language-python">p = 7
+
+# 3x + 5y ≡ 2 (mod 7)
+# x + 4y ≡ 6 (mod 7)
+
+# From equation 2: x ≡ 6 - 4y (mod 7)
+# Substitute into equation 1:
+# 3(6 - 4y) + 5y ≡ 2 (mod 7)
+# 18 - 12y + 5y ≡ 2 (mod 7)
+# 4 - 7y ≡ 2 (mod 7)    (18 mod 7 = 4)
+# 4 ≡ 2 (mod 7)         (-7y mod 7 = 0)
+# Hmm, let's try different coefficients...
+
+# Actually: 2x + 3y ≡ 1 (mod 7), 5x + y ≡ 4 (mod 7)
+# From eq 2: y ≡ 4 - 5x (mod 7)
+# Sub: 2x + 3(4 - 5x) ≡ 1 → 2x + 12 - 15x ≡ 1 → -13x ≡ -11
+# → x ≡ 11 × pow(13, -1, 7) ≡ 4 × pow(6, -1, 7) ≡ 4 × 6 ≡ 3 (mod 7)
+# y ≡ 4 - 5(3) ≡ 4 - 15 ≡ -11 ≡ 3 (mod 7)
+# Verify: 2(3) + 3(3) = 15 ≡ 1 ✓, 5(3) + 3 = 18 ≡ 4 ✓
+print("x = 3, y = 3")</code></pre>
+        <aside class="notes">Linear algebra works identically in finite fields — you just need to use modular inverses instead of regular division. Gaussian elimination works fine; you just replace division with multiplication by the modular inverse. This extends to matrices as well. ZK circuits often reduce to systems of equations over finite fields.</aside>
+      </section>
+
+      <!-- ============ PYTHON DEMO ============ -->
+      <section>
+        <h2>Live Demo: Complete Field Operations</h2>
+        <pre><code class="language-python">p = 23  # A prime
+
+print("=== Finite Field GF(23) ===")
+print(f"\nAdditive inverses:")
+for a in [1, 5, 11, 22]:
+    print(f"  -{a} ≡ {(-a) % p} (mod {p})")
+
+print(f"\nMultiplicative inverses:")
+for a in [2, 3, 7, 11]:
+    inv = pow(a, -1, p)
+    print(f"  {a}⁻¹ ≡ {inv} (mod {p})  [verify: {a}×{inv}={a*inv}≡{(a*inv)%p}]")
+
+print(f"\nDivision:")
+for (a, b) in [(10, 3), (1, 7), (15, 4)]:
+    result = (a * pow(b, -1, p)) % p
+    print(f"  {a} ÷ {b} ≡ {result} (mod {p})  [verify: {result}×{b}={(result*b)%p}≡{a%p}]")
+
+print(f"\nFermat's Little Theorem:")
+for a in [2, 5, 17]:
+    print(f"  {a}^{p-1} ≡ {pow(a, p-1, p)} (mod {p})")  # Always 1</code></pre>
+        <aside class="notes">Let's walk through this demo together. This shows all the field operations we've discussed. Run this code yourself and modify the prime to see how the results change. Try p equals 7, then 11, then 101. The same relationships hold regardless of the field size.</aside>
+      </section>
+
+      <!-- ============ LARGE FIELDS ============ -->
+      <section>
+        <h2>Real-World Field Sizes</h2>
+        <p>In practice, ZK proofs use <strong>enormous</strong> primes:</p>
+        <pre><code class="language-python"># The BN128 curve (used by Ethereum) has field modulus:
+p = 21888242871839275222246405745257275088696311157297823662689037894645226208583
+
+# That's a 254-bit number!
+print(f"Bits: {p.bit_length()}")  # 254
+
+# But arithmetic still works identically:
+a = 12345678901234567890
+b = 98765432109876543210
+
+print(f"a + b mod p = {(a + b) % p}")
+print(f"a × b mod p = {(a * b) % p}")
+print(f"a / b mod p = {(a * pow(b, -1, p)) % p}")
+print(f"a^(p-1) mod p = {pow(a, p - 1, p)}")  # Still 1!</code></pre>
+        <div class="callout">
+          Same rules, same operations &mdash; just much bigger numbers.
+        </div>
+        <aside class="notes">The Ethereum BN128 curve works in a 254-bit prime field. That's a number with about 77 decimal digits. But everything we learned today applies identically — addition, multiplication, inverses, Fermat's theorem. The only difference is performance, which is why optimized libraries exist. Python handles arbitrary precision integers natively, so you can experiment with these large fields directly.</aside>
+      </section>
+
+      <!-- ============ SUMMARY ============ -->
+      <section>
+        <h2>Key Takeaways</h2>
+        <ul>
+          <li><strong>Finite field 𝔽ₚ</strong> = {0, 1, ..., p-1} with mod-p arithmetic (p prime)</li>
+          <li><strong>Every non-zero element</strong> has a multiplicative inverse</li>
+          <li><strong>Division is exact</strong> &mdash; no fractions, no rounding</li>
+          <li><strong>Fermat's Little Theorem:</strong> a<sup>p-1</sup> &equiv; 1, so a<sup>-1</sup> = a<sup>p-2</sup></li>
+          <li><strong>Polynomials</strong> work over finite fields and are the basis of ZK</li>
+          <li><strong>Modular square roots</strong> exist for exactly half of non-zero elements</li>
+        </ul>
+        <div class="callout-blue">
+          Everything in ZK proofs happens inside finite fields. Master this, and the rest follows.
+        </div>
+        <aside class="notes">These are the core concepts to remember. Finite fields give us exact arithmetic that's computationally bounded —perfect for cryptography. Every ZK proof system operates over a finite field. Understanding how arithmetic works in these fields is the single most important prerequisite for understanding ZK proofs.</aside>
+      </section>
+
+      <!-- ============ PRACTICE ============ -->
+      <section>
+        <h2>Practice Problems</h2>
+        <ol>
+          <li>Compute all multiplicative inverses in 𝔽₁₁. Verify each one.</li>
+          <li>Solve: 4x &equiv; 3 (mod 11). <em>Hint: multiply both sides by 4<sup>-1</sup></em></li>
+          <li>Map the fraction 2/5 into 𝔽₁₃. Verify: result &times; 5 &equiv; 2 (mod 13).</li>
+          <li>Find all quadratic residues mod 13 (elements with square roots).</li>
+          <li>Verify Fermat's Little Theorem for all non-zero elements of 𝔽₁₃.</li>
+          <li>Using the galois library, define f(x) = x&sup2; + 3x + 2 over GF(11) and find all roots (values where f(x) = 0).</li>
+        </ol>
+        <aside class="notes">Work through these problems after the workshop. They reinforce every concept we covered. Problem 6 connects to the next topics — polynomials over finite fields are the computational backbone of ZK proof systems.</aside>
+      </section>
+
+      <!-- ============ NEXT WORKSHOP ============ -->
+      <section>
+        <h2>Next Workshop</h2>
+        <h3>Set Theory &amp; Abstract Algebra</h3>
+        <ul>
+          <li>Sets, subsets, and Cartesian products</li>
+          <li>Binary operators and relations</li>
+          <li>Magma &rarr; Semigroup &rarr; Monoid &rarr; Group</li>
+          <li>Why this vocabulary matters for ZK</li>
+        </ul>
+        <p class="subtle">The language of abstract math gives us the power to reason about operations without understanding their implementation.</p>
+        <aside class="notes">Next time, we'll build the algebraic vocabulary needed to understand the structures that ZK proofs rely on. We'll learn the hierarchy from Magma to Group, which will let us understand elliptic curves without knowing all the messy math behind them. See you next time!</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+</html>

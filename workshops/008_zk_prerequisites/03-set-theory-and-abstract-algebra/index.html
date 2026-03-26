@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 3: Set Theory &amp; Abstract Algebra</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    .hierarchy-box { border: 2px solid; border-radius: 12px; padding: 10px; margin: 4px auto; text-align: center; max-width: 80%; }
+    .hierarchy-group { border-color: #9b59b6; }
+    .hierarchy-monoid { border-color: #3498db; }
+    .hierarchy-semigroup { border-color: #2ecc71; }
+    .hierarchy-magma { border-color: #e74c3c; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Set Theory &amp;<br>Abstract Algebra</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 3 of 6</span></p>
+        <p class="subtle">Building the vocabulary of mathematical structures used in ZK proofs</p>
+        <aside class="notes">Welcome to Workshop 3. Today we build the mathematical vocabulary that lets us reason about complex cryptographic operations without understanding their gory implementation details. By the end, you'll be able to read statements like "elliptic curve points form an abelian group" and actually know what that means.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Sets: definitions, subsets, cardinality</li>
+          <li>Ordered pairs &amp; Cartesian products</li>
+          <li>Functions as subsets of Cartesian products</li>
+          <li>Binary operators</li>
+          <li>The algebraic hierarchy: Magma &rarr; Semigroup &rarr; Monoid &rarr; Group</li>
+          <li>Why this vocabulary matters for ZK</li>
+        </ul>
+        <aside class="notes">We're going from set theory basics to abstract algebra in one hour. The goal isn't to make you a mathematician — it's to give you the vocabulary so that when you encounter group theory and elliptic curves, you'll already speak the language.</aside>
+      </section>
+
+      <!-- ============ SETS ============ -->
+      <section>
+        <h2>What is a Set?</h2>
+        <p>A <strong>well-defined collection</strong> of objects</p>
+        <div class="two-col">
+          <div>
+            <h3>Examples</h3>
+            <ul>
+              <li>{1, 2, 3, 4, 5}</li>
+              <li>{0, 1, 2, ..., p-1} &larr; a finite field!</li>
+              <li>All integers ℤ</li>
+              <li>All real numbers ℝ</li>
+              <li>All 3&times;3 matrices</li>
+              <li>All polynomials of degree &le; 5</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Rules</h3>
+            <ul>
+              <li>No duplicates: {a, a, b} = {a, b}</li>
+              <li>Order doesn't matter: {1,2,3} = {3,1,2}</li>
+              <li>Can be empty: { } = &empty;</li>
+              <li>Membership is well-defined</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">You already know sets from programming — they're like arrays without duplicates or order. The key insight here is that ANYTHING can be a set: numbers, matrices, polynomials, even elliptic curve points. The rules we learn about sets apply to all of them uniformly.</aside>
+      </section>
+
+      <!-- ============ SUBSETS & SUPERSETS ============ -->
+      <section>
+        <h2>Subsets &amp; Number Systems</h2>
+        <p>The classic number systems form a chain of subsets:</p>
+        <div class="hierarchy-box hierarchy-magma">
+          <strong>ℂ</strong> Complex Numbers
+          <div class="hierarchy-box hierarchy-semigroup">
+            <strong>ℝ</strong> Real Numbers
+            <div class="hierarchy-box hierarchy-monoid">
+              <strong>ℚ</strong> Rational Numbers
+              <div class="hierarchy-box hierarchy-group">
+                <strong>ℤ</strong> Integers
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="subtle">ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ &mdash; Every integer is a rational number, but not every rational is an integer.</p>
+        <aside class="notes">This is a classic example of subset relationships. All integers are rational numbers (you can write 5 as 5/1), all rationals are real, all reals are complex. The notation with the funny letters comes up constantly — Z for integers from the German word Zahlen, Q for quotient, R for real, C for complex. Get comfortable with these symbols.</aside>
+      </section>
+
+      <!-- ============ CARDINALITY ============ -->
+      <section>
+        <h2>Cardinality</h2>
+        <p>The <strong>number of elements</strong> in a set</p>
+        <ul>
+          <li>|{5, 9, 10}| = 3</li>
+          <li>|{0, 1, 2, ..., 10}| = 11</li>
+          <li>|𝔽₇| = 7 (finite field of order 7)</li>
+          <li>|ℤ| = ∞ (countably infinite)</li>
+          <li>|ℝ| = ∞ (uncountably infinite &mdash; a "bigger" infinity!)</li>
+        </ul>
+        <div class="callout">
+          In ZK proofs, we always work with <strong>finite</strong> sets, so cardinality = a specific number.
+        </div>
+        <aside class="notes">Cardinality is just a fancy word for size. The vertical bars are the notation. For us, the key point is that finite fields have finite cardinality — GF(p) has exactly p elements. The order of an elliptic curve group is also finite. We'll see "order" used interchangeably with "cardinality" for groups.</aside>
+      </section>
+
+      <!-- ============ ORDERED PAIRS ============ -->
+      <section>
+        <h2>Ordered Pairs</h2>
+        <p>Sets have no order, but we can create <strong>ordered pairs</strong> (tuples):</p>
+        <ul>
+          <li><strong>Set:</strong> {a, b} = {b, a} &nbsp; (order doesn't matter)</li>
+          <li><strong>Ordered pair:</strong> (a, b) &ne; (b, a) &nbsp; (order matters!)</li>
+          <li>Two ordered pairs are equal iff both components match</li>
+        </ul>
+        <div class="callout-blue">
+          <strong>Programmer translation:</strong> An ordered pair is a tuple.<br>
+          (a, b) == (c, d) &hArr; a == c and b == d
+        </div>
+        <p class="subtle">Elliptic curve points are ordered pairs (x, y). The order matters!</p>
+        <aside class="notes">You already know this from programming — a tuple where position matters. An elliptic curve point is literally an ordered pair of field elements. The point (3, 6) is different from (6, 3). This seems obvious but it's important to establish formally because Cartesian products are built from ordered pairs.</aside>
+      </section>
+
+      <!-- ============ CARTESIAN PRODUCT ============ -->
+      <section>
+        <h2>Cartesian Products</h2>
+        <p>A &times; B = all possible ordered pairs (a, b) where a &isin; A, b &isin; B</p>
+        <pre><code class="language-python">A = {1, 2, 3}
+B = {'x', 'y', 'z'}
+
+# A × B
+cartesian = [(a, b) for a in A for b in B]
+# [(1,'x'), (1,'y'), (1,'z'),
+#  (2,'x'), (2,'y'), (2,'z'),
+#  (3,'x'), (3,'y'), (3,'z')]
+
+print(f"|A × B| = {len(cartesian)}")  # 9 = |A| × |B|</code></pre>
+        <table>
+          <tr><th>A &times; B</th><th>x</th><th>y</th><th>z</th></tr>
+          <tr><td><strong>1</strong></td><td>(1,x)</td><td>(1,y)</td><td>(1,z)</td></tr>
+          <tr><td><strong>2</strong></td><td>(2,x)</td><td>(2,y)</td><td>(2,z)</td></tr>
+          <tr><td><strong>3</strong></td><td>(3,x)</td><td>(3,y)</td><td>(3,z)</td></tr>
+        </table>
+        <aside class="notes">The Cartesian product is every possible pairing between two sets. If A has 3 elements and B has 3 elements, A cross B has 9 pairs. This is THE fundamental building block for defining functions and binary operators formally. When we say a function maps from A to B, we're really selecting specific pairs from A cross B.</aside>
+      </section>
+
+      <!-- ============ FUNCTIONS AS RELATIONS ============ -->
+      <section>
+        <h2>Functions as Subsets of Cartesian Products</h2>
+        <p>A function f: A &rarr; B is a <strong>subset</strong> of A &times; B where each element of A maps to <strong>exactly one</strong> element of B</p>
+        <div class="two-col">
+          <div>
+            <h3>&check; Valid function</h3>
+            <pre><code class="language-python"># f(1) = y, f(2) = z, f(3) = x
+f = {(1,'y'), (2,'z'), (3,'x')}
+# Each input maps to exactly
+# one output ✓</code></pre>
+          </div>
+          <div>
+            <h3>&cross; Not a function</h3>
+            <pre><code class="language-python"># 1 maps to BOTH p and q
+bad = {(1,'p'), (1,'q'), (2,'q'),
+       (3,'r')}
+# Same input, different outputs ✗</code></pre>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Key insight:</strong> functions don't have to be "computable." A function is just a relation — a mapping — between sets. In ZK, we deal with functions between very exotic sets (like elliptic curve points).
+        </div>
+        <aside class="notes">This is the set-theoretic definition of a function: pick pairs from the Cartesian product such that each input has exactly one output. The crucial point is that functions are just mappings between sets. They don't have to be something you can write as a formula or a Python function. In ZK, we'll map between integers, polynomials, matrices, and elliptic curve points. They're all just sets with mappings between them.</aside>
+      </section>
+
+      <!-- ============ BINARY OPERATORS ============ -->
+      <section>
+        <h2>Binary Operators</h2>
+        <p>A binary operator takes two elements from a set and returns one element.</p>
+        <div class="callout">
+          <span class="formula">□ : A &times; A &rarr; A</span>
+        </div>
+        <ul>
+          <li><strong>Addition on integers:</strong> (3, 5) &mapsto; 8</li>
+          <li><strong>Multiplication on rationals:</strong> (3.5, 2.0) &mapsto; 7.0</li>
+          <li><strong>String concatenation:</strong> ("Rare", "Skills") &mapsto; "RareSkills"</li>
+          <li><strong>Addition mod 7:</strong> (5, 4) &mapsto; 2</li>
+        </ul>
+        <div class="callout-blue">
+          A <strong>closed</strong> binary operator always produces a result in the same set.<br>
+          Division on integers is NOT closed: 1 &divide; 3 = 0.333... (not an integer!)
+        </div>
+        <aside class="notes">A binary operator is the core concept that everything builds on. It takes two elements and produces one. The key property is CLOSURE — the result must be in the same set. Addition is closed on integers because adding two integers gives an integer. But division is NOT closed on integers because dividing can give a fraction. Understanding closure is essential: when we say elliptic curve point addition is a closed binary operator, it means adding points always gives another point on the curve.</aside>
+      </section>
+
+      <!-- ============ CONSTRUCTING BINARY OPS ============ -->
+      <section>
+        <h2>Constructing a Binary Operator</h2>
+        <p>Addition mod 3 on the set {0, 1, 2}:</p>
+        <table>
+          <tr><th>+</th><th>0</th><th>1</th><th>2</th></tr>
+          <tr><td><strong>0</strong></td><td>0</td><td>1</td><td>2</td></tr>
+          <tr><td><strong>1</strong></td><td>1</td><td>2</td><td>0</td></tr>
+          <tr><td><strong>2</strong></td><td>2</td><td>0</td><td>1</td></tr>
+        </table>
+        <pre><code class="language-python"># Build the operation table
+S = {0, 1, 2}
+print("  | " + " ".join(str(b) for b in sorted(S)))
+print("--+------")
+for a in sorted(S):
+    row = " ".join(str((a + b) % 3) for b in sorted(S))
+    print(f"{a} | {row}")
+
+# Verify closure: every entry is in {0, 1, 2} ✓</code></pre>
+        <aside class="notes">This table IS the binary operator, fully specified. Every cell contains an element from our original set, so it's closed. Notice the symmetry — this operation is commutative. Also notice zero is the identity element: the row and column for 0 just give back the other operand. This table approach works for any finite set and any binary operation.</aside>
+      </section>
+
+      <!-- ============ ALGEBRAIC HIERARCHY ============ -->
+      <section>
+        <h2>The Algebraic Hierarchy</h2>
+        <div class="hierarchy-box hierarchy-magma" style="padding: 16px;">
+          <strong style="color: #e74c3c;">Magma</strong> — closed binary operator
+          <div class="hierarchy-box hierarchy-semigroup" style="padding: 14px;">
+            <strong style="color: #2ecc71;">Semigroup</strong> — + associative
+            <div class="hierarchy-box hierarchy-monoid" style="padding: 12px;">
+              <strong style="color: #3498db;">Monoid</strong> — + identity element
+              <div class="hierarchy-box hierarchy-group" style="padding: 10px;">
+                <strong style="color: #9b59b6;">Group</strong> — + every element has an inverse
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="subtle">Each level adds one more requirement. Groups are the star of the show for ZK.</p>
+        <aside class="notes">This is the key hierarchy. Each level includes everything from the level above plus one more property. A Magma just needs closure. A Semigroup adds associativity. A Monoid adds an identity element. A Group adds inverses. ZK proofs primarily use Groups. When someone says 'this is a group,' you immediately know it has all four properties. This is powerful because you can reason about the structure without knowing the implementation of the binary operator.</aside>
+      </section>
+
+      <!-- ============ MAGMA ============ -->
+      <section>
+        <h2>Magma</h2>
+        <p>A set with a <strong>closed</strong> binary operator. That's all!</p>
+        <pre><code class="language-python"># Example: positive integers under exponentiation
+# a^b is always a positive integer ✓ (closed)
+# But NOT associative:
+a, b, c = 2, 3, 2
+assert (a ** b) ** c != a ** (b ** c)
+# (2³)² = 64 but 2^(3²) = 512
+
+# And NOT commutative:
+assert a ** b != b ** a
+# 2³ = 8 but 3² = 9</code></pre>
+        <div class="callout">
+          A Magma is the least restrictive algebraic structure.<br>
+          Only requirement: the operation stays in the set.
+        </div>
+        <aside class="notes">Positive integers under exponentiation form a Magma — the result is always a positive integer (closed), but it's neither associative nor commutative. This is a good example to remember because it shows that closure alone isn't very powerful. We need more structure to reason usefully about operations. That's why we keep adding requirements.</aside>
+      </section>
+
+      <!-- ============ SEMIGROUP ============ -->
+      <section>
+        <h2>Semigroup</h2>
+        <p>A Magma where the binary operator is <strong>associative</strong></p>
+        <div class="callout">
+          <span class="formula">(a □ b) □ c = a □ (b □ c)</span>
+        </div>
+        <pre><code class="language-python"># Example: non-empty strings under concatenation
+# Closed: concat of two strings is a string ✓
+# Associative: ("foo" + "bar") + "baz" == "foo" + ("bar" + "baz") ✓
+a, b, c = "foo", "bar", "baz"
+assert (a + b) + c == a + (b + c)  # "foobarbaz"
+
+# But NOT commutative:
+assert a + b != b + a  # "foobar" ≠ "barfoo"
+# (That's OK — commutativity isn't required)
+
+# No identity element (if no empty string allowed)
+# No inverses: can't "un-concatenate"</code></pre>
+        <aside class="notes">String concatenation without the empty string is a perfect Semigroup example. It's closed and associative, but there's no identity element and no way to reverse a concatenation. Notice commutativity is NOT required at any level of the hierarchy. Some groups are commutative (called abelian), but it's not a requirement. Elliptic curve point addition happens to be commutative, which we'll see in Workshop 6.</aside>
+      </section>
+
+      <!-- ============ MONOID ============ -->
+      <section>
+        <h2>Monoid</h2>
+        <p>A Semigroup with an <strong>identity element</strong></p>
+        <div class="callout">
+          <span class="formula">a □ e = e □ a = a</span> &nbsp; for all a in the set
+        </div>
+        <div class="two-col">
+          <div>
+            <h3>Examples</h3>
+            <table>
+              <tr><th>Set + Op</th><th>Identity</th></tr>
+              <tr><td>ℤ under +</td><td>0</td></tr>
+              <tr><td>ℤ under &times;</td><td>1</td></tr>
+              <tr><td>Strings + concat</td><td>"" (empty)</td></tr>
+              <tr><td>Matrices + multiply</td><td>I (identity matrix)</td></tr>
+            </table>
+          </div>
+          <div>
+            <pre><code class="language-python"># Positive integers under ×
+# is a Monoid (identity = 1)
+# but NOT a Group (no inverses!)
+
+# 5 × 1 = 5  ✓ (identity)
+# 5 × ? = 1  → ? = 1/5
+# but 1/5 is not an integer!
+# So no inverse exists</code></pre>
+          </div>
+        </div>
+        <aside class="notes">A Monoid adds the identity element. This is the element that does nothing — zero for addition, one for multiplication, the empty string for concatenation. Positive integers under multiplication form a Monoid: we have closure, associativity, and identity (1), but we DON'T have inverses because the inverse of 5 would be 1/5, which isn't a positive integer. We're just one property away from a Group.</aside>
+      </section>
+
+      <!-- ============ GROUP ============ -->
+      <section>
+        <h2>Group — The Star of the Show</h2>
+        <p>A Monoid where <strong>every element has an inverse</strong></p>
+        <div class="callout">
+          For every a, there exists a' such that <span class="formula">a □ a' = e</span>
+        </div>
+        <table>
+          <tr><th>Set + Operation</th><th>Identity</th><th>Inverse of a</th><th>Group?</th></tr>
+          <tr><td>Positive ℤ under +</td><td>0 (not positive!)</td><td>—</td><td>&cross; Semigroup</td></tr>
+          <tr><td>ℤ≥0 under +</td><td>0</td><td>No (-5 not in set)</td><td>&cross; Monoid</td></tr>
+          <tr><td>All ℤ under +</td><td>0</td><td>-a</td><td>&check; Group!</td></tr>
+          <tr><td>𝔽ₚ under +</td><td>0</td><td>p - a</td><td>&check; Group!</td></tr>
+          <tr><td>𝔽ₚ\{0} under &times;</td><td>1</td><td>a<sup>p-2</sup></td><td>&check; Group!</td></tr>
+        </table>
+        <aside class="notes">Groups are where it all comes together. The domain matters enormously! Positive integers under addition aren't even a Monoid. Non-negative integers are a Monoid but not a Group. ALL integers under addition — that's a Group. And notice the last two rows: our finite field forms a Group under addition, and the non-zero elements form a Group under multiplication. This is exactly why finite fields are so useful for cryptography.</aside>
+      </section>
+
+      <!-- ============ ABELIAN ============ -->
+      <section>
+        <h2>Abelian Groups</h2>
+        <div class="callout-blue">
+          An <strong>abelian</strong> group is a group where the binary operator is <strong>commutative</strong>:
+          <br><span class="formula">a □ b = b □ a</span> for all a, b
+        </div>
+        <ul>
+          <li>Integers under addition: abelian (3 + 5 = 5 + 3)</li>
+          <li>Matrices under multiplication: <strong>NOT</strong> abelian (AB &ne; BA in general)</li>
+          <li>Finite field under addition: abelian</li>
+          <li>Elliptic curve points under point addition: <strong>abelian</strong> &larr; important!</li>
+        </ul>
+        <div class="callout">
+          "Abelian" is just a fancy word for commutative. Say abelian — you'll sound smarter.
+        </div>
+        <aside class="notes">All the groups we care about for ZK are abelian — meaning their binary operator is commutative. It's named after the mathematician Niels Henrick Abel. The fact that elliptic curve point addition is abelian is crucial because it means the order we add points doesn't matter. This lets us rearrange computations freely, which is essential for proof construction.</aside>
+      </section>
+
+      <!-- ============ WHY THIS MATTERS ============ -->
+      <section>
+        <h2>Why This Vocabulary Matters</h2>
+        <p>Consider this statement:</p>
+        <div class="callout">
+          "Elliptic curve points in a finite field under addition are a <strong>finite cyclic abelian group</strong>."
+        </div>
+        <p>You now know this means:</p>
+        <ul style="font-size: 0.85em;">
+          <li>&check; Adding two points gives another point (closed)</li>
+          <li>&check; Addition is associative</li>
+          <li>&check; There's an identity element ("point at infinity")</li>
+          <li>&check; Every point has an inverse</li>
+          <li>&check; Addition is commutative (abelian)</li>
+          <li>&check; The group has finite size</li>
+          <li>&check; Every element can be generated from a single generator (cyclic)</li>
+        </ul>
+        <p class="subtle">You know 7 things about elliptic curves without knowing what they are!</p>
+        <aside class="notes">THIS is the payoff. You don't know what elliptic curve point addition looks like, but you already know seven properties about it. This is like knowing a data structure is a balanced binary tree — you immediately know insertion is O(log n) without knowing how AVL rotations work. The vocabulary of abstract algebra lets us reason about ZK systems at a high level.</aside>
+      </section>
+
+      <!-- ============ POLYMORPHISM ANALOGY ============ -->
+      <section>
+        <h2>The Programmer's Analogy</h2>
+        <pre><code class="language-python"># Abstract algebra is like interfaces/traits in programming!
+
+class Group:
+    """Any Group implementation must satisfy:
+    - closed: combine(a, b) always returns an element in the group
+    - associative: combine(combine(a,b), c) == combine(a, combine(b,c))
+    - identity: combine(a, identity) == a
+    - inverse: combine(a, inverse(a)) == identity
+    """
+    def combine(self, a, b): ...
+    def identity(self): ...
+    def inverse(self, a): ...
+
+# Integers under + is a Group
+# Finite fields under + is a Group
+# EC points under point-add is a Group
+# All use the SAME interface, different implementations!</code></pre>
+        <div class="callout">
+          Groups hide implementation details like interfaces hide implementations.<br>
+          You can reason about behavior without knowing internals.
+        </div>
+        <aside class="notes">Think of abstract algebra as the math version of programming interfaces. Just like you can sort anything that implements Comparable, you can apply group theorems to anything that's a Group. The implementation of elliptic curve point addition is nightmarishly complex, but because it's a Group, we can reason about it using the same rules we apply to integer addition. This abstraction is what makes ZK proofs tractable.</aside>
+      </section>
+
+      <!-- ============ SUMMARY TABLE ============ -->
+      <section>
+        <h2>Summary: The Full Hierarchy</h2>
+        <table>
+          <tr><th>Structure</th><th>Closed</th><th>Assoc.</th><th>Identity</th><th>Inverse</th></tr>
+          <tr><td>Magma</td><td>&check;</td><td></td><td></td><td></td></tr>
+          <tr><td>Semigroup</td><td>&check;</td><td>&check;</td><td></td><td></td></tr>
+          <tr><td>Monoid</td><td>&check;</td><td>&check;</td><td>&check;</td><td></td></tr>
+          <tr><td>Group</td><td>&check;</td><td>&check;</td><td>&check;</td><td>&check;</td></tr>
+        </table>
+        <div class="callout-blue">
+          <strong>For ZK, you primarily need Groups.</strong><br>
+          Everything we'll encounter — finite fields, elliptic curves — forms a Group.
+        </div>
+        <aside class="notes">Here's the complete picture in one table. Groups have all four properties. Every Group is also a Monoid, Semigroup, and Magma. For ZK proofs, we primarily work with Groups. The algebraic structures we've built up form the foundation for understanding group theory, homomorphisms, and ultimately elliptic curve cryptography.</aside>
+      </section>
+
+      <!-- ============ PRACTICE ============ -->
+      <section>
+        <h2>Practice Problems</h2>
+        <ol>
+          <li>Is the set {0, 1, 2, 3, 4} under multiplication mod 5 a Group? (Careful about 0!)</li>
+          <li>Build the operation table for XOR on the set {0, 1}. What algebraic structure is it?</li>
+          <li>Why can't strings under concatenation be a Group? Which property fails?</li>
+          <li>Define the Cartesian product of {triangle, square} &times; {3, 4, 5}. Which subset defines the "number of sides" function?</li>
+          <li>Is min(a, b) over all integers a Magma? A Semigroup? A Monoid? What about over positive integers?</li>
+          <li>Consider 3-bit binary numbers under bitwise AND. Is this a Magma, Semigroup, Monoid, or Group?</li>
+        </ol>
+        <aside class="notes">These problems test each level of the hierarchy. Problem 1 is a classic trap — you need to exclude 0 for multiplication to form a group. Problem 3 is about inverses — there's no un-concat operation. Work through these to solidify the vocabulary before next workshop.</aside>
+      </section>
+
+      <!-- ============ NEXT WORKSHOP ============ -->
+      <section>
+        <h2>Next Workshop</h2>
+        <h3>Group Theory Deep Dive</h3>
+        <ul>
+          <li>Examples of groups in detail</li>
+          <li>Finite groups &amp; group order</li>
+          <li>Cyclic groups &amp; generators</li>
+          <li>Why cyclic groups are essential for ZK</li>
+        </ul>
+        <p class="subtle">Groups are the mathematical backbone of elliptic curve cryptography.</p>
+        <aside class="notes">Next time we dive deeper into groups specifically. We'll see many examples, learn about finite and cyclic groups, and understand generators — the element that can produce every other element. Cyclic groups are the key to how elliptic curve cryptography works, which underpins all ZK proof systems. See you next time!</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+</html>

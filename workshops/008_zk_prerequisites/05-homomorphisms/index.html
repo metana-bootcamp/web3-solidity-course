@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 5: Homomorphisms</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-green { background: rgba(46,204,113,0.1); border-left: 3px solid #2ecc71; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Homomorphisms</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 5 of 6</span></p>
+        <p class="subtle">Structure-preserving maps — the mathematical mechanism behind zero knowledge</p>
+        <aside class="notes">Welcome to Workshop 5. Homomorphisms are where all our abstract algebra knowledge pays off. A homomorphism is a structure-preserving map between two groups. This is THE concept that makes zero knowledge proofs possible — proving you did a computation correctly without revealing the inputs.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>What is a homomorphism?</li>
+          <li>Simple examples: integers, strings, matrices</li>
+          <li>Clarifications &amp; common misconceptions</li>
+          <li>The exponentiation homomorphism</li>
+          <li>Rational numbers &rarr; finite fields</li>
+          <li>Homomorphic encryption</li>
+          <li>Zero knowledge proofs via homomorphisms</li>
+        </ul>
+        <aside class="notes">We'll start with the definition, build intuition through many examples, then connect to ZK proofs. By the end, you'll see exactly how homomorphisms enable zero knowledge — and you'll understand why elliptic curves are the tool of choice.</aside>
+      </section>
+
+      <!-- ============ DEFINITION ============ -->
+      <section>
+        <h2>What is a Homomorphism?</h2>
+        <p>Given two groups (A, □) and (B, ■), a <strong>homomorphism</strong> from A to B is a function &phi; such that:</p>
+        <div class="callout">
+          <span class="formula">&phi;(a<sub>i</sub> □ a<sub>j</sub>) = &phi;(a<sub>i</sub>) ■ &phi;(a<sub>j</sub>)</span><br>
+          for all a<sub>i</sub>, a<sub>j</sub> in A
+        </div>
+        <p>In plain English:</p>
+        <ul>
+          <li>Combine in A first, then map &rarr; same result as</li>
+          <li>Map each element first, then combine in B</li>
+        </ul>
+        <p class="subtle">The map "preserves" the group structure — operations in A correspond to operations in B.</p>
+        <aside class="notes">This is the core definition. A homomorphism is a function between two groups that respects the operations. You can either operate first then map, or map first then operate — you get the same result either way. This is structure preservation. Think of it like a translation that preserves sentence structure between languages.</aside>
+      </section>
+
+      <!-- ============ VISUAL ============ -->
+      <section>
+        <h2>Homomorphism Visualized</h2>
+        <pre><code class="language-text">   Group A (□)              Group B (■)
+   ─────────               ─────────
+   a_i ──────── φ ────────→ φ(a_i)
+    □                          ■
+   a_j ──────── φ ────────→ φ(a_j)
+    ↓                          ↓
+   a_i □ a_j                φ(a_i) ■ φ(a_j)
+    │                          │
+    └────── φ ────────→  φ(a_i □ a_j)
+    
+    Both paths give the SAME result!</code></pre>
+        <div class="callout-blue">
+          <strong>Path 1:</strong> Combine in A, then apply &phi;<br>
+          <strong>Path 2:</strong> Apply &phi; to each, then combine in B<br>
+          <strong>Result:</strong> Same answer either way
+        </div>
+        <aside class="notes">The diagram shows two paths from the top to the bottom right. Path 1 goes down then right — combine first, then map. Path 2 goes right then down — map each element first, then combine. The fact that both paths reach the same destination is the definition of a homomorphism. This commutativity of the diagram is the whole point.</aside>
+      </section>
+
+      <!-- ============ EXAMPLE 1 ============ -->
+      <section>
+        <h2>Example 1: Integers &rarr; Even Integers</h2>
+        <p>Let &phi;(x) = 2x</p>
+        <div class="two-col">
+          <div>
+            <ul>
+              <li>A = (ℤ, +) all integers under addition</li>
+              <li>B = (2ℤ, +) even integers under addition</li>
+              <li>&phi;(x) = 2x</li>
+            </ul>
+          </div>
+          <div>
+            <pre><code class="language-python"># Verify:
+# φ(a + b) = φ(a) + φ(b)
+# 2(a + b) = 2a + 2b  ✓
+
+a, b = 3, 5
+lhs = 2 * (a + b)  # = 16
+rhs = 2*a + 2*b    # = 16
+assert lhs == rhs
+
+print(f"φ({a}+{b}) = φ({a+b}) = {lhs}")
+print(f"φ({a})+φ({b}) = {2*a}+{2*b} = {rhs}")
+# Both equal 16 ✓</code></pre>
+          </div>
+        </div>
+        <aside class="notes">The simplest homomorphism. Doubling is a homomorphism from all integers to even integers, both under addition. Doubling the sum equals the sum of doubled values. This is really just the distributive property, but it's a perfect first example of structure preservation.</aside>
+      </section>
+
+      <!-- ============ EXAMPLE 2 ============ -->
+      <section>
+        <h2>Example 2: Strings &rarr; Integers</h2>
+        <p>Let &phi; = length function (len)</p>
+        <div class="callout">
+          A = (strings, concatenation) — a Monoid<br>
+          B = (ℤ&ge;0, +) — a Monoid<br>
+          &phi;(s) = len(s)
+        </div>
+        <pre><code class="language-python"># φ(concat(s1, s2)) = φ(s1) + φ(s2)
+# len("Rare" + "Skills") = len("Rare") + len("Skills")
+
+s1, s2 = "Rare", "Skills"
+lhs = len(s1 + s2)           # len("RareSkills") = 10
+rhs = len(s1) + len(s2)      # 4 + 6 = 10
+assert lhs == rhs
+
+print(f"len('{s1}' + '{s2}') = len('{s1+s2}') = {lhs}")
+print(f"len('{s1}') + len('{s2}') = {len(s1)} + {len(s2)} = {rhs}")
+# Both equal 10 ✓</code></pre>
+        <p class="subtle">The string length is a homomorphism from strings under concatenation to non-negative integers under addition.</p>
+        <aside class="notes">This is a beautifully intuitive example. The length of the concatenation equals the sum of the lengths. You've been using this homomorphism your entire programming career without knowing it had a name. Note this works between Monoids, not just Groups — homomorphisms apply to any algebraic structure with a binary operator.</aside>
+      </section>
+
+      <!-- ============ EXAMPLE 3 ============ -->
+      <section>
+        <h2>Example 3: Matrices &rarr; Integers (Determinant)</h2>
+        <p>Let &phi; = det (determinant)</p>
+        <div class="callout">
+          A = (2&times;2 integer matrices, &times;) — a Monoid<br>
+          B = (ℤ, &times;) — a Monoid<br>
+          &phi;(M) = det(M)
+        </div>
+        <pre><code class="language-python">import numpy as np
+
+A = np.array([[1, 2], [3, 4]])
+B = np.array([[5, 6], [7, 8]])
+C = A @ B  # matrix multiplication
+
+det_A = int(round(np.linalg.det(A)))  # -2
+det_B = int(round(np.linalg.det(B)))  # -2
+det_C = int(round(np.linalg.det(C)))  # 4
+
+print(f"det(A×B) = {det_C}")
+print(f"det(A) × det(B) = {det_A} × {det_B} = {det_A * det_B}")
+assert det_C == det_A * det_B  # 4 = (-2)×(-2) ✓</code></pre>
+        <aside class="notes">The determinant is a homomorphism from matrices under multiplication to integers under multiplication. The determinant of a product equals the product of the determinants. This is a well-known linear algebra fact, but now you see it's really a homomorphism. Notice the binary operators are different — matrix multiplication on one side, integer multiplication on the other — but the structure is preserved.</aside>
+      </section>
+
+      <!-- ============ EXPONENTIATION ============ -->
+      <section>
+        <h2>The Exponentiation Homomorphism</h2>
+        <p>A = (ℤ, +) &nbsp;&rarr;&nbsp; B = ({b<sup>i</sup> : i &isin; ℤ}, &times;)</p>
+        <div class="callout">
+          <span class="formula">&phi;(x) = b<sup>x</sup></span><br><br>
+          &phi;(a + b) = b<sup>a+b</sup> = b<sup>a</sup> &times; b<sup>b</sup> = &phi;(a) &times; &phi;(b)
+        </div>
+        <pre><code class="language-python">base = 2
+
+# φ(a + b) = φ(a) × φ(b)
+a, b = 3, 5
+lhs = base ** (a + b)        # 2^8 = 256
+rhs = base**a * base**b      # 8 × 32 = 256
+assert lhs == rhs
+
+# Addition in integers maps to multiplication in powers!
+print(f"2^({a}+{b}) = 2^{a+b} = {lhs}")
+print(f"2^{a} × 2^{b} = {base**a} × {base**b} = {rhs}")</code></pre>
+        <div class="callout-blue">
+          <strong>Addition</strong> on one side becomes <strong>multiplication</strong> on the other.<br>
+          This is the basis of how elliptic curve scalar multiplication works!
+        </div>
+        <aside class="notes">This is arguably the most important homomorphism for understanding ZK proofs. Addition in the exponent corresponds to multiplication in the base. When we write aG plus bG equals (a+b)G on an elliptic curve, we're using exactly this pattern — just in additive notation instead of multiplicative. The shift from addition to multiplication through a homomorphism is the core mechanism of elliptic curve cryptography.</aside>
+      </section>
+
+      <!-- ============ CLARIFICATIONS ============ -->
+      <section>
+        <h2>Important Clarifications</h2>
+        <ul>
+          <li><strong>One-directional:</strong> &phi; maps A &rarr; B, but there's no requirement for B &rarr; A</li>
+          <li><strong>Not always exists:</strong> arbitrary groups may have no homomorphism between them</li>
+          <li><strong>Not necessarily bijective:</strong> &phi; doesn't need to hit every element of B</li>
+          <li><strong>Trivial homomorphism:</strong> mapping everything to the identity always works (but is useless)</li>
+          <li><strong>Multiple homomorphisms:</strong> there can be more than one &phi; between A and B</li>
+        </ul>
+        <div class="callout">
+          The trivial homomorphism: &phi;(a) = e<sub>B</sub> for all a.<br>
+          It's valid (&phi;(a□b) = e = e ■ e = &phi;(a)■&phi;(b)) but tells us nothing useful.
+        </div>
+        <aside class="notes">A few important points about homomorphisms. They're one-directional — just because we can map A to B doesn't mean we can map B back to A. The trivial homomorphism that sends everything to the identity always exists but is useless. For ZK proofs, we need homomorphisms that are NOT trivial — ones that actually encode meaningful information about the computation.</aside>
+      </section>
+
+      <!-- ============ RATIONALS TO FINITE FIELD ============ -->
+      <section>
+        <h2>Rationals &rarr; Finite Field</h2>
+        <p>&phi;(a/b) = a &times; b<sup>-1</sup> (mod p)</p>
+        <pre><code class="language-python">p = 17
+
+def phi(num, den):
+    return (num * pow(den, -1, p)) % p
+
+# 1/3 + 3/5 = 14/15 in regular math
+a = phi(1, 3)   # φ(1/3) 
+b = phi(3, 5)   # φ(3/5)
+c = phi(14, 15) # φ(14/15)
+
+print(f"φ(1/3) = {a}")    # 6
+print(f"φ(3/5) = {b}")    # 4
+print(f"φ(14/15) = {c}")  # 10
+
+# Check: φ(1/3) + φ(3/5) ≡ φ(14/15) (mod 17)?
+print(f"φ(1/3) + φ(3/5) = {(a + b) % p}")  # 10
+assert (a + b) % p == c  # ✓ Homomorphism preserved!</code></pre>
+        <aside class="notes">This one's from Workshop 2 but now we have the vocabulary to describe it properly. It's a homomorphism from rationals under addition to finite field elements under addition. The structure is preserved — adding rationals and then mapping gives the same result as mapping first and then adding in the field. This is actually used in ZK systems when encoding rational arithmetic.</aside>
+      </section>
+
+      <!-- ============ HOMOMORPHIC ENCRYPTION ============ -->
+      <section>
+        <h2>Homomorphic Encryption</h2>
+        <div class="callout-green">
+          If &phi; is <strong>computationally difficult to invert</strong>,<br>
+          then &phi; <strong>homomorphically encrypts</strong> the elements of A.
+        </div>
+        <ul>
+          <li>&phi; maps from "secret space" A to "public space" B</li>
+          <li>We can verify computations in B without knowing values in A</li>
+          <li>Because &phi; preserves structure, computations in B reflect computations in A</li>
+          <li>Because &phi; is hard to invert, nobody can recover the original values</li>
+        </ul>
+        <p class="subtle">This is the fundamental mechanism of zero knowledge proofs!</p>
+        <aside class="notes">This is the big reveal. If phi is easy to compute but hard to invert, we get homomorphic encryption. The prover computes in the secret space A, maps results to public space B using phi, and the verifier checks the computation in B. The structure preservation guarantees correctness, and the difficulty of inverting phi guarantees privacy. This is EXACTLY what elliptic curves give us — the discrete logarithm problem makes phi hard to invert.</aside>
+      </section>
+
+      <!-- ============ ZK ADDITION EXAMPLE 1 ============ -->
+      <section>
+        <h2>Zero Knowledge Proof: Addition</h2>
+        <p>Claim: "I know two numbers x and y such that x + y = 15"</p>
+        <pre><code class="language-python"># Setup: φ maps integers to elliptic curve points
+# φ(x) = x × G  (scalar multiplication by generator)
+# This is hard to invert (discrete logarithm problem)
+
+# Prover sends:
+#   A = φ(x) = xG
+#   B = φ(y) = yG
+#   claim: x + y = 15
+
+# Verifier checks:
+#   A ■ B  ==?  φ(15)
+#   xG + yG ==? 15G
+#
+# By the homomorphism property:
+#   φ(x + y) = φ(x) + φ(y) = xG + yG
+#
+# If xG + yG = 15G, then x + y = 15 ✓
+
+# The verifier is convinced WITHOUT knowing x or y!</code></pre>
+        <aside class="notes">Here's ZK in action. The prover has secret x and y that sum to 15. They compute xG and yG — mapping into elliptic curve space. The verifier checks that xG plus yG equals 15G. If it does, the verifier is convinced the sum is 15 without learning x or y individually. The discrete logarithm problem ensures the verifier can't extract x from xG. This is the essence of zero knowledge.</aside>
+      </section>
+
+      <!-- ============ ZK MULTIPLICATION EXAMPLE ============ -->
+      <section>
+        <h2>Zero Knowledge Proof: Scalar Multiplication</h2>
+        <p>Claim: "I know a and b, and b = 5a"</p>
+        <pre><code class="language-python"># Prover sends: φ(a) and φ(b)
+# i.e., aG and bG
+
+# Verifier checks:
+#   φ(a) + φ(a) + φ(a) + φ(a) + φ(a) ==? φ(b)
+#   5 × (aG) ==? bG
+#
+# Remember: "5 × (aG)" is repeated ADDITION
+# That's just 5aG
+
+# If 5(aG) = bG, then 5a = b ✓
+
+# Pseudocode:
+# A = multiply(G1, a)     # prover computes aG
+# B = multiply(G1, b)     # prover computes bG
+# assert multiply(A, 5) == B  # verifier checks 5(aG) = bG</code></pre>
+        <div class="callout-blue">
+          "Multiplication by a constant" is really <strong>repeated addition</strong>.<br>
+          Repeated addition = scalar multiplication on the curve.
+        </div>
+        <aside class="notes">We can verify multiplicative relationships too. The prover claims b equals 5a. They send aG and bG. The verifier computes 5 times aG by repeated addition and checks if it equals bG. Note we're NOT multiplying two curve points — we're multiplying a curve point by a scalar, which is repeated addition. This distinction is crucial: there's no point-times-point operation on elliptic curves, only point-times-scalar.</aside>
+      </section>
+
+      <!-- ============ WHY EC POINTS ============ -->
+      <section>
+        <h2>Why Elliptic Curve Points?</h2>
+        <p>What makes EC points perfect for &phi;?</p>
+        <ul>
+          <li><strong>Group structure:</strong> EC points form a finite cyclic abelian group</li>
+          <li><strong>Homomorphism:</strong> &phi;(x) = xG preserves addition</li>
+          <li><strong>Hard to invert:</strong> given xG, finding x is the <em>discrete logarithm problem</em></li>
+          <li><strong>Efficient:</strong> point addition and scalar multiplication are fast</li>
+          <li><strong>Compact:</strong> points can be represented with ~256 bits</li>
+        </ul>
+        <div class="callout">
+          EC points give us a <strong>one-way homomorphism</strong>:<br>
+          Easy: integer &rarr; EC point (compute xG)<br>
+          Hard: EC point &rarr; integer (discrete log)
+        </div>
+        <aside class="notes">Elliptic curve points are the ideal choice for phi because they satisfy all the requirements simultaneously. The group structure ensures the homomorphism works. The discrete logarithm problem ensures it's hard to invert. And the operations are computationally efficient. This is why every major ZK proof system — Groth16, PLONK, STARKs — relies on elliptic curves or similar structures.</aside>
+      </section>
+
+      <!-- ============ THE BIG PICTURE ============ -->
+      <section>
+        <h2>The Big Picture</h2>
+        <div class="callout">
+          "Elliptic curve points in a finite field under addition are a finite cyclic group, and <strong>integers under addition are homomorphic to this group</strong>."
+        </div>
+        <p>You now understand every word of this sentence:</p>
+        <ol style="font-size: 0.85em;">
+          <li>EC points under addition: closed, associative, has identity, has inverses</li>
+          <li>Finite cyclic: bounded number of elements, all generated from G</li>
+          <li>Integers under addition: the familiar group we know</li>
+          <li>Homomorphic: &phi;(a+b) = &phi;(a) + &phi;(b), i.e., (a+b)G = aG + bG</li>
+        </ol>
+        <p class="subtle">This one sentence encodes EVERYTHING you need to know about how ZK proofs work at a high level.</p>
+        <aside class="notes">Take a moment to appreciate this. Four workshops ago, this sentence would have been completely opaque. Now you can parse every word. Elliptic curve points form a group — you know what that means. It's cyclic — generated from a single point. Integers map homomorphically to it — structure is preserved. And the one-way nature of this map is what gives us zero knowledge. This is the conceptual core of all ZK proof systems.</aside>
+      </section>
+
+      <!-- ============ PYTHON DEMO ============ -->
+      <section>
+        <h2>Demo: Homomorphism in Action</h2>
+        <pre><code class="language-python"># Verify the homomorphism property in Python
+# φ(a + b) = φ(a) + φ(b) where φ(x) = 2^x
+
+base = 2
+
+# Test with many pairs
+import random
+for _ in range(5):
+    a = random.randint(1, 20)
+    b = random.randint(1, 20)
+    
+    # Path 1: add then map
+    path1 = base ** (a + b)
+    
+    # Path 2: map then multiply
+    path2 = (base ** a) * (base ** b)
+    
+    assert path1 == path2
+    print(f"a={a:2d}, b={b:2d}: "
+          f"{base}^({a}+{b})={path1}, "
+          f"{base}^{a}×{base}^{b}={path2} ✓")</code></pre>
+        <aside class="notes">Run this code to see the homomorphism property in action with many random pairs. Every pair satisfies the property. This is the same verification a ZK verifier performs, just with simple numbers instead of elliptic curve points. In Workshop 6, we'll do this with actual EC points using the py_ecc library.</aside>
+      </section>
+
+      <!-- ============ RATIONAL NUMBERS MULT ============ -->
+      <section>
+        <h2>Advanced: Rationals &rarr; Finite Field (Multiplicative)</h2>
+        <pre><code class="language-python">p = 17
+
+def phi(num, den):
+    return (num * pow(den, -1, p)) % p
+
+# Multiplicative homomorphism:
+# φ(1/3 × 3/5) = φ(1/3) × φ(3/5)
+
+# 1/3 × 3/5 = 1/5 in regular math
+a = phi(1, 3)    # φ(1/3) = 6
+b = phi(3, 5)    # φ(3/5) = 4  
+c = phi(1, 5)    # φ(1/5) = 7
+
+print(f"φ(1/3) × φ(3/5) = {a} × {b} = {(a*b) % p}")  # 24 mod 17 = 7
+print(f"φ(1/5) = {c}")  # 7
+assert (a * b) % p == c  # ✓ Works for multiplication too!</code></pre>
+        <div class="callout">
+          The same &phi; works for both additive and multiplicative homomorphisms.<br>
+          This is because finite fields have both group structures.
+        </div>
+        <aside class="notes">The same mapping phi works as both an additive and multiplicative homomorphism. This is a consequence of finite fields having two compatible group structures. This is powerful — it means we can verify both addition and multiplication claims using the same encoding. However, verifying both at the same time is trickier and requires more sophisticated techniques like bilinear pairings.</aside>
+      </section>
+
+      <!-- ============ SUMMARY ============ -->
+      <section>
+        <h2>Key Takeaways</h2>
+        <ul>
+          <li><strong>Homomorphism:</strong> &phi;(a □ b) = &phi;(a) ■ &phi;(b) — structure-preserving map</li>
+          <li><strong>One-directional:</strong> A &rarr; B, not necessarily B &rarr; A</li>
+          <li><strong>Homomorphic encryption:</strong> if &phi; is hard to invert, it encrypts values</li>
+          <li><strong>ZK proofs:</strong> prover maps secrets to EC space, verifier checks there</li>
+          <li><strong>(a+b)G = aG + bG</strong> — the core identity of elliptic curve ZK</li>
+          <li>The discrete logarithm problem makes &phi;(x) = xG a one-way function</li>
+        </ul>
+        <div class="callout-green">
+          You now have the complete mathematical foundation for understanding ZK proofs!
+        </div>
+        <aside class="notes">These are the key ideas. Homomorphisms preserve structure. When the mapping is hard to invert, it becomes homomorphic encryption. ZK proofs exploit this by mapping secret computations to elliptic curve space where they can be verified without revealing the secrets. You now have all the abstract algebra needed to understand how ZK proofs work.</aside>
+      </section>
+
+      <!-- ============ PRACTICE ============ -->
+      <section>
+        <h2>Practice Problems</h2>
+        <ol>
+          <li>Verify that &phi;(x) = 3<sup>x</sup> is a homomorphism from (ℤ, +) to ({3<sup>i</sup>}, &times;) for 5 random pairs.</li>
+          <li>Define &phi; from real numbers to n&times;m matrices. <em>Hint: fill every entry with the same number.</em></li>
+          <li>Find a homomorphism from polynomials with real coefficients to real numbers. <em>Hint: what operation reduces a polynomial to a single number?</em></li>
+          <li>Why is &phi;(x) = x<sup>2</sup> NOT a homomorphism from (ℤ, +) to (ℤ, +)?</li>
+          <li>Given &phi;(1/3) = 6 and &phi;(3/5) = 4 in GF(17), compute &phi;(1/3 + 3/5) and verify by computing &phi;(14/15) directly.</li>
+        </ol>
+        <aside class="notes">Problem 3 is evaluation at a point. Problem 4 is important — squaring is NOT additive: (a+b) squared does not equal a squared plus b squared. This shows that not every function is a homomorphism. Work through these to solidify your understanding before the final workshop.</aside>
+      </section>
+
+      <!-- ============ NEXT WORKSHOP ============ -->
+      <section>
+        <h2>Next Workshop</h2>
+        <h3>Elliptic Curve Cryptography</h3>
+        <ul>
+          <li>Elliptic curve geometry &amp; point addition</li>
+          <li>Elliptic curves over finite fields</li>
+          <li>The bn128 curve (Ethereum)</li>
+          <li>Scalar multiplication &amp; the discrete log problem</li>
+          <li>Building a basic ZK proof with py_ecc</li>
+        </ul>
+        <p class="subtle">The final workshop — where all prerequisites converge into actual ZK cryptography.</p>
+        <aside class="notes">The final workshop puts it all together. We'll learn what elliptic curves actually are geometrically, how point addition works, and then implement a simple ZK proof using actual Ethereum elliptic curve code. Every concept from workshops 1 through 5 will come together. See you at the finale!</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+</html>

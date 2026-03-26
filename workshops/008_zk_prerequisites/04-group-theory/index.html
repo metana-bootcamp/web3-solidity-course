@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 4: Group Theory</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Group Theory<br>Deep Dive</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 4 of 6</span></p>
+        <p class="subtle">Finite groups, cyclic groups, and generators — the foundation of elliptic curve crypto</p>
+        <aside class="notes">Welcome to Workshop 4. Last time we learned the algebraic hierarchy. Now we go deep into Groups specifically — the structure that powers all of ZK cryptography. By the end, you'll understand finite groups, cyclic groups, and generators, which are the direct prerequisites for understanding elliptic curves.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Quick Groups recap</li>
+          <li>Gallery of Group examples</li>
+          <li>Finite groups &amp; group order</li>
+          <li>Cyclic groups &amp; generators</li>
+          <li>Primitive roots</li>
+          <li>Key properties: uniqueness of identity, cyclic &rArr; abelian</li>
+          <li>Groups in ZK proofs</li>
+        </ul>
+        <aside class="notes">We'll work through many examples to build intuition, then focus on cyclic groups which are the specific type used in ZK. We'll also prove some properties that will be essential when we get to elliptic curves.</aside>
+      </section>
+
+      <!-- ============ RECAP ============ -->
+      <section>
+        <h2>Quick Recap: What is a Group?</h2>
+        <p>A set with a binary operator that has four properties:</p>
+        <ol>
+          <li><strong>Closure:</strong> a □ b is always in the set</li>
+          <li><strong>Associativity:</strong> (a □ b) □ c = a □ (b □ c)</li>
+          <li><strong>Identity:</strong> there exists e such that a □ e = a</li>
+          <li><strong>Inverse:</strong> for every a, there exists a' such that a □ a' = e</li>
+        </ol>
+        <div class="callout-blue">
+          If the operator is also <strong>commutative</strong>, the group is <strong>abelian</strong>.
+        </div>
+        <aside class="notes">Quick refresher from last workshop. Four properties define a group. If the operator is commutative too, we call it abelian. All groups we use in ZK happen to be abelian, but commutativity is a bonus, not a requirement for being a group.</aside>
+      </section>
+
+      <!-- ============ EXAMPLE 1: TRIVIAL ============ -->
+      <section>
+        <h2>Example 1: The Trivial Group</h2>
+        <pre><code class="language-python"># The set {0} with addition
+# Closure: 0 + 0 = 0 ✓ (stays in set)
+# Associative: (0+0)+0 = 0+(0+0) ✓ 
+# Identity: 0 (adding 0 gives 0) ✓
+# Inverse: 0's inverse is 0 ✓
+
+# This is the smallest possible group
+# A group CANNOT be empty — it must have at least the identity</code></pre>
+        <div class="callout">
+          Similarly, {1} under multiplication is a group.<br>
+          These are trivial but valid — the smallest groups possible.
+        </div>
+        <aside class="notes">The trivial group exists just to establish that groups can be very small. The important lesson: a group cannot be empty because it must contain at least the identity element. This seems obvious but matters when we discuss the point at infinity in elliptic curves — it's the identity element that ensures the curve points form a group.</aside>
+      </section>
+
+      <!-- ============ EXAMPLE 2: NOT GROUP ============ -->
+      <section>
+        <h2>Example 2: Real Numbers under &times;</h2>
+        <p>Are real numbers a group under multiplication?</p>
+        <ul>
+          <li>&check; Closed: product of reals is a real</li>
+          <li>&check; Associative: (a&times;b)&times;c = a&times;(b&times;c)</li>
+          <li>&check; Identity: 1</li>
+          <li>&cross; <strong>Inverse:</strong> the inverse of a is 1/a, but 1/0 is undefined!</li>
+        </ul>
+        <div class="callout">
+          <strong>Zero has no multiplicative inverse.</strong><br>
+          But ℝ\{0} (reals excluding zero) under &times; IS a group!
+        </div>
+        <p class="subtle">Domain sensitivity: the exact same operation can form a group or not, depending on the set.</p>
+        <aside class="notes">This is a crucial lesson about domain sensitivity. The same operation — multiplication — can fail to form a group if you include zero. Remove zero and it works. We saw this with finite fields too: F_p under addition is a group with all elements, but under multiplication we must exclude zero. This sensitivity will come up again with elliptic curves where we add the point at infinity to make the group work.</aside>
+      </section>
+
+      <!-- ============ DOMAIN SENSITIVITY TABLE ============ -->
+      <section>
+        <h2>Domain Sensitivity</h2>
+        <table>
+          <tr><th>Set</th><th>Operation</th><th>Structure</th><th>Why?</th></tr>
+          <tr><td>Positive ℤ (no 0)</td><td>+</td><td>Semigroup</td><td>No identity</td></tr>
+          <tr><td>ℤ &ge; 0</td><td>+</td><td>Monoid</td><td>Has identity, no inverses</td></tr>
+          <tr><td>All ℤ</td><td>+</td><td><strong>Group</strong></td><td>Every element has an inverse</td></tr>
+          <tr><td>ℤ</td><td>&times;</td><td>Monoid</td><td>Inverse of 2 is 1/2, not in ℤ</td></tr>
+          <tr><td>ℝ\{0}</td><td>&times;</td><td><strong>Group</strong></td><td>Every element has 1/a</td></tr>
+          <tr><td>𝔽ₚ</td><td>+ mod p</td><td><strong>Group</strong></td><td>Inverse of a is p-a</td></tr>
+          <tr><td>𝔽ₚ\{0}</td><td>&times; mod p</td><td><strong>Group</strong></td><td>Fermat: a<sup>p-2</sup></td></tr>
+        </table>
+        <aside class="notes">This table drives the point home. The SAME operation forms different algebraic structures depending on the set. Notice the last two rows — finite fields under addition and multiplication (excluding zero) both form groups. This dual group structure is what makes finite fields so special and useful for cryptography. A field is essentially a set with TWO group structures.</aside>
+      </section>
+
+      <!-- ============ MATRICES ============ -->
+      <section>
+        <h2>Example: Matrices as Groups</h2>
+        <div class="two-col">
+          <div>
+            <h3>&check; n&times;m matrices under +</h3>
+            <ul>
+              <li>Closed: sum is same dimensions</li>
+              <li>Associative: matrix + is associative</li>
+              <li>Identity: zero matrix</li>
+              <li>Inverse: negate each element</li>
+            </ul>
+          </div>
+          <div>
+            <h3>&check; n&times;n with det&ne;0 under &times;</h3>
+            <ul>
+              <li>Closed: det(AB) = det(A)&times;det(B)</li>
+              <li>Associative: matrix &times; is</li>
+              <li>Identity: identity matrix</li>
+              <li>Inverse: matrix inverse exists</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Note:</strong> n&times;n matrices with det=0 under &times; are NOT even a Monoid!<br>
+          The identity matrix has det=1, not det=0, so it's excluded from the set.
+        </div>
+        <aside class="notes">Matrices give us a great example of a non-commutative group: square matrices with non-zero determinant under multiplication. This is a Group but NOT abelian because matrix multiplication doesn't commute. The determinant being non-zero ensures every matrix has an inverse. det(AB) = det(A) times det(B) ensures closure — the product of non-zero determinant matrices has non-zero determinant.</aside>
+      </section>
+
+      <!-- ============ POLYNOMIALS ============ -->
+      <section>
+        <h2>Example: Polynomials under Addition</h2>
+        <pre><code class="language-python">from galois import GF, Poly
+
+GF7 = GF(7)
+
+# Polynomials of degree ≤ 3 over GF(7) form a group under addition
+f = Poly([3, 2, 5, 1], field=GF7)  # 3x³ + 2x² + 5x + 1
+g = Poly([4, 5, 2, 6], field=GF7)  # 4x³ + 5x² + 2x + 6
+
+# Closure: sum is still degree ≤ 3
+print(f"f + g = {f + g}")  # coefficients reduced mod 7
+
+# Identity: zero polynomial
+zero = Poly([0], field=GF7)
+print(f"f + 0 = {f + zero}")  # same as f
+
+# Inverse: negate coefficients (mod 7)
+neg_f = -f
+print(f"f + (-f) = {f + neg_f}")  # zero polynomial</code></pre>
+        <div class="callout-blue">
+          Polynomials under &times; are NOT a group — degree increases, breaking closure for bounded degree.
+        </div>
+        <aside class="notes">Polynomials over a finite field form a group under addition. This is directly relevant to ZK because proof systems like PLONK and Groth16 work with polynomials over finite fields. Note that polynomial multiplication doesn't form a group because the degree increases — if we bound the degree, multiplication can take us out of the set.</aside>
+      </section>
+
+      <!-- ============ ADDITION MOD P ============ -->
+      <section>
+        <h2>Addition Modulo a Prime</h2>
+        <pre><code class="language-python">p = 7
+
+# Build the complete group table
+print("Addition mod 7:")
+print("   | " + " ".join(f"{b}" for b in range(p)))
+print("---+" + "-" * (2 * p))
+for a in range(p):
+    row = " ".join(f"{(a+b) % p}" for b in range(p))
+    print(f" {a} | {row}")
+
+# Verify group properties:
+# Identity: 0 (row/column 0 gives same element)
+# Inverse of 5: 2 (because 5+2 = 7 ≡ 0)
+for a in range(p):
+    inv = (p - a) % p
+    assert (a + inv) % p == 0
+    print(f"  Inverse of {a} is {inv}")</code></pre>
+        <aside class="notes">Addition modulo a prime is the simplest and most important group for ZK. The output table shows every cell contains a value in {0,...,6}, proving closure. The identity is 0 and each element's inverse is what you need to add to reach 0. This is exactly the additive group of the finite field F_7 that we studied in Workshop 2.</aside>
+      </section>
+
+      <!-- ============ MULTIPLICATION MOD P ============ -->
+      <section>
+        <h2>Multiplication Modulo a Prime (Excluding 0)</h2>
+        <pre><code class="language-python">p = 7
+
+# The set {1, 2, 3, 4, 5, 6} under × mod 7
+print("Multiplication mod 7 (excluding 0):")
+print("   | " + " ".join(f"{b}" for b in range(1, p)))
+print("---+" + "-" * (2 * (p-1)))
+for a in range(1, p):
+    row = " ".join(f"{(a*b) % p}" for b in range(1, p))
+    print(f" {a} | {row}")
+
+# Identity: 1
+# Inverse of a: pow(a, -1, p)
+for a in range(1, p):
+    inv = pow(a, -1, p)
+    assert (a * inv) % p == 1
+    print(f"  {a} × {inv} ≡ 1 (mod {p})")</code></pre>
+        <aside class="notes">The multiplicative group of a finite field excludes 0. This is a group because every non-zero element has a multiplicative inverse when p is prime. This group has order p minus 1 — so for p equals 7, the group has 6 elements. This multiplicative group has a special property we'll explore next: it's cyclic.</aside>
+      </section>
+
+      <!-- ============ FINITE GROUPS ============ -->
+      <section>
+        <h2>Finite Groups &amp; Order</h2>
+        <div class="callout">
+          A <strong>finite group</strong> has a finite number of elements.<br>
+          The <strong>order</strong> of a group is the number of elements in it.
+        </div>
+        <ul>
+          <li>𝔽₇ under addition: order = 7</li>
+          <li>𝔽₇\{0} under multiplication: order = 6</li>
+          <li>All integers under addition: infinite order</li>
+        </ul>
+        <div class="callout-blue">
+          <strong>In ZK proofs, we ONLY use finite groups.</strong><br>
+          The order of the group determines the security level.
+        </div>
+        <aside class="notes">In ZK proofs, we exclusively work with finite groups. The order — the number of elements — is crucial. For BN128, the elliptic curve group has about 2^254 elements. This large order is what makes the discrete logarithm problem hard and the system secure. If the group were too small, an attacker could brute force the mapping.</aside>
+      </section>
+
+      <!-- ============ CYCLIC GROUPS ============ -->
+      <section>
+        <h2>Cyclic Groups</h2>
+        <div class="callout">
+          A <strong>cyclic group</strong> is a group where every element can be generated by repeatedly applying the binary operator to a single <strong>generator</strong> element.
+        </div>
+        <pre><code class="language-python"># Addition mod 7 is cyclic with generator 1:
+p = 7
+g = 1
+print("Generating all elements from g=1:")
+element = 0
+for i in range(p):
+    element = (g * i) % p  # i additions of g
+    print(f"  {i} × g = {element}")
+
+# Output: 0, 1, 2, 3, 4, 5, 6 — every element!</code></pre>
+        <p class="subtle">Starting from 1 and repeatedly adding 1 generates: 1, 2, 3, 4, 5, 6, 0 — every element of the group.</p>
+        <aside class="notes">A cyclic group can be generated from a single element. For addition mod 7, the generator is 1 — keep adding 1 and you hit every element. This is exactly how elliptic curve cryptography works: you pick a generator point G and multiply it by scalars to get all other points. The group being cyclic means you can reach every point from that single generator.</aside>
+      </section>
+
+      <!-- ============ MULTIPLICATIVE CYCLIC ============ -->
+      <section>
+        <h2>Multiplicative Cyclic Groups</h2>
+        <p>Multiplication mod 7 (excluding 0) — not every element is a generator!</p>
+        <div class="two-col">
+          <div>
+            <h3>&cross; Generator = 2?</h3>
+            <pre><code class="language-python">p = 7
+g = 2
+print("Powers of 2 mod 7:")
+for i in range(1, p):
+    print(f"  2^{i} = {pow(2,i,p)}")
+# 2, 4, 1, 2, 4, 1...
+# Only generates {1, 2, 4}
+# NOT a generator!</code></pre>
+          </div>
+          <div>
+            <h3>&check; Generator = 3!</h3>
+            <pre><code class="language-python">p = 7
+g = 3
+print("Powers of 3 mod 7:")
+for i in range(1, p):
+    print(f"  3^{i} = {pow(3,i,p)}")
+# 3, 2, 6, 4, 5, 1
+# Generates {1,2,3,4,5,6}
+# IS a generator!</code></pre>
+          </div>
+        </div>
+        <div class="callout">
+          An element that generates the <strong>entire</strong> multiplicative group is called a <strong>primitive root</strong>.
+        </div>
+        <aside class="notes">For multiplicative groups, not every element works as a generator. With mod 7, the element 2 only generates the subgroup {1, 2, 4} — it cycles back to 1 after only 3 steps. But 3 generates ALL six non-zero elements. Elements that generate the whole group are called primitive roots. In elliptic curve cryptography, the chosen generator point G must generate the entire group.</aside>
+      </section>
+
+      <!-- ============ FINDING GENERATORS ============ -->
+      <section>
+        <h2>Finding Primitive Roots</h2>
+        <pre><code class="language-python">from galois import GF
+
+# galois library can find all primitive roots
+for p in [7, 11, 13, 23]:
+    field = GF(p)
+    roots = field.primitive_elements
+    print(f"GF({p}): primitive roots = {list(roots)}")
+    print(f"  {len(roots)} out of {p-1} elements are generators")
+    print(f"  ratio = {len(roots)/(p-1):.1%}\n")
+
+# Manual verification for p=7
+p = 7
+for g in range(1, p):
+    generated = set()
+    val = 1
+    for _ in range(p - 1):
+        val = (val * g) % p
+        generated.add(val)
+    is_gen = len(generated) == p - 1
+    print(f"  g={g}: generates {sorted(generated)} {'← GENERATOR' if is_gen else ''}")</code></pre>
+        <aside class="notes">The galois library makes finding primitive roots easy. For p equals 7, the generators are 3 and 5. Notice the ratio — roughly a third of elements are generators, which is related to Euler's totient function. In practice, for elliptic curve cryptography, the generator is specified as part of the curve parameters. For BN128, the generator G1 is a specific point.</aside>
+      </section>
+
+      <!-- ============ CYCLIC => ABELIAN ============ -->
+      <section>
+        <h2>Cyclic &rArr; Abelian</h2>
+        <p>If a group is cyclic, it is automatically abelian (commutative).</p>
+        <div class="callout">
+          <strong>Proof sketch:</strong> Every element = generator applied some number of times.<br>
+          Let p = g+g+...+g (m times), q = g+g+...+g (n times)<br>
+          Then p □ q = g added (m+n) times = q □ p = g added (n+m) times<br>
+          Since m+n = n+m, commutativity follows.
+        </div>
+        <ul>
+          <li>Elliptic curve groups in ZK are cyclic &rarr; therefore abelian</li>
+          <li>The converse is NOT true: abelian does not imply cyclic</li>
+          <li>ℝ under addition is abelian but NOT cyclic (no single generator)</li>
+        </ul>
+        <aside class="notes">This is an important theorem. Cyclic groups are automatically commutative. The proof is elegant: since everything is just the generator added to itself repeatedly, the order doesn't matter — m plus n equals n plus m. This is why elliptic curve point addition is commutative. The converse doesn't hold: real numbers under addition are commutative but no single real number generates all others through repeated addition.</aside>
+      </section>
+
+      <!-- ============ IDENTITY IS UNIQUE ============ -->
+      <section>
+        <h2>The Identity Element is Unique</h2>
+        <div class="callout">
+          <strong>Proof by contradiction:</strong><br>
+          Suppose both e and e' are identity elements.<br>
+          Then a □ a⁻¹ = e, and also a □ a⁻¹ = e'<br>
+          So e = a □ a⁻¹ = e'<br>
+          Therefore e = e'. &nbsp; ∎
+        </div>
+        <ul>
+          <li>A group has exactly <strong>one</strong> identity element</li>
+          <li>For addition groups: the identity is 0</li>
+          <li>For multiplication groups: the identity is 1</li>
+          <li>For elliptic curves: the identity is the "point at infinity"</li>
+        </ul>
+        <aside class="notes">This seems obvious but is worth proving because it establishes a pattern of mathematical reasoning. The identity is unique — there can be only one. For elliptic curves, this unique identity is the point at infinity, a special point that's not technically on the curve but is added to the set to satisfy the group requirements.</aside>
+      </section>
+
+      <!-- ============ 2D POINTS ============ -->
+      <section>
+        <h2>Example: 2D Points as a Group</h2>
+        <pre><code class="language-python"># Set: all (x, y) pairs with real coordinates
+# Binary operator: element-wise addition
+
+# Closure: (a,b) + (c,d) = (a+c, b+d) — still a point ✓
+p1 = (1, 1)
+p2 = (2, 3)
+p3 = (p1[0]+p2[0], p1[1]+p2[1])
+print(f"{p1} + {p2} = {p3}")  # (3, 4)
+
+# Identity: the origin (0, 0)
+origin = (0, 0)
+print(f"{p1} + {origin} = {p1}")  # unchanged ✓
+
+# Inverse: negate both coordinates
+inv_p1 = (-p1[0], -p1[1])
+print(f"{p1} + {inv_p1} = {(p1[0]+inv_p1[0], p1[1]+inv_p1[1])}")  # (0, 0) ✓</code></pre>
+        <div class="callout-blue">
+          This is a <strong>preview of elliptic curves!</strong><br>
+          EC points are (x, y) pairs with a different addition rule, but same group structure.
+        </div>
+        <aside class="notes">2D points under element-wise addition form an abelian group. This is actually a great mental model for elliptic curves! EC points are also (x, y) pairs, the identity is a special point, and the inverse involves negating the y coordinate. The only difference is the addition rule is more complex — but the group structure is identical.</aside>
+      </section>
+
+      <!-- ============ FIXED BASE POWERS ============ -->
+      <section>
+        <h2>Example: Powers of a Fixed Base</h2>
+        <pre><code class="language-python"># Set: {b^i : i ∈ ℤ} under multiplication (b = 2)
+# {... 1/8, 1/4, 1/2, 1, 2, 4, 8, 16, ...}
+
+b = 2
+
+# Closure: b^x × b^y = b^(x+y) ✓
+print(f"2³ × 2⁴ = 2^(3+4) = {b**3 * b**4} = {b**7}")
+
+# Identity: b^0 = 1
+print(f"2⁰ = {b**0}")
+
+# Inverse of b^x is b^(-x)
+print(f"Inverse of 2³ is 2⁻³ = {b**-3}")
+print(f"2³ × 2⁻³ = {b**3 * b**-3}")  # 1 ✓</code></pre>
+        <div class="callout">
+          This is <strong>exactly</strong> how scalar multiplication on elliptic curves works!<br>
+          G, 2G, 3G, ... nG wraps around, just like b¹, b², b³... wraps mod p.
+        </div>
+        <aside class="notes">Powers of a fixed base form a group under multiplication. This is directly analogous to elliptic curve scalar multiplication. When we compute 1G, 2G, 3G, and so on, we're doing the same thing in additive notation. The exponents form a group under addition that maps homomorphically to this group under multiplication. This connection is actually a homomorphism, which we'll cover in the next workshop.</aside>
+      </section>
+
+      <!-- ============ GROUPS IN ZK ============ -->
+      <section>
+        <h2>Groups in Zero Knowledge Proofs</h2>
+        <p>Understanding groups gives you a vocabulary for ZK:</p>
+        <ul>
+          <li><strong>"Inverse"</strong> &rarr; you immediately know what this means</li>
+          <li><strong>"Identity"</strong> &rarr; the neutral element</li>
+          <li><strong>"Cyclic"</strong> &rarr; everything comes from a generator</li>
+          <li><strong>"Order"</strong> &rarr; how many elements before wrapping</li>
+          <li><strong>"Abelian"</strong> &rarr; order of operations doesn't matter</li>
+        </ul>
+        <div class="callout">
+          Groups help us reason about complex objects without understanding their implementation.<br>
+          If someone tells you EC points form a group, you already know how they behave!
+        </div>
+        <aside class="notes">This is the key takeaway. Group theory gives you a powerful vocabulary. When you encounter elliptic curves, bilinear pairings, or polynomial commitments, the underlying math always reduces to group operations. If you know the structure is a group, you know its properties without needing to understand the sometimes terrifying implementation details.</aside>
+      </section>
+
+      <!-- ============ LOOKING AHEAD ============ -->
+      <section>
+        <h2>Preview: EC Points as a Cyclic Group</h2>
+        <pre><code class="language-python"># This is what we'll be doing in Workshop 6:
+# from py_ecc.bn128 import G1, multiply, add, eq, neg
+
+# G1 is the generator point
+# multiply(G1, 5)     → 5G (add G to itself 5 times)
+# add(A, B)           → A + B (group binary operator)
+# neg(A)              → -A (group inverse)
+# eq(A, B)            → A == B
+
+# Key identity:
+# multiply(G1, a) + multiply(G1, b) = multiply(G1, a + b)
+# This is a HOMOMORPHISM — Workshop 5 material!</code></pre>
+        <div class="callout-blue">
+          Every concept from this workshop maps directly to EC operations:<br>
+          Generator = G1 &nbsp;|&nbsp; Identity = point at infinity &nbsp;|&nbsp; Inverse = neg(P)
+        </div>
+        <aside class="notes">Here's a sneak preview. The py_ecc library implements exactly the group operations we've been discussing. G1 is the generator, multiply does scalar multiplication (repeated addition), add is the group binary operator, neg gives the inverse. The fact that aG plus bG equals (a+b)G is the homomorphism property we'll study next workshop. Everything connects.</aside>
+      </section>
+
+      <!-- ============ SUMMARY ============ -->
+      <section>
+        <h2>Key Takeaways</h2>
+        <ul>
+          <li><strong>Groups are sensitive to their domain</strong> — same operation, different sets, different structures</li>
+          <li><strong>Finite groups</strong> have a specific order (number of elements)</li>
+          <li><strong>Cyclic groups</strong> can be generated from a single element</li>
+          <li><strong>Primitive roots</strong> generate the full multiplicative group</li>
+          <li><strong>Cyclic &rArr; Abelian:</strong> cyclic groups are always commutative</li>
+          <li><strong>Identity is unique:</strong> there's exactly one per group</li>
+          <li>In ZK, we exclusively use <strong>finite cyclic groups</strong></li>
+        </ul>
+        <aside class="notes">These concepts form the bedrock for everything that follows. Finite cyclic groups are the specific mathematical structure used in all ZK proof systems. They give us a bounded, structured space where we can perform computations and verify proofs efficiently. Master these concepts and elliptic curves will feel natural.</aside>
+      </section>
+
+      <!-- ============ PRACTICE ============ -->
+      <section>
+        <h2>Practice Problems</h2>
+        <ol>
+          <li>List all elements generated by 2 in the multiplicative group mod 11. Is 2 a primitive root?</li>
+          <li>Prove that if a group has prime order p, then every non-identity element is a generator.</li>
+          <li>Why can't strings under concatenation form a group? Identify which specific property fails.</li>
+          <li>For the group ℤ₁₃ under addition, find the inverse of every element.</li>
+          <li>Build the multiplication table for {1,2,3,4} mod 5. Verify all four group properties.</li>
+          <li>Find all primitive roots of GF(13) using the galois library or manually.</li>
+        </ol>
+        <aside class="notes">These problems cover all major topics. Problem 2 is a fun proof — hint: Lagrange's theorem says the order of any subgroup divides the group order. If the order is prime, the only subgroups are trivial and the whole group. Problem 3 is about inverses — there's no way to un-concatenate a string.</aside>
+      </section>
+
+      <!-- ============ NEXT WORKSHOP ============ -->
+      <section>
+        <h2>Next Workshop</h2>
+        <h3>Homomorphisms</h3>
+        <ul>
+          <li>Structure-preserving maps between groups</li>
+          <li>Many examples: integers &rarr; powers, strings &rarr; lengths</li>
+          <li>Homomorphic encryption</li>
+          <li>How ZK proofs use homomorphisms</li>
+        </ul>
+        <p class="subtle">Homomorphisms are the mathematical foundation of zero knowledge — proving computations without revealing inputs.</p>
+        <aside class="notes">Next workshop tackles homomorphisms — maps between groups that preserve structure. This is where it all comes together. Homomorphisms are literally the mechanism that makes zero knowledge proofs possible. A prover maps their secret computation into another group, and the verifier can check the computation without seeing the original data. See you next time!</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+</html>

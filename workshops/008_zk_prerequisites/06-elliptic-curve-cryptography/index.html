@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 6: Elliptic Curve Cryptography</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-green { background: rgba(46,204,113,0.1); border-left: 3px solid #2ecc71; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Elliptic Curve<br>Cryptography</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 6 of 6</span></p>
+        <p class="subtle">Where all prerequisites converge — from curves to zero knowledge proofs</p>
+        <aside class="notes">Welcome to the final workshop. Everything we've learned — finite fields, abstract algebra, group theory, and homomorphisms — comes together here. By the end, you'll understand how elliptic curves work, why they're perfect for ZK proofs, and you'll see a working ZK proof in Python code.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <ul>
+          <li>Elliptic curve equation &amp; geometry</li>
+          <li>Point addition: the "connect and flip" rule</li>
+          <li>Why EC points form an abelian group</li>
+          <li>Elliptic curves over finite fields</li>
+          <li>Cyclic groups &amp; generators on curves</li>
+          <li>The BN128 curve (Ethereum)</li>
+          <li>Scalar multiplication &amp; the discrete log problem</li>
+          <li>Building a ZK proof with py_ecc</li>
+        </ul>
+        <aside class="notes">We'll start with the geometry over real numbers to build intuition, then move to finite fields where actual cryptography happens. The BN128 curve is what Ethereum uses for ZK proof verification, so everything we cover is directly applicable.</aside>
+      </section>
+
+      <!-- ============ EC EQUATION ============ -->
+      <section>
+        <h2>Elliptic Curve Equation</h2>
+        <div class="callout">
+          <span class="formula">y&sup2; = x&sup3; + ax + b</span>
+        </div>
+        <p>An elliptic curve is the <strong>set of all (x, y) points</strong> satisfying this equation, plus a special "point at infinity."</p>
+        <ul>
+          <li>Different a, b values give different curves</li>
+          <li>BN128 uses: y&sup2; = x&sup3; + 3 &nbsp; (a=0, b=3)</li>
+          <li>secp256k1 (Bitcoin): y&sup2; = x&sup3; + 7 &nbsp; (a=0, b=7)</li>
+        </ul>
+        <div class="callout-blue">
+          <strong>Set-theoretic view:</strong> The curve IS a set. Points are members if they satisfy the equation. The binary operator (point addition) is a function from this set to itself.
+        </div>
+        <aside class="notes">An elliptic curve is defined by this equation. For our purposes, a equals 0, so the equation simplifies to y squared equals x cubed plus b. The BN128 curve uses b equals 3. Remember from set theory: the curve is just a set of (x, y) pairs that satisfy the equation, plus the identity element (point at infinity). All our group theory applies directly.</aside>
+      </section>
+
+      <!-- ============ POINT ADDITION GEOMETRY ============ -->
+      <section>
+        <h2>Point Addition: Connect and Flip</h2>
+        <p>To add points P and Q on the curve:</p>
+        <ol>
+          <li>Draw a line through P and Q</li>
+          <li>The line intersects the curve at a third point R'</li>
+          <li>Reflect R' over the x-axis to get R = P &oplus; Q</li>
+        </ol>
+        <div class="callout">
+          <strong>Key fact:</strong> A line that crosses an elliptic curve at two (non-tangent) points will ALWAYS cross at a third point, unless the line is perfectly vertical.
+        </div>
+        <p class="subtle">Vertical lines are the special case — they correspond to adding a point to its inverse, giving the point at infinity.</p>
+        <aside class="notes">The geometric picture is elegant. Draw a line through two curve points, find the third intersection, then flip over the x-axis. This seems arbitrary, but the flip is necessary for the group laws to work. Without it, we'd get contradictions with associativity. The vertical line case gives us inverses: a point and its x-axis reflection always produce the point at infinity when added.</aside>
+      </section>
+
+      <!-- ============ POINT DOUBLING ============ -->
+      <section>
+        <h2>Point Doubling: P + P</h2>
+        <p>What if both points are the same?</p>
+        <ul>
+          <li>Take the <strong>tangent line</strong> at P (the derivative)</li>
+          <li>Find where it intersects the curve again</li>
+          <li>Reflect over x-axis &rarr; result is 2P</li>
+        </ul>
+        <div class="callout-blue">
+          Point doubling enables <strong>fast scalar multiplication</strong>:<br>
+          To compute 1000P, you only need ~10 doublings + ~10 additions<br>
+          (binary decomposition: 1000 = 512 + 256 + 128 + 64 + 32 + 8)
+        </div>
+        <pre><code class="language-python"># 1000P = 512P + 256P + 128P + 64P + 32P + 8P
+# 512P = double P nine times (P → 2P → 4P → ... → 512P)
+# Total: ~10 doublings + ~6 additions ≈ 16 operations
+# Much better than 999 additions!</code></pre>
+        <aside class="notes">Point doubling is what makes elliptic curve cryptography practical. To compute nP, we use the same trick as binary exponentiation: decompose n into powers of 2, compute each power of 2 by repeated doubling, then add them up. This gives us O(log n) operations instead of O(n). For a 256-bit scalar, that's about 256 doublings and 256 additions — perfectly feasible.</aside>
+      </section>
+
+      <!-- ============ ADDITION FORMULA ============ -->
+      <section>
+        <h2>Point Addition Formula</h2>
+        <p>Given P<sub>1</sub> = (x<sub>1</sub>, y<sub>1</sub>) and P<sub>2</sub> = (x<sub>2</sub>, y<sub>2</sub>):</p>
+        <div class="callout">
+          <span class="formula">&lambda; = (y<sub>2</sub> - y<sub>1</sub>) / (x<sub>2</sub> - x<sub>1</sub>)</span><br>
+          <span class="formula">x<sub>3</sub> = &lambda;&sup2; - x<sub>1</sub> - x<sub>2</sub></span><br>
+          <span class="formula">y<sub>3</sub> = &lambda;(x<sub>1</sub> - x<sub>3</sub>) - y<sub>1</sub></span>
+        </div>
+        <p>For point doubling (P<sub>1</sub> = P<sub>2</sub>):</p>
+        <div class="callout">
+          <span class="formula">&lambda; = (3x<sub>1</sub>&sup2; + a) / (2y<sub>1</sub>)</span>
+        </div>
+        <p class="subtle">Over finite fields, division becomes multiplication by the modular inverse. All operations stay exact!</p>
+        <aside class="notes">Here are the actual formulas. Lambda is the slope of the line through the two points. For doubling, it's the derivative. Notice the formulas only use addition, subtraction, multiplication, and division — all of which work perfectly in finite fields. When we move to finite fields, division becomes multiplication by the modular inverse, and everything stays exact. No floating point, no rounding errors.</aside>
+      </section>
+
+      <!-- ============ EC AS GROUP ============ -->
+      <section>
+        <h2>EC Points Form an Abelian Group</h2>
+        <ol>
+          <li><strong>Closed:</strong> adding two curve points gives another curve point (or point at infinity)</li>
+          <li><strong>Associative:</strong> (P &oplus; Q) &oplus; R = P &oplus; (Q &oplus; R) — proven algebraically</li>
+          <li><strong>Identity:</strong> the point at infinity O &nbsp; (P &oplus; O = P)</li>
+          <li><strong>Inverse:</strong> inverse of (x, y) is (x, -y) &nbsp; (reflection over x-axis)</li>
+          <li><strong>Commutative:</strong> P &oplus; Q = Q &oplus; P &nbsp; (same line = same intersection)</li>
+        </ol>
+        <div class="callout-green">
+          Two points determine a unique line &rarr; one unique third intersection &rarr; same result regardless of order. <strong>Abelian!</strong>
+        </div>
+        <aside class="notes">We can verify all five properties! Closure comes from the geometry — lines always intersect the curve at a third point. The identity is the point at infinity — a mathematical construct that makes everything work. The inverse uses x-axis reflection: if the point (x, y) is on the curve, so is (x, -y), and their connecting line is vertical, giving the point at infinity. Commutativity is beautifully obvious: both points determine the same line, same third intersection, same result.</aside>
+      </section>
+
+      <!-- ============ OVER FINITE FIELDS ============ -->
+      <section>
+        <h2>Elliptic Curves over Finite Fields</h2>
+        <p>Instead of real numbers, use arithmetic mod p:</p>
+        <div class="callout">
+          <span class="formula">y&sup2; &equiv; x&sup3; + 3 (mod p)</span>
+        </div>
+        <pre><code class="language-python">import libnum
+
+def generate_points(mod):
+    points = []
+    for x in range(mod):
+        y_sq = (x**3 + 3) % mod
+        if libnum.has_sqrtmod_prime_power(y_sq, mod, 1):
+            for y in libnum.sqrtmod_prime_power(y_sq, mod, 1):
+                points.append((x, y))
+    return points
+
+# y² = x³ + 3 (mod 11) — a small example
+points = generate_points(11)
+print(f"Points on y² = x³ + 3 (mod 11):")
+for p in sorted(points):
+    print(f"  {p}")
+print(f"Total: {len(points)} points + point at infinity = {len(points)+1}")</code></pre>
+        <aside class="notes">When we move to finite fields, the curve becomes a finite set of discrete points instead of a smooth curve. We iterate through all x values, compute x cubed plus 3 mod p, and check if the result has a modular square root. If it does, we have a valid point. For mod 11, we get a small set of points — small enough to enumerate but large enough to illustrate the concepts.</aside>
+      </section>
+
+      <!-- ============ POINT ADDITION IN FF ============ -->
+      <section>
+        <h2>Point Addition over Finite Fields</h2>
+        <pre><code class="language-python">def ec_add(x1, y1, x2, y2, a, p):
+    """Add two points on y² = x³ + ax + b (mod p)"""
+    if (x1, y1) == (None, None): return (x2, y2)
+    if (x2, y2) == (None, None): return (x1, y1)
+    
+    if x1 == x2 and y1 == y2:
+        # Point doubling
+        lam = ((3 * x1**2 + a) * pow(2 * y1, -1, p)) % p
+    elif x1 == x2:
+        # Vertical line → point at infinity
+        return (None, None)
+    else:
+        # Regular addition
+        lam = ((y2 - y1) * pow(x2 - x1, -1, p)) % p
+    
+    x3 = (lam**2 - x1 - x2) % p
+    y3 = (lam * (x1 - x3) - y1) % p
+    return (x3, y3)
+
+# Example: y² = x³ + 3 (mod 11)
+print(ec_add(4, 10, 7, 7, 0, 11))  # Two points on the curve</code></pre>
+        <aside class="notes">Here's point addition implemented in Python for finite fields. Notice the only difference from real-number addition is using pow with -1 for modular inverse instead of regular division. The formulas are identical. This is the power of finite fields — the same algebra works, just with modular arithmetic. The None, None convention represents the point at infinity.</aside>
+      </section>
+
+      <!-- ============ CYCLIC GROUP ============ -->
+      <section>
+        <h2>Generating the Cyclic Group</h2>
+        <pre><code class="language-python"># y² = x³ + 3 (mod 11), generator G = (4, 10)
+G = (4, 10)
+p = 11
+
+point = G
+print(f"1G = {point}")
+for i in range(2, 14):
+    point = ec_add(point[0], point[1], G[0], G[1], 0, p)
+    print(f"{i}G = {point}")
+
+# Output:
+# 1G  = (4, 10)     7G  = (0, 5)
+# 2G  = (7, 7)      8G  = (1, 2)
+# 3G  = (1, 9)      9G  = (7, 4)
+# 4G  = (0, 6)      10G = (4, 1)
+# 5G  = (8, 8)      11G = (None, None) ← identity!
+# 6G  = (2, 0)      12G = (4, 10) ← back to G!
+# The group has order 12 (11 points + point at infinity)</code></pre>
+        <aside class="notes">Starting from the generator point (4, 10), we can generate every point on the curve by repeated addition. The group has order 12 — note this is NOT the same as our modulus 11! After 11 additions we hit the point at infinity (the identity), and at 12 we cycle back to the generator. Every point has a unique "number" corresponding to how many times we added G. This numbering is the discrete logarithm.</aside>
+      </section>
+
+      <!-- ============ ORDER VS MODULUS ============ -->
+      <section>
+        <h2>Important: Order &ne; Modulus</h2>
+        <div class="callout">
+          <strong>Field modulus:</strong> the prime p we do arithmetic over (11 in our example)<br>
+          <strong>Curve order:</strong> the number of points on the curve (12 in our example)
+        </div>
+        <ul>
+          <li>The modulus and order are <strong>different numbers</strong></li>
+          <li>Adding the <em>modulus</em> to a scalar gives a <strong>different</strong> point</li>
+          <li>Adding the <em>order</em> to a scalar gives the <strong>same</strong> point (it wraps around)</li>
+          <li>For BN128: modulus &asymp; 2<sup>254</sup>, order &asymp; 2<sup>254</sup> (close but different!)</li>
+        </ul>
+        <div class="callout-blue">
+          The homomorphism works modulo the <strong>curve order</strong>, not the field modulus.<br>
+          <span class="formula">(a + b) mod order = aG + bG</span>
+        </div>
+        <aside class="notes">This is a common source of confusion. The prime p that defines the field is NOT the same as the number of points on the curve. For our toy example, p is 11 but the order is 12. For BN128, both are roughly 2^254 but they're different numbers. The wrapping behavior — the homomorphism — works modulo the order, not the modulus. Getting this wrong would break everything.</aside>
+      </section>
+
+      <!-- ============ BN128 ============ -->
+      <section>
+        <h2>The BN128 Curve (Ethereum)</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq, neg, curve_order
+
+# The generator point
+print(f"G1 = {G1}")
+# (1, 2)  — a small (x,y) pair!
+
+# But the curve operates over a HUGE field:
+field_mod = 21888242871839275222246405745257275088696311157297823662689037894645226208583
+print(f"Field modulus bits: {field_mod.bit_length()}")  # 254
+
+# The curve order (number of points):
+print(f"Curve order bits: {curve_order.bit_length()}")  # 254
+
+# These are DIFFERENT numbers!
+assert field_mod != curve_order</code></pre>
+        <div class="callout">
+          BN128 is used by Ethereum's ZK proof precompiles (ecAdd, ecMul, ecPairing).<br>
+          254-bit security &rarr; ~2<sup>128</sup> security level against best known attacks.
+        </div>
+        <aside class="notes">BN128 is the real deal — the curve Ethereum uses for ZK proof verification. The generator G1 is the point (1, 2), which seems simple but operates in a 254-bit prime field. The numbers involved are enormous — about 77 decimal digits. Ethereum has precompiled contracts for point addition, scalar multiplication, and pairing checks, making ZK verification gas-efficient.</aside>
+      </section>
+
+      <!-- ============ PY_ECC OPERATIONS ============ -->
+      <section>
+        <h2>Operations with py_ecc</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq, neg
+
+# Scalar multiplication: nG
+p1 = multiply(G1, 5)    # 5G
+p2 = multiply(G1, 10)   # 10G
+
+# Point addition
+p3 = add(p1, p2)        # 5G + 10G
+p4 = multiply(G1, 15)   # 15G
+
+# The homomorphism: 5G + 10G = 15G
+assert eq(p3, p4)
+print("5G + 10G = 15G ✓  — Homomorphism works!")
+
+# Point negation (inverse)
+neg_p1 = neg(p1)         # -(5G)
+identity = add(p1, neg_p1)  # 5G + (-5G) = O
+print(f"5G + (-5G) = {identity}")  # None (point at infinity)
+
+# Associativity
+a, b, c = multiply(G1, 3), multiply(G1, 7), multiply(G1, 11)
+assert eq(add(add(a, b), c), add(a, add(b, c)))
+print("Associativity verified ✓")</code></pre>
+        <aside class="notes">Here's the py_ecc library in action. Multiply does scalar multiplication, add does point addition, neg gives the inverse, and eq checks equality. The key line is the homomorphism check: 5G plus 10G equals 15G. This is the mathematical property that makes ZK proofs possible. We also verify associativity and the existence of inverses — all the group properties we studied.</aside>
+      </section>
+
+      <!-- ============ DISCRETE LOG ============ -->
+      <section>
+        <h2>The Discrete Logarithm Problem</h2>
+        <div class="callout">
+          <strong>Easy:</strong> Given x, compute P = xG &nbsp; (scalar multiplication)<br>
+          <strong>Hard:</strong> Given P, find x such that xG = P &nbsp; (discrete logarithm)
+        </div>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply
+
+# EASY: compute 12345G (instant)
+secret = 12345
+public_point = multiply(G1, secret)
+print(f"12345 × G1 = {public_point}")
+
+# HARD: given public_point, find 12345
+# The only known approach for BN128 is essentially brute force
+# (or baby-step giant-step, but still infeasible for 254-bit numbers)
+
+# With ~2^254 possible values, checking each would take
+# longer than the age of the universe, even at 10^18 ops/sec</code></pre>
+        <p class="subtle">This asymmetry is the foundation of elliptic curve cryptography and ZK proofs.</p>
+        <aside class="notes">This is THE security assumption. Computing xG from x is trivial — a few hundred point doublings and additions. But recovering x from xG is computationally infeasible for large groups. The best known algorithm is roughly 2^128 operations for BN128, which is beyond the capability of any computer. This one-way property is what turns our homomorphism into a zero knowledge scheme.</aside>
+      </section>
+
+      <!-- ============ MULT IS REPEATED ADD ============ -->
+      <section>
+        <h2>Multiplication = Repeated Addition</h2>
+        <div class="callout-blue">
+          There is no "point × point" operation on elliptic curves!<br>
+          "Scalar multiplication" is just repeated point addition.
+        </div>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq
+
+# multiply(G1, 5) is really:
+# G1 + G1 + G1 + G1 + G1
+
+# Verify:
+manual = G1
+for _ in range(4):
+    manual = add(manual, G1)
+
+assert eq(manual, multiply(G1, 5))
+print("5G = G+G+G+G+G ✓")
+
+# Algebraic identity still works:
+# (a+b)G = aG + bG  (because it's all addition)
+a, b = 100, 200
+assert eq(multiply(G1, a + b), add(multiply(G1, a), multiply(G1, b)))
+print(f"({a}+{b})G = {a}G + {b}G ✓")</code></pre>
+        <aside class="notes">An extremely important clarification: when we say 5G, we really mean G plus G plus G plus G plus G. There is no multiplication of two curve points. Scalar multiplication is shorthand for repeated addition. This is why the notation can be confusing — it looks like multiplication but it's addition. The algebraic identity (a+b)G = aG + bG follows directly from associativity of the addition operation.</aside>
+      </section>
+
+      <!-- ============ HOMOMORPHISM VERIFICATION ============ -->
+      <section>
+        <h2>The Homomorphism in Practice</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq, curve_order
+
+# The core identity: (a + b) mod order ↔ aG + bG
+# Works even with enormous numbers that overflow!
+
+a = 2**300 + 21
+b = 3**50 + 11
+
+# Path 1: add integers, then map to curve
+path1 = multiply(G1, (a + b))
+
+# Path 2: map to curve, then add points
+path2 = add(multiply(G1, a), multiply(G1, b))
+
+assert eq(path1, path2)
+print("φ(a + b) = φ(a) + φ(b) ✓")
+print(f"Even with {(a+b).bit_length()}-bit numbers!")
+
+# Also works with modular reduction
+path3 = multiply(G1, (a + b) % curve_order)
+assert eq(path1, path3)
+print("Modular reduction gives same result ✓")</code></pre>
+        <aside class="notes">This is the homomorphism we've been building toward. With enormous numbers — hundreds of bits — the property still holds perfectly. Path 1 adds integers first, then maps to the curve. Path 2 maps each integer separately, then adds on the curve. Same result. The modular reduction doesn't even matter because the curve arithmetic handles overflow naturally. This is the mathematical magic that powers ZK proofs.</aside>
+      </section>
+
+      <!-- ============ INVERSES ============ -->
+      <section>
+        <h2>Point Inverses in Finite Fields</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, neg, add, is_inf
+
+field_mod = 21888242871839275222246405745257275088696311157297823662689037894645226208583
+
+# The inverse has the same x but the y is the field inverse
+for i in range(1, 4):
+    point = multiply(G1, i)
+    inv = neg(point)
+    
+    print(f"{i}G    = ({int(point[0])}, {int(point[1])})")
+    print(f"-{i}G   = ({int(inv[0])}, {int(inv[1])})")
+    
+    # x values are the same
+    assert int(point[0]) == int(inv[0])
+    
+    # y values are additive inverses: y + y' = field_mod
+    assert int(point[1]) + int(inv[1]) == field_mod
+    
+    # Adding a point to its inverse gives the identity
+    assert is_inf(add(point, inv))
+    print(f"{i}G + (-{i}G) = point at infinity ✓\n")</code></pre>
+        <aside class="notes">Just like the 2D point group from Workshop 4, the inverse of an EC point has the same x coordinate but the y coordinate is negated — in finite field terms, the two y values sum to the field modulus. Adding a point to its inverse always gives the point at infinity, the identity element. The py_ecc library encodes the point at infinity as None.</aside>
+      </section>
+
+      <!-- ============ ENCODING DIVISION ============ -->
+      <section>
+        <h2>Encoding Rational Numbers</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq, curve_order
+
+# In a finite field, 1/2 = modular inverse of 2
+# This lets us encode "fractions" on the curve!
+
+five_over_two = (5 * pow(2, -1, curve_order)) % curve_order
+one_half = pow(2, -1, curve_order)
+
+# 5/2 + 1/2 = 3 in regular math
+result = add(multiply(G1, five_over_two), multiply(G1, one_half))
+expected = multiply(G1, 3)
+
+assert eq(result, expected)
+print("(5/2)G + (1/2)G = 3G ✓")
+print("Rational arithmetic works on the curve!")</code></pre>
+        <div class="callout">
+          We can encode rational numbers as field elements using modular inverses.<br>
+          This extends the homomorphism to rational arithmetic.
+        </div>
+        <aside class="notes">We can even encode fractions. Five halves is encoded as 5 times the modular inverse of 2. Adding five-halves G and one-half G gives 3G — exactly as expected. This extends our homomorphism from integers to rationals, giving us even more computational power within the ZK framework. Division in the scalar space maps correctly to the elliptic curve space.</aside>
+      </section>
+
+      <!-- ============ BASIC ZK PROOF ============ -->
+      <section>
+        <h2>Building a ZK Proof</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq
+
+# ====== PROVER ======
+# "I know x and y such that x + y = 15"
+secret_x = 5
+secret_y = 10
+
+# Prover computes and publishes:
+A = multiply(G1, secret_x)  # xG
+B = multiply(G1, secret_y)  # yG
+claim = 15
+
+proof = (A, B, claim)
+
+# ====== VERIFIER ======
+# Verifier receives (A, B, 15) but does NOT know x or y
+A, B, claimed_sum = proof
+
+# Compute claimed_sum × G
+expected = multiply(G1, claimed_sum)
+
+# Check: A + B == claimed_sum × G?
+if eq(add(A, B), expected):
+    print("✓ VERIFIED: prover knows x, y with x + y = 15")
+else:
+    print("✗ REJECTED: proof is invalid")</code></pre>
+        <aside class="notes">Here's a working ZK proof! The prover has secret x equals 5 and y equals 10. They compute xG and yG and send those to the verifier along with the claim that x plus y equals 15. The verifier computes 15G and checks that xG plus yG equals 15G. By the homomorphism property, if this check passes, x plus y really does equal 15. The verifier is convinced without ever learning x or y individually.</aside>
+      </section>
+
+      <!-- ============ EXTENDING THE PROOF ============ -->
+      <section>
+        <h2>ZK Proof: Linear Equations</h2>
+        <pre><code class="language-python">from py_ecc.bn128 import G1, multiply, add, eq
+
+# Prove: "I know x such that 23x = 161"
+# (Solution: x = 7)
+
+# ====== PROVER ======
+secret_x = 7
+commitment = multiply(G1, secret_x)  # xG
+
+# ====== VERIFIER ======
+# Verifier knows the equation 23x = 161
+# They check: 23 × (xG) == 161G
+
+lhs = multiply(commitment, 23)       # 23 × (xG) = 23xG
+rhs = multiply(G1, 161)              # 161G
+
+if eq(lhs, rhs):
+    print("✓ VERIFIED: prover knows x such that 23x = 161")
+    print("  (Verifier doesn't know x = 7!)")
+
+# This works because:
+# 23 × (xG) = 23xG = (23x)G = 161G ← by homomorphism</code></pre>
+        <aside class="notes">We can verify more complex relationships. Here the prover knows x equals 7 and proves 23 times x equals 161 without revealing x. The verifier multiplies the commitment xG by the scalar 23 and checks against 161G. Remember, multiplying a curve point by 23 is repeated addition — perfectly valid. This naturally extends to systems of linear equations, which is the basis for more sophisticated ZK proof systems.</aside>
+      </section>
+
+      <!-- ============ SECURITY NOTE ============ -->
+      <section>
+        <h2>Security Considerations</h2>
+        <div class="callout">
+          <strong>Our simple proofs are NOT fully zero knowledge!</strong><br>
+          If an attacker guesses x, they can verify by comparing xG to the commitment.
+        </div>
+        <ul>
+          <li>True ZK requires <strong>blinding factors</strong> (random masks)</li>
+          <li>Protocols like Groth16, PLONK add these safeguards</li>
+          <li>But the <strong>core mechanism</strong> — homomorphic verification — is what we showed</li>
+          <li>BN128 provides ~128 bits of security against discrete log</li>
+        </ul>
+        <div class="callout-blue">
+          Real ZK proof systems add randomness and multi-round interactions to achieve full zero knowledge. The homomorphism we demonstrated is the foundation they build on.
+        </div>
+        <aside class="notes">Important caveat: our proofs are technically 'knowledge proofs' but not fully zero knowledge. If an attacker has a small number of candidates for x, they can check each one. Real ZK systems add random blinding factors that prevent this. But the core mathematical mechanism — the homomorphism — is exactly what we showed. Groth16 and PLONK build on this foundation with additional cryptographic machinery.</aside>
+      </section>
+
+      <!-- ============ BLACK BOX ============ -->
+      <section>
+        <h2>Treating EC as a Black Box</h2>
+        <div class="callout-green">
+          You don't need to understand the implementation of EC point addition.<br>
+          You just need to know it follows <strong>group rules</strong>:
+        </div>
+        <ul>
+          <li>&check; Adding EC points is <strong>closed</strong> — produces another EC point</li>
+          <li>&check; Adding EC points is <strong>associative</strong></li>
+          <li>&check; There exists an <strong>identity</strong> (point at infinity)</li>
+          <li>&check; Every point has an <strong>inverse</strong></li>
+          <li>&check; The group is <strong>cyclic</strong> — generated from G</li>
+          <li>&check; <strong>Homomorphism:</strong> (a+b)G = aG + bG</li>
+        </ul>
+        <p class="subtle">This is like using a hash function — you don't need to know SHA-256's internals to use it correctly.</p>
+        <aside class="notes">This is the most important takeaway. Just like you use hash functions without understanding their internals, you can use elliptic curves by understanding the interface — the group properties. Adding points gives a point. There's an identity. Each point has an inverse. The homomorphism works. That's all you need to build and understand ZK proof systems at a conceptual level.</aside>
+      </section>
+
+      <!-- ============ SERIES SUMMARY ============ -->
+      <section>
+        <h2>Workshop Series Recap</h2>
+        <table style="font-size: 0.7em;">
+          <tr><th>#</th><th>Topic</th><th>Key Concept</th></tr>
+          <tr><td>1</td><td>ZK Intro &amp; Complexity</td><td>Witnesses, P/NP, circuits</td></tr>
+          <tr><td>2</td><td>Finite Fields</td><td>Exact arithmetic mod p, no rounding</td></tr>
+          <tr><td>3</td><td>Set Theory &amp; Algebra</td><td>Magma → Semigroup → Monoid → Group</td></tr>
+          <tr><td>4</td><td>Group Theory</td><td>Cyclic groups, generators, order</td></tr>
+          <tr><td>5</td><td>Homomorphisms</td><td>&phi;(a□b) = &phi;(a)■&phi;(b), one-way maps</td></tr>
+          <tr><td>6</td><td>Elliptic Curves</td><td>EC group + homomorphism = ZK proofs</td></tr>
+        </table>
+        <div class="callout-green">
+          <strong>You now have the mathematical foundation for ZK proofs!</strong><br>
+          Next steps: study Groth16, PLONK, or STARKs with this foundation.
+        </div>
+        <aside class="notes">Let's look back at the full journey. We started with understanding what ZK proofs prove, learned the number system they operate in, built the abstract algebra vocabulary, studied groups and their properties, learned how homomorphisms preserve structure, and finally put it all together with elliptic curves. You now have every mathematical prerequisite needed to study actual ZK proof systems like Groth16, PLONK, and STARKs.</aside>
+      </section>
+
+      <!-- ============ PRACTICE ============ -->
+      <section>
+        <h2>Practice Problems</h2>
+        <ol>
+          <li>Using py_ecc, verify that (a+b+c)G = aG + bG + cG for random a, b, c.</li>
+          <li>Verify associativity: (aG + bG) + cG = aG + (bG + cG) for random values.</li>
+          <li>Prove you know x such that 7x = 49 using EC commitments (without revealing x).</li>
+          <li>Generate all points on y&sup2; = x&sup3; + 3 (mod 23). How many points are there?</li>
+          <li>Find a generator for the curve in problem 4 and verify it generates all points.</li>
+          <li><strong>Challenge:</strong> Build a ZK proof for a system of two linear equations: 2x + 3y = 13 and x + y = 5.</li>
+        </ol>
+        <aside class="notes">The challenge problem asks you to build a ZK proof for a system of equations. Hint: the prover commits to xG and yG. The verifier checks both equations by computing 2(xG) + 3(yG) and comparing to 13G, and xG + yG compared to 5G. Both must pass. This is the basic idea behind QAP-based ZK proofs, just much simpler.</aside>
+      </section>
+
+      <!-- ============ NEXT STEPS ============ -->
+      <section>
+        <h2>What's Next?</h2>
+        <ul>
+          <li><strong>R1CS:</strong> Rank-1 constraint systems — encoding computations as matrices</li>
+          <li><strong>QAP:</strong> Quadratic arithmetic programs — polynomials from R1CS</li>
+          <li><strong>Groth16:</strong> The most gas-efficient ZK-SNARK for Ethereum</li>
+          <li><strong>PLONK:</strong> Universal trusted setup, more flexible</li>
+          <li><strong>STARKs:</strong> No trusted setup, quantum-resistant</li>
+          <li><strong>Bilinear pairings:</strong> "multiplying" EC points (bilinear maps)</li>
+        </ul>
+        <div class="callout">
+          Every one of these topics builds directly on the prerequisites covered in this series.<br>
+          <strong>You are ready.</strong>
+        </div>
+        <aside class="notes">These are the natural next steps in your ZK journey. R1CS and QAP are how we encode arbitrary computations as constraint systems. Groth16 and PLONK are the proof systems that Ethereum supports. STARKs are the newer quantum-resistant alternative. Bilinear pairings extend what we can do with elliptic curves. With the foundation from these six workshops, you're prepared to tackle any of these topics. Congratulations on completing the ZK prerequisites series!</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+</html>

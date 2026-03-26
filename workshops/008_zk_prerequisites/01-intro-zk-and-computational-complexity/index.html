@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK Workshop 1: Introduction to Zero Knowledge Proofs &amp; Computational Complexity</title>
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    .reveal section h1, .reveal section h2, .reveal section h3 { text-transform: none; }
+    .reveal section h2 { margin-bottom: 0.3em; }
+    .reveal ul { font-size: 0.9em; margin-top: 0.2em; margin-bottom: 0.2em; }
+    .reveal ul li { margin-bottom: 0.15em; }
+    .reveal pre { margin: 0.3em auto; }
+    .reveal pre code { font-size: 0.55em; line-height: 1.35; max-height: 450px; overflow-y: auto; }
+    .reveal table { font-size: 0.75em; margin: 0.3em auto; }
+    .reveal table th, .reveal table td { padding: 6px 12px; }
+    .subtle { color: #bbb; font-size: 0.75em; margin-top: 0.3em; margin-bottom: 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); font-size: 0.75em; }
+    .callout { background: rgba(255,255,255,0.06); border-left: 3px solid #f5a623; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .callout-blue { background: rgba(100,149,237,0.1); border-left: 3px solid #6495ed; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; margin: 6px 0; }
+    .formula { font-family: monospace; font-size: 1.1em; color: #f5a623; }
+    .hierarchy-box { border: 2px solid; border-radius: 12px; padding: 12px; margin: 4px; text-align: center; }
+    .hierarchy-pspace { border-color: #e74c3c; }
+    .hierarchy-np { border-color: #f39c12; }
+    .hierarchy-p { border-color: #2ecc71; }
+    @media (max-width: 900px) {
+      .reveal ul { font-size: 0.85em; }
+      .reveal pre code { font-size: 0.48em; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ TITLE ============ -->
+      <section>
+        <h1>Zero Knowledge Proofs<br>&amp; Computational Complexity</h1>
+        <p><span class="badge">ZK Prereqs</span> <span class="badge">Workshop 1 of 6</span></p>
+        <p class="subtle">Foundations: What ZKPs are, what they can do, and the math framework behind them</p>
+        <aside class="notes">Welcome to the first workshop in our ZK prerequisites series. Today we cover the big picture: what ZK proofs are, how computational complexity determines what they can prove, and how to represent problems as circuits. This is the foundation everything else builds on.</aside>
+      </section>
+
+      <!-- ============ AGENDA ============ -->
+      <section>
+        <h2>Agenda</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Topic</th></tr></thead>
+          <tbody>
+            <tr><td>0:00</td><td>What Are Zero Knowledge Proofs?</td></tr>
+            <tr><td>0:10</td><td>Computational Complexity: P, NP, PSPACE</td></tr>
+            <tr><td>0:25</td><td>Witnesses &amp; Verification</td></tr>
+            <tr><td>0:35</td><td>Boolean Circuits</td></tr>
+            <tr><td>0:45</td><td>Arithmetic Circuits</td></tr>
+            <tr><td>0:55</td><td>Wrap-up &amp; Practice Problems</td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">Here's how the hour breaks down. We start with the "why" — what ZKPs are and where they're used. Then we build up the theory: complexity classes tell us what's provable, witnesses are the secret knowledge, and circuits are the language we express problems in. We end with practice problems for homework.</aside>
+      </section>
+
+      <!-- ============ PART 1: WHAT ARE ZKPs ============ -->
+      <section>
+        <h2>Part 1: What Are Zero Knowledge Proofs?</h2>
+        <p class="subtle">~10 minutes</p>
+      </section>
+
+      <section>
+        <h2>The Core Idea</h2>
+        <p>A Zero Knowledge Proof lets a <strong>prover</strong> convince a <strong>verifier</strong> that a statement is true &mdash;</p>
+        <p><em>without revealing any information about <strong>why</strong> it's true.</em></p>
+        <div class="callout" style="margin-top: 20px;">
+          Analogy: Prove to a bouncer you're over 21 &mdash; without showing your ID, name, address, or exact age.
+        </div>
+        <aside class="notes">This is the elevator pitch. A ZKP is a cryptographic protocol between two parties. The prover knows a secret — some piece of information — and wants to convince the verifier that a claim about that secret is true. The verifier learns absolutely nothing beyond "yes, the claim is true." No data leaks. Think of it like proving you know a password without ever typing it.</aside>
+      </section>
+
+      <section>
+        <h2>Why ZKPs Matter in Web3</h2>
+        <table>
+          <thead><tr><th>Use Case</th><th>What's Proven</th><th>What Stays Hidden</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Privacy mixers</strong></td><td>"I deposited funds earlier"</td><td>Which deposit is yours</td></tr>
+            <tr><td><strong>zkRollups</strong></td><td>"All transactions are valid"</td><td>Transaction details</td></tr>
+            <tr><td><strong>Private voting</strong></td><td>"I'm eligible and this is my vote"</td><td>Who you voted for</td></tr>
+            <tr><td><strong>Identity</strong></td><td>"I meet the criteria"</td><td>Personal data</td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">Here are four real use cases. Privacy mixers let you withdraw funds without linking to your deposit. zkRollups batch thousands of transactions with a single proof — the chain doesn't need to re-execute them. Private voting and identity are emerging use cases. The common theme: prove a fact, hide the details.</aside>
+      </section>
+
+      <section>
+        <h2>Three Properties of ZKPs</h2>
+        <ul>
+          <li><strong>Completeness</strong> &mdash; If the statement is true and both parties are honest, the verifier <em>will</em> be convinced</li>
+          <li><strong>Soundness</strong> &mdash; If the statement is false, no cheating prover can trick the verifier (except with negligible probability)</li>
+          <li><strong>Zero Knowledge</strong> &mdash; The verifier learns <em>nothing</em> beyond the truth of the statement</li>
+        </ul>
+        <div class="callout-blue" style="margin-top: 10px;">
+          Discussion: Can you think of a situation in smart contracts where you'd want to prove something without revealing the underlying data?
+        </div>
+        <aside class="notes">These are the three formal properties. Completeness means the system works — honest provers succeed. Soundness means it's secure — liars get caught. Zero Knowledge means it's private — the verifier gains no extra information. All three must hold simultaneously. Ask students for examples — they might mention private auctions, salary proofs, credit checks on-chain.</aside>
+      </section>
+
+      <!-- ============ PART 2: P vs NP vs PSPACE ============ -->
+      <section>
+        <h2>Part 2: Computational Complexity</h2>
+        <p class="subtle">P, NP, PSPACE — ~15 minutes</p>
+        <p>To understand what ZK proofs <em>can</em> and <em>cannot</em> do, we need to classify problems by difficulty.</p>
+        <aside class="notes">Now we shift to theory. This section is the most important of the workshop — it determines the boundaries of what zero knowledge proofs can achieve. The key question: how hard is it to solve a problem versus verify a solution?</aside>
+      </section>
+
+      <section>
+        <h2>Problems in P</h2>
+        <p>Easy to <strong>solve</strong> AND easy to <strong>verify</strong>. Both in polynomial time.</p>
+        <div class="two-col">
+          <div>
+            <h3>Sorting a list</h3>
+            <ul>
+              <li><strong>Solve:</strong> O(n log n) &mdash; mergesort</li>
+              <li><strong>Verify:</strong> O(n) &mdash; check each element &ge; predecessor</li>
+            </ul>
+            <h3>Search in a list</h3>
+            <ul>
+              <li><strong>Solve:</strong> O(n) &mdash; scan the list</li>
+              <li><strong>Verify:</strong> O(1) &mdash; "7 is at index 4" &rarr; check index 4</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Graph connectivity</h3>
+            <ul>
+              <li><strong>Solve:</strong> O(n + e) &mdash; BFS</li>
+              <li><strong>Verify:</strong> O(n) &mdash; follow the claimed path</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">Problems in P are the easy ones. We can find the answer efficiently AND check it efficiently. Sorting: mergesort runs in n-log-n, and verifying is just a linear scan. Searching: O(n) to find, O(1) to verify given the index. Graph connectivity: BFS to find a path, then just walk the path to verify. All polynomial time.</aside>
+      </section>
+
+      <section>
+        <h2>Problems in NP</h2>
+        <p>Hard to <strong>solve</strong> but easy to <strong>verify</strong>.</p>
+        <div class="two-col">
+          <div>
+            <h3>Sudoku</h3>
+            <ul>
+              <li><strong>Solve:</strong> Exponential search through combinations</li>
+              <li><strong>Verify:</strong> O(n&sup2;) &mdash; check rows, columns, subgrids</li>
+            </ul>
+          </div>
+          <div>
+            <h3>3-coloring a map</h3>
+            <ul>
+              <li><strong>Solve:</strong> Brute-force through exponential color assignments</li>
+              <li><strong>Verify:</strong> O(n) &mdash; check each pair of neighbors</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="margin-top: 10px;">
+          Key insight: All P problems are also NP problems. <strong>P &sube; NP</strong>
+        </div>
+        <aside class="notes">NP is where things get interesting for ZK. These are problems where finding the answer might take exponential time — searching through millions of combinations — but once someone claims to have an answer, checking it is fast. Sudoku: exponentially many ways to fill the grid, but verifying a filled grid is trivial. 3-coloring: checking that no neighbors share a color is a simple loop. Note: every P problem is also NP — if you can solve it fast, you can certainly verify it fast.</aside>
+      </section>
+
+      <section>
+        <h2>Problems in PSPACE</h2>
+        <p>Hard to <strong>solve</strong> AND hard to <strong>verify</strong>.</p>
+        <div class="two-col">
+          <div>
+            <h3>Optimal chess move</h3>
+            <ul>
+              <li>A computer says "move pawn to f3"</li>
+              <li>How do you verify that's optimal?</li>
+              <li>You can't &mdash; you'd need to replay the entire game tree</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Regex equivalence</h3>
+            <ul>
+              <li>Are <code>a+</code> and <code>aa*</code> equivalent?</li>
+              <li>For simple cases, yes &mdash; for arbitrary regexes, exponential to verify</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">PSPACE is the dead zone for ZK proofs. Even if someone gives you an answer, there's no short proof you can check. Chess: you'd have to explore the entire game tree to confirm a move is optimal. Regex equivalence: you'd have to test an exponential number of strings. There's no witness that makes verification fast.</aside>
+      </section>
+
+      <section>
+        <h2>The Hierarchy</h2>
+        <div style="max-width: 600px; margin: 0 auto;">
+          <div class="hierarchy-box hierarchy-pspace" style="padding: 20px;">
+            <strong style="color: #e74c3c;">PSPACE</strong>
+            <p class="subtle">Hard to solve, hard to verify</p>
+            <div class="hierarchy-box hierarchy-np" style="padding: 16px;">
+              <strong style="color: #f39c12;">NP</strong>
+              <p class="subtle">Hard to solve, easy to verify</p>
+              <div class="hierarchy-box hierarchy-p" style="padding: 12px;">
+                <strong style="color: #2ecc71;">P</strong>
+                <p class="subtle">Easy to solve, easy to verify</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Here's the big picture. P sits inside NP, which sits inside PSPACE. Each outer ring adds difficulty. ZK proofs live in the NP zone — they work for any problem where verification is efficient.</aside>
+      </section>
+
+      <section>
+        <h2>Summary Table</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Time to Solve</th><th>Time to Verify</th></tr></thead>
+          <tbody>
+            <tr><td><strong style="color: #2ecc71;">P</strong></td><td>Polynomial</td><td>Polynomial</td></tr>
+            <tr><td><strong style="color: #f39c12;">NP</strong></td><td>No requirement (often exponential)</td><td>Polynomial</td></tr>
+            <tr><td><strong style="color: #e74c3c;">PSPACE</strong></td><td>No requirement</td><td>No requirement</td></tr>
+          </tbody>
+        </table>
+        <div class="callout" style="margin-top: 16px;">
+          <strong>ZK Proofs only work for P and NP problems</strong> &mdash; problems where the solution can be verified efficiently. If you can't verify it efficiently, you can't create a ZK proof for it.
+        </div>
+        <aside class="notes">This is the single most important takeaway from this section. Memorize this: ZKPs require efficient verification. If verification is exponential, no ZK trick can help. This rules out things like proving you found the perfect chess strategy.</aside>
+      </section>
+
+      <!-- ============ PART 3: WITNESSES ============ -->
+      <section>
+        <h2>Part 3: Witnesses &amp; Verification</h2>
+        <p class="subtle">~10 minutes</p>
+      </section>
+
+      <section>
+        <h2>What is a Witness?</h2>
+        <p>A <strong>witness</strong> is proof that you solved the problem correctly &mdash; the evidence that lets someone verify your solution.</p>
+        <table>
+          <thead><tr><th>Problem</th><th>Witness</th></tr></thead>
+          <tbody>
+            <tr><td>Sorting a list</td><td>The sorted list</td></tr>
+            <tr><td>Finding a number in a list</td><td>The index where it appears</td></tr>
+            <tr><td>Path between graph nodes</td><td>The sequence of nodes</td></tr>
+            <tr><td>Sudoku</td><td>The filled-in grid</td></tr>
+            <tr><td>3-coloring</td><td>The color assignment</td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">A witness is just the information needed to verify a solution. For sorting, the witness IS the sorted list — hand it to someone and they can check it in O(n). For Sudoku, the witness is the completed grid. The key: a witness doesn't have to be the solution in its original form — it could be a solution to an alternative representation of the same problem.</aside>
+      </section>
+
+      <section>
+        <h2>The "Knowledge" in Zero Knowledge</h2>
+        <p>The <strong>"knowledge"</strong> in ZKP refers to <em>knowledge of the witness</em>.</p>
+        <ul>
+          <li>A ZK proof says: <em>"I know a witness that satisfies the verification"</em></li>
+          <li>But it does <strong>NOT</strong> reveal what that witness is</li>
+        </ul>
+        <div style="margin-top: 20px; font-size: 0.85em;">
+          <pre style="text-align: left; background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: none; box-shadow: none;">
+1. Define the PROBLEM as a circuit
+2. The prover has the WITNESS (solution)
+3. The prover generates a PROOF that the witness satisfies the circuit
+4. The verifier checks the PROOF — without seeing the witness</pre>
+        </div>
+        <aside class="notes">This is the pipeline. Step 1: express your problem as a circuit — we'll learn how in the next sections. Step 2: the prover plugs in their secret witness. Step 3: cryptographic magic generates a proof. Step 4: the verifier checks the proof. The verifier never sees the witness, yet they become convinced it's valid. The entirety of ZK research is about making steps 3 and 4 efficient, secure, and truly zero-knowledge.</aside>
+      </section>
+
+      <section>
+        <h2>ZKPs Can't Do Everything</h2>
+        <ul>
+          <li>ZKPs <strong>cannot</strong> help you <em>find</em> a solution &mdash; only prove you <em>have</em> one</li>
+          <li>ZKPs <strong>cannot</strong> work for PSPACE problems &mdash; no efficient verification mechanism</li>
+          <li>ZKPs <strong>can</strong> work for any P or NP problem &mdash; anything with efficient verification</li>
+        </ul>
+        <div class="callout-blue" style="margin-top: 10px;">
+          Discussion: Consider a smart contract that verifies Merkle proofs. What is the witness? What is the statement being proven?
+        </div>
+        <aside class="notes">Important misconception to address: ZKPs don't solve hard problems, they prove solutions. If you found a Sudoku solution, ZK can prove you know it without showing it. But ZK can't find the solution for you. And for problems like optimal chess moves, where even verification is exponential, ZK is useless. Ask students the Merkle proof question: the witness is the leaf value plus the sibling hashes, and the statement is "this leaf is part of this tree."</aside>
+      </section>
+
+      <!-- ============ PART 4: BOOLEAN CIRCUITS ============ -->
+      <section>
+        <h2>Part 4: Boolean Circuits</h2>
+        <p class="subtle">~10 minutes</p>
+        <p>We need a <strong>universal language</strong> to express any verifiable problem.<br>Boolean circuits give us that.</p>
+      </section>
+
+      <section>
+        <h2>Boolean Operators</h2>
+        <table>
+          <thead><tr><th>Operator</th><th>Symbol</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>AND</td><td>&and;</td><td>True only when both inputs are true</td></tr>
+            <tr><td>OR</td><td>&or;</td><td>True when at least one input is true</td></tr>
+            <tr><td>NOT</td><td>&not;</td><td>Flips true &harr; false</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 16px;">
+          <p>Example formula with variables x<sub>1</sub>, x<sub>2</sub>, x<sub>3</sub>, x<sub>4</sub>:</p>
+          <p class="formula">out = (x<sub>1</sub> &or; &not;x<sub>2</sub> &or; &not;x<sub>3</sub>) &and; (&not;x<sub>2</sub> &or; x<sub>3</sub> &or; x<sub>4</sub>)</p>
+        </div>
+        <aside class="notes">Quick refresher on Boolean logic. AND, OR, NOT — these are the only building blocks we need. Any problem in P or NP can be expressed using just these three operators. The formula at the bottom takes four Boolean variables and produces a true/false output. Finding values that make it true might be hard. Verifying a proposed assignment is easy — just plug in and evaluate.</aside>
+      </section>
+
+      <section>
+        <h2>Verifying a Boolean Formula</h2>
+        <p>Given: <span class="formula">out = (x<sub>1</sub> &or; &not;x<sub>2</sub> &or; &not;x<sub>3</sub>) &and; (&not;x<sub>2</sub> &or; x<sub>3</sub> &or; x<sub>4</sub>)</span></p>
+        <p>Proposed witness: x<sub>1</sub>=T, x<sub>2</sub>=F, x<sub>3</sub>=T, x<sub>4</sub>=F</p>
+        <div style="margin-top: 16px; text-align: left; max-width: 700px; margin-left: auto; margin-right: auto;">
+          <p>Plug in: (T &or; T &or; F) &and; (T &or; T &or; F)</p>
+          <p>= T &and; T</p>
+          <p>= <strong style="color: #2ecc71;">TRUE &check;</strong></p>
+        </div>
+        <div class="callout">
+          <strong>Finding</strong> the assignment &rarr; may be exponential<br>
+          <strong>Verifying</strong> a proposed assignment &rarr; polynomial (just plug in!)
+        </div>
+        <aside class="notes">Here's verification in action. Someone gives us four values. We substitute them in, evaluate left to right, and get TRUE. That took constant time per clause. Finding those four values from scratch? For large formulas, that's an NP-hard search. But checking is always fast.</aside>
+      </section>
+
+      <section>
+        <h2>3-Coloring as a Boolean Circuit</h2>
+        <p>For each territory, create Boolean variables for each color:</p>
+        <p class="subtle">WA_G, WA_B, WA_R &mdash; (Western Australia: Green, Blue, Red)</p>
+        <div style="text-align: left; max-width: 750px; margin: 12px auto;">
+          <p><strong>Color constraint</strong> &mdash; exactly one color per territory:</p>
+          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623;">
+            (WA_G &and; &not;WA_B &and; &not;WA_R) &or; (&not;WA_G &and; WA_B &and; &not;WA_R) &or; (&not;WA_G &and; &not;WA_B &and; WA_R)
+          </p>
+          <p><strong>Boundary constraint</strong> &mdash; neighbors have different colors:</p>
+          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623;">
+            &not;(WA_G &and; SA_G) &and; &not;(WA_B &and; SA_B) &and; &not;(WA_R &and; SA_R)
+          </p>
+        </div>
+        <aside class="notes">Let's see a real example. To prove a valid 3-coloring of a map, each territory gets three Boolean variables — one per color. The color constraint says exactly one must be true. The boundary constraint says for each pair of neighbors, they can't both be the same color. AND all these constraints together, and you have a Boolean circuit. A satisfying assignment IS a valid 3-coloring. But notice: 3 variables per territory. That's verbose. Arithmetic circuits will fix this.</aside>
+      </section>
+
+      <section>
+        <h2>The Problem with Boolean Circuits</h2>
+        <p>Boolean circuits are <strong>verbose</strong> for arithmetic operations.</p>
+        <ul>
+          <li>Expressing <code>a + b = c</code> where a=8, b=4, c=12 requires:</li>
+          <li>Converting everything to binary (4 bits each = 12 variables)</li>
+          <li>Building a massive carry-chain formula</li>
+        </ul>
+        <pre><code class="hljs">((a₄ ∧ b₄ ∧ c₄) ∨ (¬a₄ ∧ ¬b₄ ∧ c₄) ∨ ...) ∧
+((a₃ ∧ b₃ ∧ ((a₂ ∧ b₂) ∨ (b₂ ∧ (a₁ ∧ b₁) ∨ ...
+// ... continues for many more lines ...</code></pre>
+        <div class="callout">
+          Simple addition becomes a wall of Boolean logic.<br>
+          <strong>This is why we prefer arithmetic circuits for ZK.</strong>
+        </div>
+        <aside class="notes">Here's the motivation for the next section. Try expressing "8 + 4 = 12" in Boolean. You need 4 bits per number, 12 Boolean variables, and a massive formula modeling binary addition with carries. It's technically correct but insanely verbose. Arithmetic circuits let us just write "a + b === c" directly.</aside>
+      </section>
+
+      <!-- ============ PART 5: ARITHMETIC CIRCUITS ============ -->
+      <section>
+        <h2>Part 5: Arithmetic Circuits</h2>
+        <p class="subtle">~10 minutes</p>
+        <p>A simpler, more compact way to express problems for ZK proofs.</p>
+      </section>
+
+      <section>
+        <h2>What is an Arithmetic Circuit?</h2>
+        <p>A <strong>system of equations</strong> using only three operations:</p>
+        <div class="two-col" style="margin-top: 16px;">
+          <div>
+            <ul>
+              <li><strong>Addition</strong> (+)</li>
+              <li><strong>Multiplication</strong> (&times;)</li>
+              <li><strong>Equality</strong> (===)</li>
+            </ul>
+          </div>
+          <div>
+            <p>First example:</p>
+            <pre><code class="hljs">6 === x₁ + x₂
+9 === x₁ * x₂</code></pre>
+            <p class="subtle">Satisfied by x₁ = 3, x₂ = 3</p>
+          </div>
+        </div>
+        <div class="callout" style="margin-top: 12px;">
+          <code>===</code> means <strong>assert equal</strong>, not assign.<br>
+          Think: <code>assertEq(left, right)</code>
+        </div>
+        <aside class="notes">An arithmetic circuit is just a system of equations. Variables are called "signals." The triple-equals means "assert these are equal" — it's a constraint, not an assignment. The circuit is "satisfied" when ALL equations hold simultaneously. In our example, x1=3, x2=3 works because 3+3=6 and 3*3=9. The circuit `x === x + 1` has NO solution — it's unsatisfiable.</aside>
+      </section>
+
+      <section>
+        <h2>Constraining Values</h2>
+        <p>How do we force a signal to be 0 or 1?</p>
+        <pre><code class="hljs">x(x - 1) === 0</code></pre>
+        <p class="subtle">Only x = 0 or x = 1 satisfies this!</p>
+        <p style="margin-top: 20px;">How do we force a signal to be one of {1, 2, 3}?</p>
+        <pre><code class="hljs">0 === (1 - x) * (2 - x) * (3 - x)</code></pre>
+        <p class="subtle">A polynomial that has roots at exactly 1, 2, and 3.</p>
+        <aside class="notes">This is a beautiful trick. x times (x minus 1) equals zero only when x is 0 or 1 — those are the roots of the polynomial. Extend the idea: (1-x)(2-x)(3-x) equals zero only when x is 1, 2, or 3. We're using the fundamental theorem of algebra to constrain signal values. This is used everywhere in ZK circuit design.</aside>
+      </section>
+
+      <section>
+        <h2>3-Coloring with Arithmetic Circuits</h2>
+        <p>Instead of 3 Boolean variables per territory &rarr; <strong>1 signal</strong> with values {1, 2, 3}</p>
+        <pre><code class="hljs">// Color constraints — each territory is colored 1, 2, or 3
+0 === (1 - WA) * (2 - WA) * (3 - WA)
+0 === (1 - SA) * (2 - SA) * (3 - SA)
+0 === (1 - NT) * (2 - NT) * (3 - NT)
+// ... one per territory
+
+// Boundary constraints — neighbors have different colors
+// If x ≠ y and both ∈ {1,2,3}, then x*y ∈ {2, 3, 6}
+0 === (2 - WA*SA) * (3 - WA*SA) * (6 - WA*SA)
+0 === (2 - WA*NT) * (3 - WA*NT) * (6 - WA*NT)
+// ... one per border</code></pre>
+        <div class="callout">
+          Same 15 constraints as Boolean, but <strong>&frac13; the variables</strong>.
+        </div>
+        <aside class="notes">Look how clean this is compared to the Boolean version. Each territory is one signal: 1 for blue, 2 for red, 3 for green. The color constraint forces each signal into {1,2,3}. The boundary constraint is clever: if two neighbors have DIFFERENT colors from {1,2,3}, their product must be in {2,3,6}. If they're the SAME color, the product is in {1,4,9}. So we constrain the product to be 2, 3, or 6. Same logic, way fewer variables.</aside>
+      </section>
+
+      <section>
+        <h2>Boolean &harr; Arithmetic Translation</h2>
+        <p>Every Boolean gate has an arithmetic equivalent<br>(when inputs are constrained to 0 or 1):</p>
+        <table>
+          <thead><tr><th>Boolean</th><th>Arithmetic</th></tr></thead>
+          <tbody>
+            <tr><td>NOT u &rarr; t</td><td><code>t === 1 - u</code></td></tr>
+            <tr><td>u AND v &rarr; t</td><td><code>t === u * v</code></td></tr>
+            <tr><td>u OR v &rarr; t</td><td><code>t === u + v - u*v</code></td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">This is why arithmetic circuits are fully equivalent to Boolean circuits. NOT: flip 0 to 1 and 1 to 0 — that's subtraction from 1. AND: both must be 1, so multiplication works. OR: at least one is 1 — addition minus the overlap. Since we can translate any Boolean gate, and any NP problem can be a Boolean circuit, it follows that any NP problem can also be an arithmetic circuit.</aside>
+      </section>
+
+      <section>
+        <h2>Conversion Example</h2>
+        <p>Boolean: <span class="formula">out = (x &and; &not;y) &or; z</span></p>
+        <p style="margin-top: 12px;">Step by step &rarr; Arithmetic:</p>
+        <pre><code class="hljs">// Constrain inputs to 0 or 1
+x(x - 1) === 0
+y(y - 1) === 0
+z(z - 1) === 0
+
+// ¬y       →  (1 - y)
+// x ∧ ¬y   →  x * (1 - y)
+// ... ∨ z  →  x*(1-y) + z - x*(1-y)*z
+
+// Final:
+out === x - x*y + z - x*z + x*y*z</code></pre>
+        <aside class="notes">Let's walk through a real conversion. Start with the Boolean formula: x AND (NOT y) OR z. First, constrain all inputs to binary. Then substitute: NOT y becomes 1 minus y. AND becomes multiplication. OR becomes the addition-minus-product formula. Simplify algebraically and you get that last line. Both circuits accept exactly the same inputs.</aside>
+      </section>
+
+      <section>
+        <h2>The ZK Pipeline</h2>
+        <div style="font-size: 0.9em; text-align: center;">
+          <p>Real-world problem</p>
+          <p>&darr;</p>
+          <p><strong>Arithmetic Circuit</strong> (system of constraints)</p>
+          <p>&darr;</p>
+          <p>Prover: "I know a witness that satisfies all constraints"</p>
+          <p>&darr;</p>
+          <p><strong>ZK Proof</strong>: Verifier confirms without seeing the witness</p>
+        </div>
+        <div class="callout" style="margin-top: 16px;">
+          All problems in P and NP can be expressed as arithmetic circuits.<br>
+          This is the foundation everything else is built on.
+        </div>
+        <aside class="notes">Zoom out. This is the entire ZK pipeline in four lines. You take a real problem, express it as an arithmetic circuit, the prover provides the witness, and cryptographic machinery generates a proof the verifier can check. Everything in the next five workshops builds toward making this pipeline work: finite fields give us the number system, group theory gives us the algebra, and elliptic curves give us the cryptography.</aside>
+      </section>
+
+      <!-- ============ LIVE CODING ============ -->
+      <section>
+        <h2>Live Demo: Boolean vs Arithmetic</h2>
+        <pre><code class="language-python"># Boolean circuit: out = (x AND NOT y) OR z
+def boolean_circuit(x, y, z):
+    return (x and not y) or z
+
+# Arithmetic circuit equivalent (inputs constrained to 0 or 1)
+def arithmetic_circuit(x, y, z):
+    assert x * (x - 1) == 0, "x must be 0 or 1"
+    assert y * (y - 1) == 0, "y must be 0 or 1"
+    assert z * (z - 1) == 0, "z must be 0 or 1"
+    return x - x*y + z - x*z + x*y*z
+
+# Test all combinations
+for x in [0, 1]:
+    for y in [0, 1]:
+        for z in [0, 1]:
+            bool_result = 1 if boolean_circuit(x, y, z) else 0
+            arith_result = arithmetic_circuit(x, y, z)
+            assert bool_result == arith_result
+            print(f"x={x}, y={y}, z={z} → {arith_result}")
+
+print("All match — circuits are equivalent!")</code></pre>
+        <aside class="notes">If you have a few minutes, run this live. It exhaustively tests all 8 combinations of binary inputs and shows that the Boolean and arithmetic circuits produce identical results. This is the proof that the translation works. Students can try modifying the Boolean formula and re-deriving the arithmetic version as homework.</aside>
+      </section>
+
+      <!-- ============ WRAP-UP ============ -->
+      <section>
+        <h2>Key Takeaways</h2>
+        <ol>
+          <li><strong>ZKPs</strong> let you prove you know something without revealing it</li>
+          <li>Only <strong>P and NP problems</strong> can have ZK proofs (solutions must be efficiently verifiable)</li>
+          <li><strong>Witnesses</strong> are the secret knowledge the prover has</li>
+          <li><strong>Arithmetic circuits</strong> are systems of equations (add, multiply, equals) that model any NP problem</li>
+          <li>Arithmetic circuits are more <strong>compact</strong> than Boolean circuits for most ZK applications</li>
+        </ol>
+        <aside class="notes">Five things to walk away with. ZKPs prove knowledge without revealing it. They only work for problems with efficient verification. The witness is the secret. Arithmetic circuits are the language. And they're preferred over Boolean because they're more compact.</aside>
+      </section>
+
+      <section>
+        <h2>Practice Problems</h2>
+        <ol style="font-size: 0.8em;">
+          <li><strong>Classify</strong> as P, NP, or PSPACE: shortest path in a graph, prime factorization, best Go move, primality testing</li>
+          <li><strong>Create an arithmetic circuit</strong> satisfied when all signals x<sub>1</sub>...x<sub>n</sub> are 1</li>
+          <li><strong>Create an arithmetic circuit</strong> satisfied when at least one signal is 0</li>
+          <li><strong>Convert this Boolean formula</strong> to arithmetic: <span class="formula">out = (a &or; b) &and; &not;c</span></li>
+          <li><strong>Design a 2-coloring circuit</strong> for a bipartite graph (hint: adjust the 3-coloring scheme)</li>
+        </ol>
+        <aside class="notes">Assign these for homework. Problem 1 tests classification understanding. Problems 2 and 3 are direct circuit design — think about what polynomial has the right roots. Problem 4 practices the conversion steps. Problem 5 requires rethinking the color constraint for only 2 colors.</aside>
+      </section>
+
+      <section>
+        <h2>Next Workshop</h2>
+        <h3>Finite Fields &amp; Modular Arithmetic</h3>
+        <ul>
+          <li>How arithmetic circuits handle division and overflow</li>
+          <li>Modular arithmetic &mdash; the number system ZK proofs operate in</li>
+          <li>Additive and multiplicative inverses</li>
+          <li>Polynomials over finite fields</li>
+        </ul>
+        <p class="subtle">This is the number system that makes ZK proofs possible.</p>
+        <aside class="notes">Next time we tackle finite fields — the number system all ZK proofs run on. We'll see how modular arithmetic solves the precision and overflow problems we mentioned. We'll learn about inverses, and we'll see how polynomials behave differently over finite fields. Bring a laptop — we'll be writing Python code.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://unpkg.com/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [ RevealHighlight, RevealNotes ]
+    });
+  </script>
+</body>
+</html>
