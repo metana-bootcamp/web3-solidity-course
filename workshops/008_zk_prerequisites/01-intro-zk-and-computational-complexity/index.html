@@ -45,6 +45,28 @@
         <aside class="notes">Welcome to the first workshop in our ZK prerequisites series. Today we cover the big picture: what ZK proofs are, how computational complexity determines what they can prove, and how to represent problems as circuits. This is the foundation everything else builds on.</aside>
       </section>
 
+      <!-- ============ HOOK ============ -->
+      <section>
+        <h2>🔐 The Password Paradox</h2>
+        <p style="font-size: 1.1em; margin-top: 20px;">Every time you log in to a website, you prove you know the password...</p>
+        <p style="font-size: 1.3em; color: #f5a623; margin-top: 10px;"><strong>...by revealing the password.</strong></p>
+        <p style="margin-top: 30px;">What if you could prove you know it<br><em>without ever sending it?</em></p>
+        <div class="callout" style="margin-top: 20px;">
+          That's Zero Knowledge Proofs in one sentence.
+        </div>
+        <aside class="notes">Start with this. Let the room sit with it for a moment. Every login, every API key, every authentication — we prove knowledge by revealing it. ZKPs flip this on its head.
+
+Ask the room: "Where else do we reveal too much information to prove a simple fact?" Wait 15 seconds. If no one speaks up (or to add to their answers), use these ready-made examples:
+
+1. BUYING ALCOHOL — You show your full driver's license: name, home address, date of birth, organ donor status. The bouncer only needs one fact: age ≥ 21.
+2. GETTING A LOAN — You hand over complete bank statements showing every coffee purchase. The bank only needs: monthly income ≥ some threshold.
+3. CRYPTO KYC — To trade $50 of Bitcoin, you upload passport + selfie + utility bill. The exchange only needs: "this person is not on a sanctions list."
+4. ONLINE SHOPPING — Every checkout page gets your full credit card number. The shop only needs: "this person can pay $29.99."
+5. JOB APPLICATIONS — Companies ask for full salary history. They only need: "candidate's expectations are within our budget."
+
+In every case, we OVER-prove. We reveal far more data than the fact we're trying to establish. ZKPs fix this: prove JUST the required fact, reveal NOTHING else.</aside>
+      </section>
+
       <!-- ============ AGENDA ============ -->
       <section>
         <h2>Agenda</h2>
@@ -66,6 +88,7 @@
       <section>
         <h2>Part 1: What Are Zero Knowledge Proofs?</h2>
         <p class="subtle">~10 minutes</p>
+        <aside class="notes">Transition slide — pause briefly. Say: "Let's start from the beginning. What exactly IS a zero knowledge proof? I'll use everyday analogies to build intuition before we get into any math." This section is the most accessible part of the workshop — keep the energy conversational.</aside>
       </section>
 
       <section>
@@ -110,34 +133,63 @@
         <h2>Part 2: Computational Complexity</h2>
         <p class="subtle">P, NP, PSPACE — ~15 minutes</p>
         <p>To understand what ZK proofs <em>can</em> and <em>cannot</em> do, we need to classify problems by difficulty.</p>
-        <aside class="notes">Now we shift to theory. This section is the most important of the workshop — it determines the boundaries of what zero knowledge proofs can achieve. The key question: how hard is it to solve a problem versus verify a solution?</aside>
+        <aside class="notes">Now we shift to theory. Don't worry — we'll keep using everyday examples. This section tells us WHAT kinds of problems can have ZK proofs. The whole thing boils down to one question: how hard is it to SOLVE a problem versus CHECK someone's answer? Think about that difference — it's the key to everything.</aside>
       </section>
 
       <section>
-        <h2>Problems in P</h2>
-        <p>Easy to <strong>solve</strong> AND easy to <strong>verify</strong>. Both in polynomial time.</p>
-        <div class="two-col">
+        <h2>Solving vs. Checking: The Key Difference</h2>
+        <p style="font-size: 0.85em;">Before we classify problems, understand <strong>one idea</strong>:</p>
+        <div class="two-col" style="margin-top: 10px; font-size: 0.85em;">
           <div>
-            <h3>Sorting a list</h3>
-            <ul>
-              <li><strong>Solve:</strong> O(n log n) &mdash; mergesort</li>
-              <li><strong>Verify:</strong> O(n) &mdash; check each element &ge; predecessor</li>
-            </ul>
-            <h3>Search in a list</h3>
-            <ul>
-              <li><strong>Solve:</strong> O(n) &mdash; scan the list</li>
-              <li><strong>Verify:</strong> O(1) &mdash; "7 is at index 4" &rarr; check index 4</li>
-            </ul>
+            <h3 style="color: #2ecc71; margin-bottom: 4px;">🔍 Solving</h3>
+            <p style="margin: 0;">Finding the answer from scratch.</p>
+            <p class="subtle" style="margin-top: 2px;">Like doing a jigsaw puzzle with no picture on the box.</p>
           </div>
           <div>
-            <h3>Graph connectivity</h3>
-            <ul>
-              <li><strong>Solve:</strong> O(n + e) &mdash; BFS</li>
-              <li><strong>Verify:</strong> O(n) &mdash; follow the claimed path</li>
-            </ul>
+            <h3 style="color: #6495ed; margin-bottom: 4px;">✅ Checking</h3>
+            <p style="margin: 0;">Verifying someone else's answer is correct.</p>
+            <p class="subtle" style="margin-top: 2px;">Like looking at a completed jigsaw and confirming all pieces fit.</p>
           </div>
         </div>
-        <aside class="notes">Problems in P are the easy ones. We can find the answer efficiently AND check it efficiently. Sorting: mergesort runs in n-log-n, and verifying is just a linear scan. Searching: O(n) to find, O(1) to verify given the index. Graph connectivity: BFS to find a path, then just walk the path to verify. All polynomial time.</aside>
+        <div class="callout" style="margin-top: 10px; padding: 6px 12px;">
+          Some problems are easy to both solve and check.<br>
+          Some are <strong>hard to solve</strong> but <strong>easy to check</strong>.<br>
+          Some are hard to even check!<br>
+          <strong>ZK proofs only work when checking is easy.</strong>
+        </div>
+        <aside class="notes">This is THE fundamental idea of the next 15 minutes. Everything hangs on the distinction between solving (finding the answer) and checking (verifying the answer).
+
+Use the jigsaw puzzle analogy: "Assembling a 5000-piece puzzle takes hours — that's SOLVING. But if someone shows you a completed puzzle, you can quickly see whether all pieces fit — that's CHECKING."
+
+Some problems are easy both ways (sorting a list). Some are hard to solve but easy to check (Sudoku). And some are hard even to check (optimal chess move).
+
+We're about to sort problems into these three buckets. The bucket a problem falls into determines whether ZK proofs can work for it.</aside>
+      </section>
+
+      <section>
+        <h2>Problems in P &mdash; "Practical"</h2>
+        <p style="font-size: 0.85em;">Easy to <strong>solve</strong> AND easy to <strong>check</strong>.</p>
+        <table style="font-size: 0.75em; margin-top: 6px;">
+          <thead><tr><th>Problem</th><th>Solve</th><th>Check</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Sorting a list</strong></td><td>Compare &amp; swap &mdash; fast for millions</td><td>Scan left to right: each item &ge; previous?</td></tr>
+            <tr><td><strong>Finding a name</strong></td><td>Scan through the whole list</td><td>"Alice is at pos 42" &rarr; look at pos 42</td></tr>
+            <tr><td><strong>Drive City A &rarr; B?</strong></td><td>Try different routes until one works</td><td>Follow the directions &mdash; do you arrive?</td></tr>
+          </tbody>
+        </table>
+        <div class="callout" style="margin-top: 10px;">
+          <strong>P = "Practical"</strong> &mdash; Both solving and checking finish in reasonable time, even for huge inputs.
+        </div>
+        <aside class="notes">P stands for "Polynomial time" but just think of it as "Practical." These are problems where BOTH finding the answer AND checking the answer are fast.
+
+The key intuition: if the input gets 10× bigger, the work might get 20× or 100× bigger — but NOT 1000× bigger. That's manageable growth.
+
+Walk through each example:
+- SORTING: "I have a million names to alphabetize. A computer does it in under a second. And to CHECK? Just scan the list — is each name after the previous one alphabetically? Also under a second."
+- FINDING: "Is Alice in this phone book? Scan through. Found her on page 42. To CHECK? Someone tells you 'page 42' — you flip there and confirm. Instant."
+- DRIVING: "Can I drive from Mumbai to Delhi? Try routes until one works. To CHECK someone's route? Just follow their directions turn by turn."
+
+All fast to solve, all fast to check. That's P.</aside>
       </section>
 
       <section>
@@ -162,30 +214,40 @@
         <div class="callout" style="margin-top: 10px;">
           Key insight: All P problems are also NP problems. <strong>P &sube; NP</strong>
         </div>
-        <aside class="notes">NP is where things get interesting for ZK. These are problems where finding the answer might take exponential time — searching through millions of combinations — but once someone claims to have an answer, checking it is fast. Sudoku: exponentially many ways to fill the grid, but verifying a filled grid is trivial. 3-coloring: checking that no neighbors share a color is a simple loop. Note: every P problem is also NP — if you can solve it fast, you can certainly verify it fast.</aside>
+        <aside class="notes">NP is THE important category for ZK proofs. Use these explanations:
+
+SUDOKU (primary analogy): "I give you a blank 9×9 Sudoku and say 'solve it.' You might struggle for an hour — trying numbers, hitting dead ends, erasing, starting over. That's SOLVING — it's hard.
+
+But now your friend shows you a completed grid and says 'I solved it!' How long does it take you to CHECK? 30 seconds. Just verify: does each row have 1-9? Each column? Each 3×3 box? If yes — it's valid. CHECKING is easy."
+
+3-COLORING: "Here's a map of Indian states. Color every state so that no two neighboring states share a color, using only 3 colors. Finding a valid coloring? You'd try billions of combinations. But if someone shows you a colored map, checking takes seconds: look at each border line and confirm the two states on either side have different colors."
+
+KEY POINT TO EMPHASIZE: This gap between hard-to-solve and easy-to-check is EXACTLY what ZK proofs exploit. The prover does the hard work (finding the solution), then proves to the verifier they succeeded — and the verifier only has to do the easy part (checking).
+
+Also mention: Every P problem is automatically NP too. If you can both solve and check it fast, it definitely qualifies as "easy to check." So P is a subset of NP.</aside>
       </section>
 
       <section>
-        <h2>Problems in PSPACE</h2>
-        <p>Hard to <strong>solve</strong> AND hard to <strong>verify</strong>.</p>
-        <div class="two-col">
-          <div>
-            <h3>Optimal chess move</h3>
-            <ul>
-              <li>A computer says "move pawn to f3"</li>
-              <li>How do you verify that's optimal?</li>
-              <li>You can't &mdash; you'd need to replay the entire game tree</li>
-            </ul>
-          </div>
-          <div>
-            <h3>Regex equivalence</h3>
-            <ul>
-              <li>Are <code>a+</code> and <code>aa*</code> equivalent?</li>
-              <li>For simple cases, yes &mdash; for arbitrary regexes, exponential to verify</li>
-            </ul>
-          </div>
+        <h2>Problems in PSPACE &mdash; "Impossible to Check"</h2>
+        <p style="font-size: 0.85em;">Hard to <strong>solve</strong> AND hard to <strong>check</strong>.</p>
+        <table style="font-size: 0.75em; margin-top: 6px;">
+          <thead><tr><th></th><th>Problem</th><th>Why checking is hard</th></tr></thead>
+          <tbody>
+            <tr><td>🏆</td><td><strong>Best move in chess</strong></td><td>Must explore <strong>every</strong> opponent response &amp; counter-move &mdash; no shortcut</td></tr>
+            <tr><td>🎮</td><td><strong>Unbeatable game strategy</strong></td><td>Must simulate <strong>every possible game</strong> against every opponent</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 0.8em; margin-top: 8px;">No "receipt" exists &mdash; nothing anyone can show you makes checking fast.</p>
+        <div class="callout" style="margin-top: 8px;">
+          <strong>No ZK proofs possible here</strong> &mdash; if you can't check the answer quickly, you can't create a proof for it.
         </div>
-        <aside class="notes">PSPACE is the dead zone for ZK proofs. Even if someone gives you an answer, there's no short proof you can check. Chess: you'd have to explore the entire game tree to confirm a move is optimal. Regex equivalence: you'd have to test an exponential number of strings. There's no witness that makes verification fast.</aside>
+        <aside class="notes">PSPACE is the dead zone for ZK proofs. The key difference from NP: there's nothing anyone can show you that lets you quickly verify the answer.
+
+CHESS ANALOGY (use this): "A grandmaster tells you: 'The best move here is queen to e5.' Can you verify that? You'd have to check: what if the opponent plays pawn to d4? Then what's the best response? What if they play knight to f6 instead? And for EACH of those moves, what's the best counter-move? You end up rebuilding the entire game tree — billions of positions. There's no shortcut. No receipt. No clever proof. You have to replay everything."
+
+Same with game strategies: if someone claims to have the perfect Connect 4 strategy, the only way to verify is to play every possible game against them. That's not fast.
+
+This is why ZK proofs are limited to P and NP problems: you NEED efficient checking. No efficient checking = no ZK proof possible.</aside>
       </section>
 
       <section>
@@ -223,6 +285,30 @@
         <aside class="notes">This is the single most important takeaway from this section. Memorize this: ZKPs require efficient verification. If verification is exponential, no ZK trick can help. This rules out things like proving you found the perfect chess strategy.</aside>
       </section>
 
+      <!-- ============ CHECKPOINT ============ -->
+      <section data-background-color="#1a1a2e">
+        <h2>⚡ Quick Check: Classify These!</h2>
+        <p class="subtle">Vote with your hands: 1 finger = P, 2 fingers = NP, 3 fingers = PSPACE</p>
+        <table>
+          <thead><tr><th>Problem</th><th>Your Vote</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>Binary search in a sorted list</td><td>🤔</td><td class="fragment"><strong style="color: #2ecc71;">P</strong> — O(log n) solve & verify</td></tr>
+            <tr><td>Solving a 9×9 Sudoku</td><td>🤔</td><td class="fragment"><strong style="color: #f39c12;">NP</strong> — hard to solve, easy to check</td></tr>
+            <tr><td>Finding the best chess move</td><td>🤔</td><td class="fragment"><strong style="color: #e74c3c;">PSPACE</strong> — can't even verify efficiently</td></tr>
+            <tr><td>"Is 997 prime?"</td><td>🤔</td><td class="fragment"><strong style="color: #2ecc71;">P</strong> — AKS primality test</td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">Pause here for 2-3 minutes. Read each problem aloud, give students 10 seconds to vote, then reveal answers one at a time (press spacebar/arrow for each fragment).
+
+BINARY SEARCH — "We have a sorted phone book with a million names. We want to find 'Smith.' Open the middle — 'M' — too early, go right. Open the middle of that half — 'T' — too far, go left. Each step eliminates half the remaining names. Even for a BILLION names, this takes ~30 steps. Solving is fast. Checking is fast (just look at the result). Both fast = P."
+
+SUDOKU — "Give someone a blank 9×9 Sudoku. Solving it might take an hour of trial, error, and backtracking. But once filled in, CHECKING takes 30 seconds: scan each row (has 1-9?), column (has 1-9?), box (has 1-9?). Hard to solve, easy to check = NP."
+
+CHESS — "A computer says 'knight to g5 is the BEST move.' Can you verify that's truly the BEST? You'd have to analyze every possible opponent response, and their counter-responses... There's no shortcut. Hard to solve AND hard to check = PSPACE. No ZK proof possible."
+
+PRIMALITY — This one surprises people! "Is 997 prime?" There ARE fast algorithms (AKS, discovered in 2002) that check primality in reasonable time. Both solving and checking are fast = P. Fun fact: before 2002, mathematicians weren't sure if this was P or NP! Our understanding of these categories is still evolving.</aside>
+      </section>
+
       <!-- ============ PART 3: WITNESSES ============ -->
       <section>
         <h2>Part 3: Witnesses &amp; Verification</h2>
@@ -231,48 +317,125 @@
 
       <section>
         <h2>What is a Witness?</h2>
-        <p>A <strong>witness</strong> is proof that you solved the problem correctly &mdash; the evidence that lets someone verify your solution.</p>
-        <table>
-          <thead><tr><th>Problem</th><th>Witness</th></tr></thead>
+        <p style="font-size: 0.8em; margin-bottom: 6px;">A <strong>witness</strong> = the evidence that lets you <strong>quickly check</strong> a solution. Like a <strong>receipt</strong> 🧾.</p>
+        <table style="font-size: 0.7em;">
+          <thead><tr><th>Problem</th><th>Witness ("receipt")</th><th>How to check</th></tr></thead>
           <tbody>
-            <tr><td>Sorting a list</td><td>The sorted list</td></tr>
-            <tr><td>Finding a number in a list</td><td>The index where it appears</td></tr>
-            <tr><td>Path between graph nodes</td><td>The sequence of nodes</td></tr>
-            <tr><td>Sudoku</td><td>The filled-in grid</td></tr>
-            <tr><td>3-coloring</td><td>The color assignment</td></tr>
+            <tr><td>Sorting a list</td><td>The sorted list</td><td>Scan: each item ≥ previous?</td></tr>
+            <tr><td>Finding "Alice"</td><td>"Position 42"</td><td>Look at pos 42</td></tr>
+            <tr><td>Drive city A→B?</td><td>Turn-by-turn directions</td><td>Follow them &mdash; arrive?</td></tr>
+            <tr><td>Sudoku</td><td>Filled grid</td><td>Rows, cols, boxes: all 1-9?</td></tr>
+            <tr><td>3-coloring</td><td>Color per region</td><td>Each border: neighbors differ?</td></tr>
           </tbody>
         </table>
-        <aside class="notes">A witness is just the information needed to verify a solution. For sorting, the witness IS the sorted list — hand it to someone and they can check it in O(n). For Sudoku, the witness is the completed grid. The key: a witness doesn't have to be the solution in its original form — it could be a solution to an alternative representation of the same problem.</aside>
+        <p style="font-size: 0.75em; margin-top: 6px; color: #6495ed;">PSPACE problems (chess, game strategies) have <strong>NO useful witness</strong> &mdash; no receipt exists.</p>
+        <aside class="notes">Use the receipt analogy throughout. Walk through each row:
+
+"A witness is like a receipt from a shop. It PROVES something happened, and anyone can quickly verify it."
+
+- Sorting: "I claim I sorted your list. My witness IS the sorted list — you just scan it left to right to check."
+- Finding Alice: "I claim Alice is in the phone book. My witness is 'page 42' — you flip there, confirm. Done in 1 second."
+- Driving: "I claim you can drive from Mumbai to Delhi. My witness is the route — turn left at X, right at Y. You follow the directions."
+- Sudoku: "I claim I solved this puzzle. My witness is the completed grid. You check rows, columns, boxes. 30 seconds."
+- 3-coloring: "I claim I colored this map with 3 colors and no neighbors match. My witness is the coloring. You just check each border."
+
+Then the punchline: "For PSPACE problems like chess? There IS no receipt. Nothing anyone can show you makes checking the 'best move' fast. That's why ZK can't work for PSPACE — no witness exists."</aside>
       </section>
 
       <section>
         <h2>The "Knowledge" in Zero Knowledge</h2>
-        <p>The <strong>"knowledge"</strong> in ZKP refers to <em>knowledge of the witness</em>.</p>
-        <ul>
-          <li>A ZK proof says: <em>"I know a witness that satisfies the verification"</em></li>
-          <li>But it does <strong>NOT</strong> reveal what that witness is</li>
-        </ul>
-        <div style="margin-top: 20px; font-size: 0.85em;">
-          <pre style="text-align: left; background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: none; box-shadow: none;">
-1. Define the PROBLEM as a circuit
-2. The prover has the WITNESS (solution)
-3. The prover generates a PROOF that the witness satisfies the circuit
-4. The verifier checks the PROOF — without seeing the witness</pre>
+        <p>The <strong>"knowledge"</strong> in ZKP = knowledge of the <strong>witness</strong>.</p>
+        <div class="callout" style="margin-top: 16px;">
+          <strong>Concrete example &mdash; Sudoku:</strong>
         </div>
-        <aside class="notes">This is the pipeline. Step 1: express your problem as a circuit — we'll learn how in the next sections. Step 2: the prover plugs in their secret witness. Step 3: cryptographic magic generates a proof. Step 4: the verifier checks the proof. The verifier never sees the witness, yet they become convinced it's valid. The entirety of ZK research is about making steps 3 and 4 efficient, secure, and truly zero-knowledge.</aside>
+        <div style="margin-top: 12px; font-size: 0.85em;">
+          <pre style="text-align: left; background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: none; box-shadow: none;"><strong>Claim:</strong>     "I solved this Sudoku puzzle"
+<strong>Witness:</strong>   The completed grid (SECRET — only the prover knows this)
+<strong>ZK Proof:</strong>  Convinces the verifier the grid is valid
+               ...WITHOUT ever showing the actual numbers</pre>
+        </div>
+        <p style="margin-top: 16px;">The ZK pipeline (how it works under the hood):</p>
+        <ol style="font-size: 0.8em;">
+          <li>Express the problem as a <strong>circuit</strong> (math equations) &mdash; we'll learn this today</li>
+          <li>The prover plugs in their <strong>witness</strong> (the secret solution)</li>
+          <li>Cryptographic magic generates a <strong>proof</strong></li>
+          <li>The verifier checks the proof &mdash; <strong>without ever seeing the witness</strong></li>
+        </ol>
+        <aside class="notes">Make this concrete with the Sudoku walk-through:
+
+"You're in a Sudoku competition. You solved the puzzle — that completed grid is your WITNESS. Now you want to prove to the judges that you solved it, but you don't want to show your grid (you don't want other competitors to copy your answer).
+
+A ZK proof lets you do exactly that. Through cryptographic magic (which we'll understand by Workshop 6), you generate a proof. The judges check it. They become convinced your grid is valid — every row, column, and box has 1-9. But they never see a single number on your grid."
+
+The 4-step pipeline at the bottom is how ALL ZK proofs work:
+- Step 1: Turn your problem into math equations (a 'circuit'). We'll learn this in the next section.
+- Step 2: You (the prover) plug in your secret answer.
+- Step 3: Cryptographic magic creates a proof.
+- Step 4: Anyone can check the proof without seeing your answer.
+
+We'll spend the rest of today learning Step 1: how to express problems as circuits.</aside>
       </section>
 
       <section>
         <h2>ZKPs Can't Do Everything</h2>
         <ul>
           <li>ZKPs <strong>cannot</strong> help you <em>find</em> a solution &mdash; only prove you <em>have</em> one</li>
-          <li>ZKPs <strong>cannot</strong> work for PSPACE problems &mdash; no efficient verification mechanism</li>
-          <li>ZKPs <strong>can</strong> work for any P or NP problem &mdash; anything with efficient verification</li>
+          <li>ZKPs <strong>cannot</strong> work for PSPACE problems &mdash; no efficient checking</li>
+          <li>ZKPs <strong>can</strong> work for any P or NP problem &mdash; anything where checking is fast</li>
         </ul>
-        <div class="callout-blue" style="margin-top: 10px;">
-          Discussion: Consider a smart contract that verifies Merkle proofs. What is the witness? What is the statement being proven?
+        <div class="callout" style="margin-top: 14px;">
+          Think of ZKPs like a <strong>notary stamp</strong>: the notary confirms a document is valid, but doesn't create the document for you.
         </div>
-        <aside class="notes">Important misconception to address: ZKPs don't solve hard problems, they prove solutions. If you found a Sudoku solution, ZK can prove you know it without showing it. But ZK can't find the solution for you. And for problems like optimal chess moves, where even verification is exponential, ZK is useless. Ask students the Merkle proof question: the witness is the leaf value plus the sibling hashes, and the statement is "this leaf is part of this tree."</aside>
+        <aside class="notes">Three key limitations to drive home:
+
+1. "ZKPs don't SOLVE problems" — If you can't solve the Sudoku, ZKPs won't help. You need the witness FIRST. ZKPs only let you prove you have it. Like a notary: they stamp your document, but they don't write it for you.
+
+2. "ZKPs need efficient checking" — This is why PSPACE is out. If you can't quickly verify an answer, you can't make a ZK proof for it.
+
+3. "ZKPs work for P and NP" — Great news! Most real-world problems (transaction validity, identity checks, whitelist membership) are P or NP.</aside>
+      </section>
+
+      <section>
+        <h2>Real Example: Merkle Proof</h2>
+        <p class="subtle">You've likely seen this in Solidity &mdash; let's connect it to what we just learned.</p>
+        <div style="font-size: 0.75em; text-align: center; margin: 12px 0;">
+          <pre style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: none; box-shadow: none; text-align: left; display: inline-block;">
+                   <strong style="color:#f5a623;">ROOT HASH</strong>  (stored on-chain)
+                  /          \
+           <span style="color:#6495ed;">Hash(A+B)</span>      <span style="color:#888;">Hash(C+D)</span>
+            /     \          /     \
+       <span style="color:#2ecc71;">Hash A</span>  <span style="color:#6495ed;">Hash B</span>  Hash C  Hash D
+          |       |       |       |
+       Leaf A  <strong style="color:#2ecc71;">Leaf B</strong>  Leaf C  Leaf D
+                 ↑
+        YOU WANT TO PROVE THIS LEAF IS IN THE TREE</pre>
+        </div>
+        <table style="font-size: 0.8em;">
+          <tr><td><strong>Statement</strong></td><td>"Leaf B is part of this Merkle tree"</td></tr>
+          <tr><td><strong>Witness</strong></td><td>Leaf B + <span style="color:#2ecc71;">Hash A</span> + <span style="color:#888;">Hash(C+D)</span> &nbsp; (the sibling hashes along the path)</td></tr>
+          <tr><td><strong>Checking</strong></td><td>Hash the leaf up the tree &rarr; does the result match the root?</td></tr>
+        </table>
+        <div class="callout" style="margin-top: 10px;">
+          <strong>This is NP:</strong> Hard to guess which leaves exist, but <strong>easy to verify</strong> a claimed leaf with just 2-3 hashes!
+        </div>
+        <aside class="notes">Connect to something students already know from Solidity — most have seen OpenZeppelin's MerkleProof.verify().
+
+Walk through the diagram:
+"Imagine a whitelist of 1000 wallet addresses stored as a Merkle tree. Only the ROOT hash is stored on-chain (saves gas).
+
+A user claims: 'My address is on the whitelist.' That's the STATEMENT.
+
+Their WITNESS is: their address (Leaf B) plus the sibling hashes along the path to the root. In this diagram, that's Hash A and Hash(C+D) — just 2 hashes!
+
+CHECKING is fast:
+1. Hash Leaf B → get Hash B
+2. Combine Hash A + Hash B → get Hash(A+B)
+3. Combine Hash(A+B) + Hash(C+D) → get Root
+4. Does it match the on-chain root? If yes — VERIFIED!
+
+This is a perfect NP problem: the tree has 1000 leaves (hard to search through all of them), but verifying ANY single leaf takes only ~10 hash operations for a 1000-leaf tree.
+
+Bonus: You could wrap this in a ZK proof to prove you're on the whitelist WITHOUT revealing which address is yours!"</aside>
       </section>
 
       <!-- ============ PART 4: BOOLEAN CIRCUITS ============ -->
@@ -317,15 +480,28 @@
 
       <section>
         <h2>3-Coloring as a Boolean Circuit</h2>
-        <p>For each territory, create Boolean variables for each color:</p>
-        <p class="subtle">WA_G, WA_B, WA_R &mdash; (Western Australia: Green, Blue, Red)</p>
-        <div style="text-align: left; max-width: 750px; margin: 12px auto;">
-          <p><strong>Color constraint</strong> &mdash; exactly one color per territory:</p>
-          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623;">
+        <div style="text-align: center; margin-bottom: 6px;">
+          <svg width="240" height="120" viewBox="0 0 280 150" style="display: inline-block;">
+            <line x1="70" y1="40" x2="210" y2="40" stroke="#555" stroke-width="2"/>
+            <line x1="70" y1="40" x2="140" y2="130" stroke="#555" stroke-width="2"/>
+            <line x1="210" y1="40" x2="140" y2="130" stroke="#555" stroke-width="2"/>
+            <circle cx="70" cy="40" r="22" fill="#e74c3c" stroke="#fff" stroke-width="2"/>
+            <text x="70" y="45" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">WA</text>
+            <circle cx="210" cy="40" r="22" fill="#2ecc71" stroke="#fff" stroke-width="2"/>
+            <text x="210" y="45" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">SA</text>
+            <circle cx="140" cy="130" r="22" fill="#3498db" stroke="#fff" stroke-width="2"/>
+            <text x="140" y="135" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold">NT</text>
+            <text x="140" y="12" text-anchor="middle" fill="#bbb" font-size="11">No two neighbors share a color ✓</text>
+          </svg>
+        </div>
+        <p style="font-size: 0.85em; margin-bottom: 2px;">Each territory gets Boolean variables per color: <span class="subtle">WA_G, WA_B, WA_R</span></p>
+        <div style="text-align: left; max-width: 750px; margin: 6px auto; font-size: 0.85em;">
+          <p style="margin-bottom: 2px;"><strong>Color constraint</strong> &mdash; exactly one color per territory:</p>
+          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623; margin-top: 0;">
             (WA_G &and; &not;WA_B &and; &not;WA_R) &or; (&not;WA_G &and; WA_B &and; &not;WA_R) &or; (&not;WA_G &and; &not;WA_B &and; WA_R)
           </p>
-          <p><strong>Boundary constraint</strong> &mdash; neighbors have different colors:</p>
-          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623;">
+          <p style="margin-bottom: 2px;"><strong>Boundary constraint</strong> &mdash; neighbors differ:</p>
+          <p style="font-size: 0.7em; font-family: monospace; color: #f5a623; margin-top: 0;">
             &not;(WA_G &and; SA_G) &and; &not;(WA_B &and; SA_B) &and; &not;(WA_R &and; SA_R)
           </p>
         </div>
@@ -334,20 +510,47 @@
 
       <section>
         <h2>The Problem with Boolean Circuits</h2>
-        <p>Boolean circuits are <strong>verbose</strong> for arithmetic operations.</p>
-        <ul>
-          <li>Expressing <code>a + b = c</code> where a=8, b=4, c=12 requires:</li>
-          <li>Converting everything to binary (4 bits each = 12 variables)</li>
-          <li>Building a massive carry-chain formula</li>
-        </ul>
-        <pre><code class="hljs">((a₄ ∧ b₄ ∧ c₄) ∨ (¬a₄ ∧ ¬b₄ ∧ c₄) ∨ ...) ∧
-((a₃ ∧ b₃ ∧ ((a₂ ∧ b₂) ∨ (b₂ ∧ (a₁ ∧ b₁) ∨ ...
-// ... continues for many more lines ...</code></pre>
-        <div class="callout">
-          Simple addition becomes a wall of Boolean logic.<br>
-          <strong>This is why we prefer arithmetic circuits for ZK.</strong>
+        <p style="font-size: 0.8em;">Boolean circuits are <strong>overly long</strong> for number operations. Express <code>8 + 4 = 12</code>:</p>
+        <div style="font-size: 0.7em; margin-top: 4px;">
+          <table>
+            <thead><tr><th>Number</th><th>Binary</th><th>Boolean vars</th></tr></thead>
+            <tbody>
+              <tr><td>8</td><td>1000</td><td>a₁=1, a₂=0, a₃=0, a₄=0</td></tr>
+              <tr><td>4</td><td>0100</td><td>b₁=0, b₂=1, b₃=0, b₄=0</td></tr>
+              <tr><td>12</td><td>1100</td><td>c₁=1, c₂=1, c₃=0, c₄=0</td></tr>
+            </tbody>
+          </table>
         </div>
-        <aside class="notes">Here's the motivation for the next section. Try expressing "8 + 4 = 12" in Boolean. You need 4 bits per number, 12 Boolean variables, and a massive formula modeling binary addition with carries. It's technically correct but insanely verbose. Arithmetic circuits let us just write "a + b === c" directly.</aside>
+        <div class="two-col" style="margin-top: 6px;">
+          <div>
+            <p style="font-size: 0.7em; color: #e74c3c; margin-bottom: 2px;"><strong>✗ Boolean: 12 vars + carry logic</strong></p>
+            <pre><code class="hljs" style="font-size: 0.8em;">a₁ XOR b₁ = c₁ (with carry)
+a₂ XOR b₂ XOR carry = c₂
+... MANY more lines</code></pre>
+          </div>
+          <div>
+            <p style="font-size: 0.7em; color: #2ecc71; margin-bottom: 2px;"><strong>✓ Arithmetic: 3 vars, 1 equation</strong></p>
+            <pre><code class="hljs" style="font-size: 0.8em;">a + b === c
+// That's it. Done.</code></pre>
+          </div>
+        </div>
+        <div class="callout" style="margin-top: 6px; padding: 5px 12px;">
+          This is why ZK systems use arithmetic circuits.
+        </div>
+        <aside class="notes">Walk through this step by step — it's the key motivation for arithmetic circuits:
+
+"To represent '8 + 4 = 12' with Boolean logic, we first need to convert each number to BINARY. How does binary work?
+- 8 in binary is 1000 (that's: 1×8 + 0×4 + 0×2 + 0×1)
+- 4 in binary is 0100 (that's: 0×8 + 1×4 + 0×2 + 0×1)
+- 12 in binary is 1100 (that's: 1×8 + 1×4 + 0×2 + 0×1)
+
+Each number needs 4 bits = 4 Boolean variables. Three numbers = 12 variables just to SET UP the problem.
+
+Then you need to model how binary addition actually works: add bit by bit from right to left, carrying over to the next column when the sum exceeds 1. Just like long addition with decimal numbers, but in base 2. Each column needs its own formula handling the carry."
+
+Now show the right side: "With arithmetic circuits? a + b === c. Three variables. One equation. Done. The numbers work as actual numbers — no binary conversion needed."
+
+"This 4:1 ratio gets MUCH worse for bigger numbers. Real ZK proofs use 256-bit numbers. Boolean: 768 variables + huge carry chain. Arithmetic: still just a + b === c."</aside>
       </section>
 
       <!-- ============ PART 5: ARITHMETIC CIRCUITS ============ -->
@@ -466,28 +669,35 @@ out === x - x*y + z - x*z + x*y*z</code></pre>
       <!-- ============ LIVE CODING ============ -->
       <section>
         <h2>Live Demo: Boolean vs Arithmetic</h2>
-        <pre><code class="language-python"># Boolean circuit: out = (x AND NOT y) OR z
-def boolean_circuit(x, y, z):
+        <p class="subtle">Prove <code>(x AND NOT y) OR z</code> equals its arithmetic version for ALL inputs.</p>
+        <pre><code class="language-python" style="font-size: 0.5em; line-height: 1.3;">def boolean_circuit(x, y, z):          # Python keywords
     return (x and not y) or z
 
-# Arithmetic circuit equivalent (inputs constrained to 0 or 1)
-def arithmetic_circuit(x, y, z):
-    assert x * (x - 1) == 0, "x must be 0 or 1"
-    assert y * (y - 1) == 0, "y must be 0 or 1"
-    assert z * (z - 1) == 0, "z must be 0 or 1"
-    return x - x*y + z - x*z + x*y*z
+def arithmetic_circuit(x, y, z):       # Only +, *, integers
+    assert x*(x-1) == 0 and y*(y-1) == 0 and z*(z-1) == 0
+    return x - x*y + z - x*z + x*y*z  # NOT=(1-y), OR=a+b-ab
 
-# Test all combinations
-for x in [0, 1]:
-    for y in [0, 1]:
-        for z in [0, 1]:
-            bool_result = 1 if boolean_circuit(x, y, z) else 0
-            arith_result = arithmetic_circuit(x, y, z)
-            assert bool_result == arith_result
-            print(f"x={x}, y={y}, z={z} → {arith_result}")
+for x in [0,1]:                        # Test all 8 combos
+    for y in [0,1]:
+        for z in [0,1]:
+            b = 1 if boolean_circuit(x,y,z) else 0
+            a = arithmetic_circuit(x,y,z)
+            assert b == a
+            print(f"x={x}, y={y}, z={z} -> {a}")
+print("All 8 match!")</code></pre>
+        <aside class="notes">Walk through this BEFORE running it:
 
-print("All match — circuits are equivalent!")</code></pre>
-        <aside class="notes">If you have a few minutes, run this live. It exhaustively tests all 8 combinations of binary inputs and shows that the Boolean and arithmetic circuits produce identical results. This is the proof that the translation works. Students can try modifying the Boolean formula and re-deriving the arithmetic version as homework.</aside>
+"This code has three parts:
+
+1. BOOLEAN VERSION (line 3-4): Exactly the formula from our conversion slide, using Python's regular 'and', 'or', 'not' keywords. Nothing fancy.
+
+2. ARITHMETIC VERSION (line 8-15): The SAME logic but expressed with only numbers and math. The asserts enforce that inputs must be 0 or 1 (this is x(x-1)===0 from our 'Constraining Values' slide). The return line is the simplified arithmetic formula we derived: x - x*y + z - x*z + x*y*z.
+
+3. TEST LOOP (line 18-24): Tries EVERY combination of inputs. x can be 0 or 1, y can be 0 or 1, z can be 0 or 1 — that's 2×2×2 = 8 total combinations. For each one, it runs BOTH versions and checks they give the same answer.
+
+Run it, and you'll see all 8 combinations print with matching results. This PROVES the arithmetic formula is a perfect translation of the Boolean formula.
+
+If students want to experiment: change the Boolean formula (try 'x or y' or 'x and y and z') and derive the new arithmetic version using the conversion table. Then test it the same way."</aside>
       </section>
 
       <!-- ============ WRAP-UP ============ -->
@@ -512,7 +722,27 @@ print("All match — circuits are equivalent!")</code></pre>
           <li><strong>Convert this Boolean formula</strong> to arithmetic: <span class="formula">out = (a &or; b) &and; &not;c</span></li>
           <li><strong>Design a 2-coloring circuit</strong> for a bipartite graph (hint: adjust the 3-coloring scheme)</li>
         </ol>
-        <aside class="notes">Assign these for homework. Problem 1 tests classification understanding. Problems 2 and 3 are direct circuit design — think about what polynomial has the right roots. Problem 4 practices the conversion steps. Problem 5 requires rethinking the color constraint for only 2 colors.</aside>
+        <aside class="notes">Assign these as homework. Complete solutions are in the ANSWER_KEY.md file and the solutions/ folder (one .py per problem) in this workshop's directory. Do NOT share these with students — they are instructor-only.
+
+Hints you can give if students get stuck:
+
+- Problem 1: Ask yourself "Can I CHECK the answer quickly?"
+  - Shortest path: given a path, follow it and count distance → easy to check → P
+  - Prime factorization: given factors, multiply them → easy to check → NP
+  - Best Go move: no way to quickly verify it's truly the best → PSPACE
+  - Primality testing: AKS algorithm solves it fast → P
+
+- Problem 2: "All signals are 1" — if you multiply them all together, the product is 1 only when every signal is 1. So: x₁ × x₂ × ... × xₙ === 1
+
+- Problem 3: "At least one is 0" — same product trick! If any signal is 0, the product is 0. So: x₁ × x₂ × ... × xₙ === 0
+
+- Problem 4: Use the Boolean → Arithmetic conversion table:
+  NOT c = (1-c)
+  a OR b = a + b - a*b
+  AND = multiply
+  So: (a + b - a*b) * (1 - c) === 1
+
+- Problem 5: For 2 colors use values 0 and 1. Neighbors must differ. XOR trick: vᵢ + vⱼ - 2*vᵢ*vⱼ === 1</aside>
       </section>
 
       <section>
