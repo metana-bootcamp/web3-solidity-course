@@ -41,6 +41,19 @@
         <aside class="notes">Welcome to Workshop 4. Last time we learned the algebraic hierarchy. Now we go deep into Groups specifically — the structure that powers all of ZK cryptography. By the end, you'll understand finite groups, cyclic groups, and generators, which are the direct prerequisites for understanding elliptic curves.</aside>
       </section>
 
+      <!-- ============ HOOK ============ -->
+      <section>
+        <h2>💍 One Element to Rule Them All</h2>
+        <p style="font-size: 1.1em; margin-top: 20px;">Imagine a group where <strong>a single element</strong> can generate every other element...</p>
+        <p class="fragment" style="margin-top: 15px;">...just by combining it with itself, over and over.</p>
+        <div class="callout fragment" style="margin-top: 20px;">
+          <strong>Cyclic Group:</strong> One seed that grows the entire garden.<br>
+          <span style="font-size: 0.85em;">Clock arithmetic: start at 12, add 1 repeatedly → you visit every hour.</span>
+        </div>
+        <p class="fragment" style="margin-top: 15px; color: #f5a623;"><strong>In ZK proofs, we ONLY use these groups.<br>Today we learn why.</strong></p>
+        <aside class="notes">Set up the anticipation. A cyclic group is one where a single element — called a generator — can produce every other element through repeated application of the operation. Like a clock: keep adding 1 and you'll hit every number. This is THE structure of ZK cryptography. Every elliptic curve group used in ZK is cyclic.</aside>
+      </section>
+
       <!-- ============ AGENDA ============ -->
       <section>
         <h2>Agenda</h2>
@@ -111,17 +124,31 @@
       <!-- ============ DOMAIN SENSITIVITY TABLE ============ -->
       <section>
         <h2>Domain Sensitivity</h2>
-        <table>
-          <tr><th>Set</th><th>Operation</th><th>Structure</th><th>Why?</th></tr>
-          <tr><td>Positive ℤ (no 0)</td><td>+</td><td>Semigroup</td><td>No identity</td></tr>
-          <tr><td>ℤ &ge; 0</td><td>+</td><td>Monoid</td><td>Has identity, no inverses</td></tr>
-          <tr><td>All ℤ</td><td>+</td><td><strong>Group</strong></td><td>Every element has an inverse</td></tr>
-          <tr><td>ℤ</td><td>&times;</td><td>Monoid</td><td>Inverse of 2 is 1/2, not in ℤ</td></tr>
-          <tr><td>ℝ\{0}</td><td>&times;</td><td><strong>Group</strong></td><td>Every element has 1/a</td></tr>
-          <tr><td>𝔽ₚ</td><td>+ mod p</td><td><strong>Group</strong></td><td>Inverse of a is p-a</td></tr>
-          <tr><td>𝔽ₚ\{0}</td><td>&times; mod p</td><td><strong>Group</strong></td><td>Fermat: a<sup>p-2</sup></td></tr>
+        <p style="font-size: 0.85em;">Same operation, different set, different result.</p>
+        <table style="font-size: 0.75em;">
+          <tr><th>Set</th><th>Operation</th><th>Group?</th><th>Beginner reason</th></tr>
+          <tr><td>All integers ℤ</td><td>+</td><td><strong>Yes</strong></td><td>0 exists, and every number has an opposite</td></tr>
+          <tr><td>Integers ℤ</td><td>&times;</td><td><strong>No</strong></td><td>2 has no inverse inside integers (1/2 not in ℤ)</td></tr>
+          <tr><td>Non-zero reals ℝ\{0}</td><td>&times;</td><td><strong>Yes</strong></td><td>Every number has 1/a</td></tr>
+          <tr><td>𝔽ₚ</td><td>+ mod p</td><td><strong>Yes</strong></td><td>Inverse of a is p-a</td></tr>
+          <tr><td>𝔽ₚ\{0}</td><td>&times; mod p</td><td><strong>Yes</strong></td><td>Every non-zero has multiplicative inverse</td></tr>
         </table>
-        <aside class="notes">This table drives the point home. The SAME operation forms different algebraic structures depending on the set. Notice the last two rows — finite fields under addition and multiplication (excluding zero) both form groups. This dual group structure is what makes finite fields so special and useful for cryptography. A field is essentially a set with TWO group structures.</aside>
+        <div class="callout-blue" style="margin-top: 8px;">
+          Tiny change in the set can break a group. Always ask: what is the exact set?
+        </div>
+        <aside class="notes">Teach this as a checklist habit:
+
+"When students ask 'is this a group?', do NOT answer from the operation alone. Ask two questions first:
+1) What is the exact set?
+2) What is the exact operation?"
+
+Walk row-by-row quickly:
+- Integers with +: works, because 0 is identity and each n has -n.
+- Integers with multiplication: fails, because inverse of 2 is 1/2 and 1/2 is not an integer.
+- Non-zero reals with multiplication: works, because every a has 1/a.
+- Finite field rows: same story under mod arithmetic.
+
+Core message to repeat: "Group theory is sensitive to the domain." This one idea prevents most beginner mistakes.</aside>
       </section>
 
       <!-- ============ MATRICES ============ -->
@@ -151,7 +178,20 @@
           <strong>Note:</strong> n&times;n matrices with det=0 under &times; are NOT even a Monoid!<br>
           The identity matrix has det=1, not det=0, so it's excluded from the set.
         </div>
-        <aside class="notes">Matrices give us a great example of a non-commutative group: square matrices with non-zero determinant under multiplication. This is a Group but NOT abelian because matrix multiplication doesn't commute. The determinant being non-zero ensures every matrix has an inverse. det(AB) = det(A) times det(B) ensures closure — the product of non-zero determinant matrices has non-zero determinant.</aside>
+        <aside class="notes">Beginners usually panic on matrix slides, so simplify the script:
+
+"There are two separate stories here:
+1) Any same-size matrices with addition form a group. Easy.
+2) Square invertible matrices with multiplication form a group. Harder, but still the same 4 rules."
+
+Plain-English reason for det not equal to 0:
+"det not equal 0 means the matrix can be undone (it has an inverse)."
+
+One key warning line for students:
+"Matrix multiplication is usually NOT commutative: AB is often different from BA. So this group is usually non-abelian."
+
+Do not over-prove determinant facts live. Just state:
+"Product of invertible matrices is invertible, so closure holds."</aside>
       </section>
 
       <!-- ============ POLYNOMIALS ============ -->
@@ -207,23 +247,37 @@ for a in range(p):
       <!-- ============ MULTIPLICATION MOD P ============ -->
       <section>
         <h2>Multiplication Modulo a Prime (Excluding 0)</h2>
+        <p style="font-size: 0.85em;">Use set {1,2,3,4,5,6}. We exclude 0 because 0 has no multiplicative inverse.</p>
         <pre><code class="language-python">p = 7
 
-# The set {1, 2, 3, 4, 5, 6} under × mod 7
-print("Multiplication mod 7 (excluding 0):")
-print("   | " + " ".join(f"{b}" for b in range(1, p)))
-print("---+" + "-" * (2 * (p-1)))
+# Step 1: identity check
 for a in range(1, p):
-    row = " ".join(f"{(a*b) % p}" for b in range(1, p))
-    print(f" {a} | {row}")
+    assert (a * 1) % p == a
 
-# Identity: 1
-# Inverse of a: pow(a, -1, p)
+# Step 2: find inverse of each element
 for a in range(1, p):
     inv = pow(a, -1, p)
-    assert (a * inv) % p == 1
-    print(f"  {a} × {inv} ≡ 1 (mod {p})")</code></pre>
-        <aside class="notes">The multiplicative group of a finite field excludes 0. This is a group because every non-zero element has a multiplicative inverse when p is prime. This group has order p minus 1 — so for p equals 7, the group has 6 elements. This multiplicative group has a special property we'll explore next: it's cyclic.</aside>
+    print(f"{a} inverse is {inv} because {a}*{inv} % 7 = {(a*inv)%7}")
+
+# Output pairs:
+# 1<->1, 2<->4, 3<->5, 6<->6</code></pre>
+        <div class="callout-blue">
+          Group order here is 6 (because there are 6 non-zero elements).
+        </div>
+        <aside class="notes">Teacher flow:
+
+"Students get lost when they see a full multiplication table. So do this in two passes only:
+1) identity is 1
+2) every element has an inverse"
+
+Then compute inverse pairs live:
+- 2 inverse 4 (2*4=8=1 mod 7)
+- 3 inverse 5 (3*5=15=1 mod 7)
+- 6 inverse 6 (6*6=36=1 mod 7)
+
+Point out symmetry: inverse pairs mirror each other.
+
+Important sentence: "This is why we insist p is prime. If p were composite, some numbers would fail to get inverses."</aside>
       </section>
 
       <!-- ============ FINITE GROUPS ============ -->
@@ -255,14 +309,21 @@ for a in range(1, p):
 p = 7
 g = 1
 print("Generating all elements from g=1:")
-element = 0
 for i in range(p):
-    element = (g * i) % p  # i additions of g
-    print(f"  {i} × g = {element}")
+    print(f"  {i}*g mod 7 = {(i*g) % p}")
 
 # Output: 0, 1, 2, 3, 4, 5, 6 — every element!</code></pre>
         <p class="subtle">Starting from 1 and repeatedly adding 1 generates: 1, 2, 3, 4, 5, 6, 0 — every element of the group.</p>
-        <aside class="notes">A cyclic group can be generated from a single element. For addition mod 7, the generator is 1 — keep adding 1 and you hit every element. This is exactly how elliptic curve cryptography works: you pick a generator point G and multiply it by scalars to get all other points. The group being cyclic means you can reach every point from that single generator.</aside>
+        <aside class="notes">Use a simple analogy first: "A cyclic group is like a playlist on loop from one start button. Keep pressing next, eventually you visit every song."
+
+Then map analogy to math:
+"Start with generator g=1 in addition mod 7. Multiples of 1 give 0,1,2,3,4,5,6. Since we reached everything, 1 is a generator."
+
+Important beginner clarification:
+"In additive groups, we write 3g to mean g+g+g (not multiplication in real numbers)."
+
+Connect to EC gently:
+"Later, with elliptic curves, G, 2G, 3G means repeated point addition in exactly the same spirit."</aside>
       </section>
 
       <!-- ============ MULTIPLICATIVE CYCLIC ============ -->
@@ -296,33 +357,80 @@ for i in range(1, p):
         <div class="callout">
           An element that generates the <strong>entire</strong> multiplicative group is called a <strong>primitive root</strong>.
         </div>
-        <aside class="notes">For multiplicative groups, not every element works as a generator. With mod 7, the element 2 only generates the subgroup {1, 2, 4} — it cycles back to 1 after only 3 steps. But 3 generates ALL six non-zero elements. Elements that generate the whole group are called primitive roots. In elliptic curve cryptography, the chosen generator point G must generate the entire group.</aside>
+        <aside class="notes">Give students a 3-step test they can always use:
+
+"How to test if g is a generator in multiplicative mod p:
+1) Compute g^1, g^2, g^3, ... mod p
+2) Stop if you hit 1
+3) If you hit 1 too early, not a generator"
+
+Apply to g=2 mod 7:
+2,4,1,... hit 1 at power 3 (too early) so it misses elements 3,5,6.
+
+Apply to g=3 mod 7:
+3,2,6,4,5,1 hits all 6 non-zero elements before returning to 1, so yes generator.
+
+Vocabulary line:
+"Primitive root = generator of the full multiplicative group."
+
+Keep repeating: "not every element is a generator." This is the main learning objective of this slide.</aside>
       </section>
 
       <!-- ============ FINDING GENERATORS ============ -->
       <section>
         <h2>Finding Primitive Roots</h2>
-        <pre><code class="language-python">from galois import GF
+        <p style="font-size: 0.85em;">Manual method first, library second.</p>
+        <pre><code class="language-python"># Manual check in mod 7
+    p = 7
+    for g in range(1, p):
+      seen = []
+      v = 1
+      for _ in range(p - 1):
+        v = (v * g) % p
+        seen.append(v)
+      ok = len(set(seen)) == (p - 1)
+      print(g, seen, "GEN" if ok else "no")
 
-# galois library can find all primitive roots
-for p in [7, 11, 13, 23]:
-    field = GF(p)
-    roots = field.primitive_elements
-    print(f"GF({p}): primitive roots = {list(roots)}")
-    print(f"  {len(roots)} out of {p-1} elements are generators")
-    print(f"  ratio = {len(roots)/(p-1):.1%}\n")
+    # Then optional automation:
+    from galois import GF
+    print(list(GF(7).primitive_elements))</code></pre>
+        <div class="callout-blue">
+          In mod 7, primitive roots are 3 and 5.
+        </div>
+        <aside class="notes">Teaching strategy:
 
-# Manual verification for p=7
-p = 7
-for g in range(1, p):
-    generated = set()
-    val = 1
-    for _ in range(p - 1):
-        val = (val * g) % p
-        generated.add(val)
-    is_gen = len(generated) == p - 1
-    print(f"  g={g}: generates {sorted(generated)} {'← GENERATOR' if is_gen else ''}")</code></pre>
-        <aside class="notes">The galois library makes finding primitive roots easy. For p equals 7, the generators are 3 and 5. Notice the ratio — roughly a third of elements are generators, which is related to Euler's totient function. In practice, for elliptic curve cryptography, the generator is specified as part of the curve parameters. For BN128, the generator G1 is a specific point.</aside>
+    "Do NOT start with library output. Students need to see the pattern manually once."
+
+    Manual demo for g=3 in mod 7:
+    3,2,6,4,5,1 -> six distinct non-zero elements, so generator.
+
+    Manual demo for g=2:
+    2,4,1,2,... repeats early, so not generator.
+
+    Only after manual intuition, show galois one-liner to automate.
+
+    If asked "how many generators should exist?" give short answer:
+    "For mod p, count is phi(p-1)." Do not deep dive unless the room asks.</aside>
+      </section>
+
+      <!-- ============ CHECKPOINT ============ -->
+      <section data-background-color="#1a1a2e">
+        <h2>⚡ Speed Round: Generator Hunt</h2>
+        <p class="subtle">Compute powers mod 7. Is the element a generator of ℤ₇*?</p>
+        <table>
+          <thead><tr><th>Element</th><th>Powers mod 7</th><th>Generator?</th></tr></thead>
+          <tbody>
+            <tr><td>g = 2</td><td class="fragment">2, 4, 1 (only 3 elements)</td><td class="fragment"><strong style="color: #e74c3c;">NO</strong></td></tr>
+            <tr><td>g = 3</td><td class="fragment">3, 2, 6, 4, 5, 1 (all 6!)</td><td class="fragment"><strong style="color: #2ecc71;">YES ✓</strong></td></tr>
+            <tr><td>g = 4</td><td class="fragment">4, 2, 1 (only 3 elements)</td><td class="fragment"><strong style="color: #e74c3c;">NO</strong></td></tr>
+            <tr><td>g = 5</td><td class="fragment">5, 4, 6, 2, 3, 1 (all 6!)</td><td class="fragment"><strong style="color: #2ecc71;">YES ✓</strong></td></tr>
+          </tbody>
+        </table>
+        <div class="callout fragment">
+          Only 2 out of 6 elements are generators. How many generators does mod 13 have?<br>
+          <span style="font-size: 0.85em;">φ(p−1) = φ(12) = φ(4)×φ(3) = 2×2 = <strong>4 generators</strong></span>
+        </div>
+        <aside class="notes">Great hands-on exercise. Have students compute 2's powers on their own first (10 seconds), then reveal. The key realization: not every element is a generator. Only elements whose order equals the group order generate everything. The Euler totient formula at the bottom predicts exactly how many generators exist.</aside>
       </section>
 
       <!-- ============ CYCLIC => ABELIAN ============ -->
@@ -330,17 +438,26 @@ for g in range(1, p):
         <h2>Cyclic &rArr; Abelian</h2>
         <p>If a group is cyclic, it is automatically abelian (commutative).</p>
         <div class="callout">
-          <strong>Proof sketch:</strong> Every element = generator applied some number of times.<br>
-          Let p = g+g+...+g (m times), q = g+g+...+g (n times)<br>
-          Then p □ q = g added (m+n) times = q □ p = g added (n+m) times<br>
-          Since m+n = n+m, commutativity follows.
+          <strong>Proof sketch in one line:</strong><br>
+          If p = g^m and q = g^n, then p*q = g^(m+n) = g^(n+m) = q*p.
         </div>
         <ul>
           <li>Elliptic curve groups in ZK are cyclic &rarr; therefore abelian</li>
           <li>The converse is NOT true: abelian does not imply cyclic</li>
           <li>ℝ under addition is abelian but NOT cyclic (no single generator)</li>
         </ul>
-        <aside class="notes">This is an important theorem. Cyclic groups are automatically commutative. The proof is elegant: since everything is just the generator added to itself repeatedly, the order doesn't matter — m plus n equals n plus m. This is why elliptic curve point addition is commutative. The converse doesn't hold: real numbers under addition are commutative but no single real number generates all others through repeated addition.</aside>
+        <aside class="notes">Students often freeze at proof notation. Use this script:
+
+"Every element in a cyclic group is just 'some power of g'.
+So any two elements look like g^m and g^n.
+Multiply them: powers add -> g^(m+n).
+Swap order: g^(n+m).
+But m+n = n+m, so same result. Done."
+
+Then immediately add the warning:
+"Abelian does NOT always mean cyclic." Use real numbers under addition as counterexample.
+
+Keep it short. This theorem should feel easy, not scary.</aside>
       </section>
 
       <!-- ============ IDENTITY IS UNIQUE ============ -->
@@ -443,13 +560,23 @@ print(f"2³ × 2⁻³ = {b**3 * b**-3}")  # 1 ✓</code></pre>
 # eq(A, B)            → A == B
 
 # Key identity:
-# multiply(G1, a) + multiply(G1, b) = multiply(G1, a + b)
-# This is a HOMOMORPHISM — Workshop 5 material!</code></pre>
+# multiply(G1, a) + multiply(G1, b) = multiply(G1, a + b)</code></pre>
         <div class="callout-blue">
           Every concept from this workshop maps directly to EC operations:<br>
           Generator = G1 &nbsp;|&nbsp; Identity = point at infinity &nbsp;|&nbsp; Inverse = neg(P)
         </div>
-        <aside class="notes">Here's a sneak preview. The py_ecc library implements exactly the group operations we've been discussing. G1 is the generator, multiply does scalar multiplication (repeated addition), add is the group binary operator, neg gives the inverse. The fact that aG plus bG equals (a+b)G is the homomorphism property we'll study next workshop. Everything connects.</aside>
+        <aside class="notes">Keep this preview concrete and light:
+
+"Do not worry about curve equations yet. Just map vocabulary:
+generator -> G1
+identity -> point at infinity
+inverse -> neg(P)
+binary operation -> add(A,B)"
+
+Then show the identity line and say:
+"This is the same pattern we already saw in cyclic groups."
+
+Avoid deep theory here. Goal is confidence, not rigor.</aside>
       </section>
 
       <!-- ============ SUMMARY ============ -->
@@ -478,7 +605,27 @@ print(f"2³ × 2⁻³ = {b**3 * b**-3}")  # 1 ✓</code></pre>
           <li>Build the multiplication table for {1,2,3,4} mod 5. Verify all four group properties.</li>
           <li>Find all primitive roots of GF(13) using the galois library or manually.</li>
         </ol>
-        <aside class="notes">These problems cover all major topics. Problem 2 is a fun proof — hint: Lagrange's theorem says the order of any subgroup divides the group order. If the order is prime, the only subgroups are trivial and the whole group. Problem 3 is about inverses — there's no way to un-concatenate a string.</aside>
+        <aside class="notes">Give these hints out loud if students stall:
+
+      Problem 1:
+      "List powers of 2 mod 11 until you hit 1. If you got all 10 non-zero elements before returning to 1, then 2 is primitive."
+
+      Problem 2:
+      "For a prime-sized group, non-identity elements cannot live in tiny subgroups. Their generated subgroup size must divide p, so it must be p."
+
+      Problem 3:
+      "Check identity and inverse under concatenation. Empty string is identity, but most strings cannot be undone by concatenating another string."
+
+      Problem 4:
+      "In additive mod 13, inverse of a is 13-a (except 0 maps to 0)."
+
+      Problem 5:
+      "Build the 4x4 table and check: closed, identity=1, each row has inverse partner."
+
+      Problem 6:
+      "Use same generator test as slide: powers should hit all non-zero elements before repeating."
+
+      If time is short, solve #1 and #4 live; assign #2 and #6 as stretch.</aside>
       </section>
 
       <!-- ============ NEXT WORKSHOP ============ -->
