@@ -42,6 +42,19 @@
         <aside class="notes">Welcome to Workshop 5. Homomorphisms are where all our abstract algebra knowledge pays off. A homomorphism is a structure-preserving map between two groups. This is THE concept that makes zero knowledge proofs possible — proving you did a computation correctly without revealing the inputs.</aside>
       </section>
 
+      <!-- ============ HOOK ============ -->
+      <section>
+        <h2>🌐 The Google Translate of Math</h2>
+        <p style="font-size: 1.1em; margin-top: 20px;">Imagine translating a sentence from English to French, and <strong>the meaning stays the same</strong>.</p>
+        <div class="fragment" style="margin-top: 20px;">
+          <p>That's a <strong>homomorphism</strong> — a translation between mathematical structures where the <em>operations</em> are preserved.</p>
+        </div>
+        <div class="callout fragment" style="margin-top: 20px;">
+          <strong>The killer app:</strong> What if I could encrypt your computation, run it <em>in encrypted form</em>, and get the right encrypted answer — without ever seeing your data?
+        </div>
+        <aside class="notes">Two hooks here. First: a homomorphism is a "translation" that preserves meaning. Combining then translating gives the same result as translating then combining. Second: the practical punchline — this enables computing on encrypted data, which is exactly what ZK proofs do. You compute with hidden witnesses and the verifier can check the result without seeing the inputs.</aside>
+      </section>
+
       <!-- ============ AGENDA ============ -->
       <section>
         <h2>Agenda</h2>
@@ -57,21 +70,61 @@
         <aside class="notes">We'll start with the definition, build intuition through many examples, then connect to ZK proofs. By the end, you'll see exactly how homomorphisms enable zero knowledge — and you'll understand why elliptic curves are the tool of choice.</aside>
       </section>
 
+      <!-- ============ ABSTRACT ALGEBRA BRUSH-UP ============ -->
+      <section>
+        <h2>Core Terms We Will Use</h2>
+        <p style="font-size: 0.82em;">Quick refresher before homomorphisms:</p>
+        <div class="two-col" style="font-size: 0.78em; gap: 12px;">
+          <div>
+            <ul>
+              <li><strong>Binary operation:</strong> rule that combines two elements</li>
+              <li><strong>Identity:</strong> "do nothing" element (0 for +, 1 for ×)</li>
+              <li><strong>Inverse:</strong> "undo" element (e.g., 5 + 2 ≡ 0 mod 7)</li>
+              <li><strong>Group:</strong> closed + associative + identity + inverses</li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+              <li><strong>Abelian:</strong> order does not matter (a+b = b+a)</li>
+              <li><strong>Cyclic:</strong> one element can generate all others</li>
+              <li><strong>Generator:</strong> that one starting element (like G on ECs)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout-blue" style="margin-top: 4px;">
+          Homomorphism = a map that preserves this structure.
+        </div>
+        <aside class="notes">"If these terms feel rusty, that's completely normal. We only need intuition-level meaning today."
+
+      Walk through in this order: operation, identity, inverse, group, abelian, cyclic, generator.
+
+      "Homomorphism is a translation between two mathematical systems that keeps these rules true."
+
+      If you're short on time, emphasize just three anchors: identity (0), inverse pair in mod 7, and generator G.</aside>
+      </section>
+
       <!-- ============ DEFINITION ============ -->
       <section>
         <h2>What is a Homomorphism?</h2>
-        <p>Given two groups (A, □) and (B, ■), a <strong>homomorphism</strong> from A to B is a function &phi; such that:</p>
+        <p>Given two groups, a <strong>homomorphism</strong> is a map that keeps the math structure intact.</p>
         <div class="callout">
-          <span class="formula">&phi;(a<sub>i</sub> □ a<sub>j</sub>) = &phi;(a<sub>i</sub>) ■ &phi;(a<sub>j</sub>)</span><br>
-          for all a<sub>i</sub>, a<sub>j</sub> in A
+          <span class="formula">&phi;(x \, op<sub>A</sub> \, y) = &phi;(x) \, op<sub>B</sub> \, &phi;(y)</span><br>
+          for all x, y in A
         </div>
         <p>In plain English:</p>
         <ul>
-          <li>Combine in A first, then map &rarr; same result as</li>
-          <li>Map each element first, then combine in B</li>
+          <li>Do the operation first, then map</li>
+          <li>OR map first, then do the operation</li>
+          <li>Both paths give the same answer</li>
         </ul>
-        <p class="subtle">The map "preserves" the group structure — operations in A correspond to operations in B.</p>
-        <aside class="notes">This is the core definition. A homomorphism is a function between two groups that respects the operations. You can either operate first then map, or map first then operate — you get the same result either way. This is structure preservation. Think of it like a translation that preserves sentence structure between languages.</aside>
+        <p class="subtle">"op" means operation. In one group it might be +, in the other it might be ×.</p>
+        <aside class="notes">"Homomorphism means: same pattern, different world."
+
+      Decode symbols right away: op_A is the operation in the first group, op_B is the operation in the second group.
+
+      "FIRST-THEN-MAP equals MAP-THEN-FIRST."
+
+      "Why do we care? Because it lets us verify math in one space while secrets stay hidden in another space."</aside>
       </section>
 
       <!-- ============ VISUAL ============ -->
@@ -93,7 +146,34 @@
           <strong>Path 2:</strong> Apply &phi; to each, then combine in B<br>
           <strong>Result:</strong> Same answer either way
         </div>
-        <aside class="notes">The diagram shows two paths from the top to the bottom right. Path 1 goes down then right — combine first, then map. Path 2 goes right then down — map each element first, then combine. The fact that both paths reach the same destination is the definition of a homomorphism. This commutativity of the diagram is the whole point.</aside>
+        <aside class="notes">"There are two roads to the same destination. If both roads always meet, we have a homomorphism."
+
+      Use one quick example: for phi(x)=2x under addition, phi(3+5)=16 and phi(3)+phi(5)=6+10=16.
+
+      Keep this slide conceptual and light; save detail for examples.</aside>
+      </section>
+
+      <!-- ============ HIGH SCHOOL REFRESHER ============ -->
+      <section>
+        <h2>Quick Refresher (High-School Math)</h2>
+        <p style="font-size: 0.85em;">We'll use these 4 rules repeatedly:</p>
+        <table style="font-size: 0.78em;">
+          <thead><tr><th>Rule</th><th>Formula</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td>Distributive</td><td>k(a+b)=ka+kb</td><td>2(3+5)=6+10</td></tr>
+            <tr><td>Exponent add rule</td><td>b^(m+n)=b^m * b^n</td><td>2^8 = 2^3 * 2^5</td></tr>
+            <tr><td>Square expansion</td><td>(a+b)^2 = a^2 + 2ab + b^2</td><td>(2+3)^2 = 4 + 12 + 9</td></tr>
+            <tr><td>Mod inverse idea</td><td>a * a^-1 &equiv; 1 (mod p)</td><td>3*5 &equiv; 1 (mod 7)</td></tr>
+          </tbody>
+        </table>
+        <div class="callout-blue" style="margin-top: 8px;">
+          If these rules hold, checking homomorphisms becomes mechanical.
+        </div>
+        <aside class="notes">"You do not need advanced math today. These four rules are enough."
+
+      Connect each rule to where it appears later: distributive for phi(x)=2x, exponent rule for exponentiation homomorphism, square expansion for why x^2 fails, and modular inverse for finite-field mapping.
+
+      Pause briefly and ask if anyone wants one extra example before moving on.</aside>
       </section>
 
       <!-- ============ EXAMPLE 1 ============ -->
@@ -131,8 +211,8 @@ print(f"φ({a})+φ({b}) = {2*a}+{2*b} = {rhs}")
         <h2>Example 2: Strings &rarr; Integers</h2>
         <p>Let &phi; = length function (len)</p>
         <div class="callout">
-          A = (strings, concatenation) — a Monoid<br>
-          B = (ℤ&ge;0, +) — a Monoid<br>
+          A = (strings, concatenation)<br>
+          B = (ℤ&ge;0, +)<br>
           &phi;(s) = len(s)
         </div>
         <pre><code class="language-python"># φ(concat(s1, s2)) = φ(s1) + φ(s2)
@@ -147,7 +227,13 @@ print(f"len('{s1}' + '{s2}') = len('{s1+s2}') = {lhs}")
 print(f"len('{s1}') + len('{s2}') = {len(s1)} + {len(s2)} = {rhs}")
 # Both equal 10 ✓</code></pre>
         <p class="subtle">The string length is a homomorphism from strings under concatenation to non-negative integers under addition.</p>
-        <aside class="notes">This is a beautifully intuitive example. The length of the concatenation equals the sum of the lengths. You've been using this homomorphism your entire programming career without knowing it had a name. Note this works between Monoids, not just Groups — homomorphisms apply to any algebraic structure with a binary operator.</aside>
+        <aside class="notes">This is usually the easiest example, so use it to build confidence.
+
+      "When I glue two strings, total length equals length1 + length2. That's homomorphism."
+
+      If someone asks about monoid, keep it brief: "like a group, but inverses are not required."
+
+      Goal for this moment: students feel "I already use this in real coding."</aside>
       </section>
 
       <!-- ============ EXAMPLE 3 ============ -->
@@ -172,7 +258,13 @@ det_C = int(round(np.linalg.det(C)))  # 4
 print(f"det(A×B) = {det_C}")
 print(f"det(A) × det(B) = {det_A} × {det_B} = {det_A * det_B}")
 assert det_C == det_A * det_B  # 4 = (-2)×(-2) ✓</code></pre>
-        <aside class="notes">The determinant is a homomorphism from matrices under multiplication to integers under multiplication. The determinant of a product equals the product of the determinants. This is a well-known linear algebra fact, but now you see it's really a homomorphism. Notice the binary operators are different — matrix multiplication on one side, integer multiplication on the other — but the structure is preserved.</aside>
+        <aside class="notes">This is a harder example.
+
+      "You don't need to re-derive determinant formulas here. Just use one fact: det(AB)=det(A)det(B)."
+
+      That alone is enough to show homomorphism.
+
+      If the room feels overloaded, skip detailed calculation and keep the core lesson: different-looking objects can still preserve structure through a map.</aside>
       </section>
 
       <!-- ============ EXPONENTIATION ============ -->
@@ -198,7 +290,13 @@ print(f"2^{a} × 2^{b} = {base**a} × {base**b} = {rhs}")</code></pre>
           <strong>Addition</strong> on one side becomes <strong>multiplication</strong> on the other.<br>
           This is the basis of how elliptic curve scalar multiplication works!
         </div>
-        <aside class="notes">This is arguably the most important homomorphism for understanding ZK proofs. Addition in the exponent corresponds to multiplication in the base. When we write aG plus bG equals (a+b)G on an elliptic curve, we're using exactly this pattern — just in additive notation instead of multiplicative. The shift from addition to multiplication through a homomorphism is the core mechanism of elliptic curve cryptography.</aside>
+        <aside class="notes">Spend extra time here; this is the bridge to ZK.
+
+      "Rule from high school: b^(m+n)=b^m * b^n. That one rule is this homomorphism."
+
+      Then connect gently to elliptic curves: "On curves we write with + notation, so the same pattern appears as (a+b)G = aG + bG."
+
+      "Nothing magical is happening. It's the same exponent law in a group setting."</aside>
       </section>
 
       <!-- ============ CLARIFICATIONS ============ -->
@@ -216,6 +314,29 @@ print(f"2^{a} × 2^{b} = {base**a} × {base**b} = {rhs}")</code></pre>
           It's valid (&phi;(a□b) = e = e ■ e = &phi;(a)■&phi;(b)) but tells us nothing useful.
         </div>
         <aside class="notes">A few important points about homomorphisms. They're one-directional — just because we can map A to B doesn't mean we can map B back to A. The trivial homomorphism that sends everything to the identity always exists but is useless. For ZK proofs, we need homomorphisms that are NOT trivial — ones that actually encode meaningful information about the computation.</aside>
+      </section>
+
+      <!-- ============ CHECKPOINT ============ -->
+      <section data-background-color="#1a1a2e">
+        <h2>⚡ Spot the Homomorphism</h2>
+        <p class="subtle">Vote YES or NO for each — is it a valid homomorphism?</p>
+        <table>
+          <thead><tr><th>Map</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>φ(x) = 2x from (ℤ,+) to (ℤ,+)</td><td class="fragment"><strong style="color: #2ecc71;">YES</strong> — 2(a+b) = 2a+2b ✓</td></tr>
+            <tr><td>φ(x) = x² from (ℤ,+) to (ℤ,+)</td><td class="fragment"><strong style="color: #e74c3c;">NO</strong> — (a+b)² ≠ a²+b²</td></tr>
+            <tr><td>φ(x) = x+1 from (ℤ,+) to (ℤ,+)</td><td class="fragment"><strong style="color: #e74c3c;">NO</strong> — (a+b)+1 ≠ (a+1)+(b+1)</td></tr>
+            <tr><td>det(AB) vs det(A)·det(B)</td><td class="fragment"><strong style="color: #2ecc71;">YES</strong> — determinant is a homomorphism!</td></tr>
+            <tr><td>φ(x) = eˣ from (ℝ,+) to (ℝ⁺,×)</td><td class="fragment"><strong style="color: #2ecc71;">YES</strong> — e^(a+b) = eᵃ × eᵇ ✓</td></tr>
+          </tbody>
+        </table>
+        <aside class="notes">Run this as a rapid confidence check.
+
+      Use the same method each time: compute phi(a+b), compute phi(a) op phi(b), then compare.
+
+      For the x^2 row, explicitly expand (a+b)^2 = a^2 + 2ab + b^2 and point out the 2ab term as the failure reason.
+
+      If needed, briefly revisit the refresher slide.</aside>
       </section>
 
       <!-- ============ RATIONALS TO FINITE FIELD ============ -->
@@ -239,7 +360,13 @@ print(f"φ(14/15) = {c}")  # 10
 # Check: φ(1/3) + φ(3/5) ≡ φ(14/15) (mod 17)?
 print(f"φ(1/3) + φ(3/5) = {(a + b) % p}")  # 10
 assert (a + b) % p == c  # ✓ Homomorphism preserved!</code></pre>
-        <aside class="notes">This one's from Workshop 2 but now we have the vocabulary to describe it properly. It's a homomorphism from rationals under addition to finite field elements under addition. The structure is preserved — adding rationals and then mapping gives the same result as mapping first and then adding in the field. This is actually used in ZK systems when encoding rational arithmetic.</aside>
+        <aside class="notes">Many students forget modular inverse, so remind them first:
+
+      "b^-1 mod p is the number that multiplies with b to give 1 mod p."
+
+      Use one mini-check: "In mod 17, inverse of 3 is 6 because 3*6=18=1 mod 17."
+
+      If time is tight, skip print lines and focus on the final assert: map-after-add equals add-after-map.</aside>
       </section>
 
       <!-- ============ HOMOMORPHIC ENCRYPTION ============ -->
@@ -256,7 +383,13 @@ assert (a + b) % p == c  # ✓ Homomorphism preserved!</code></pre>
           <li>Because &phi; is hard to invert, nobody can recover the original values</li>
         </ul>
         <p class="subtle">This is the fundamental mechanism of zero knowledge proofs!</p>
-        <aside class="notes">This is the big reveal. If phi is easy to compute but hard to invert, we get homomorphic encryption. The prover computes in the secret space A, maps results to public space B using phi, and the verifier checks the computation in B. The structure preservation guarantees correctness, and the difficulty of inverting phi guarantees privacy. This is EXACTLY what elliptic curves give us — the discrete logarithm problem makes phi hard to invert.</aside>
+        <aside class="notes">Use this mental model: "easy forward, hard backward, structure preserved."
+
+      Easy forward: compute phi(secret).
+      Hard backward: cannot recover secret from phi(secret).
+      Structure preserved: checks on mapped values are still valid.
+
+      Keep language plain on this slide.</aside>
       </section>
 
       <!-- ============ ZK ADDITION EXAMPLE 1 ============ -->
@@ -279,10 +412,16 @@ assert (a + b) % p == c  # ✓ Homomorphism preserved!</code></pre>
 # By the homomorphism property:
 #   φ(x + y) = φ(x) + φ(y) = xG + yG
 #
-# If xG + yG = 15G, then x + y = 15 ✓
+# If xG + yG = 15G, then x+y matches 15 (mod group order) ✓
 
 # The verifier is convinced WITHOUT knowing x or y!</code></pre>
-        <aside class="notes">Here's ZK in action. The prover has secret x and y that sum to 15. They compute xG and yG — mapping into elliptic curve space. The verifier checks that xG plus yG equals 15G. If it does, the verifier is convinced the sum is 15 without learning x or y individually. The discrete logarithm problem ensures the verifier can't extract x from xG. This is the essence of zero knowledge.</aside>
+        <aside class="notes">This check is modulo the curve group order.
+
+      For intuition, say "sum equals 15"; mathematically it's "sum congruent to 15 mod n."
+
+      "Prover sends commitments xG and yG. Verifier checks xG+yG equals 15G. Because mapping preserves addition, this check is valid without revealing x or y."
+
+      Keep this conceptual; no need to go into full protocol details here.</aside>
       </section>
 
       <!-- ============ ZK MULTIPLICATION EXAMPLE ============ -->
@@ -345,7 +484,9 @@ assert (a + b) % p == c  # ✓ Homomorphism preserved!</code></pre>
           <li>Homomorphic: &phi;(a+b) = &phi;(a) + &phi;(b), i.e., (a+b)G = aG + bG</li>
         </ol>
         <p class="subtle">This one sentence encodes EVERYTHING you need to know about how ZK proofs work at a high level.</p>
-        <aside class="notes">Take a moment to appreciate this. Four workshops ago, this sentence would have been completely opaque. Now you can parse every word. Elliptic curve points form a group — you know what that means. It's cyclic — generated from a single point. Integers map homomorphically to it — structure is preserved. And the one-way nature of this map is what gives us zero knowledge. This is the conceptual core of all ZK proof systems.</aside>
+        <aside class="notes">"We translate integer math into curve-point math in a way that keeps truth but hides values."
+
+      Then decode the sentence piece-by-piece only if needed. Keep this closing empowering, not heavy.</aside>
       </section>
 
       <!-- ============ PYTHON DEMO ============ -->
